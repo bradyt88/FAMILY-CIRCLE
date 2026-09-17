@@ -5,6 +5,7 @@ import './batch1.css'
 import './batch11.css'
 import './batch12.css'
 import './batch13.css'
+import './batch14.css'
 
 type Screen = 'members' | 'home'
 type HomeTab = 'home' | 'chat' | 'photos' | 'calendar' | 'tasks'
@@ -13,6 +14,7 @@ type FamilyPhoto = { id: string; src: string; name: string; time: string }
 type ChatMessage = { initials: string; time: string; name: string; text: string; accent: string; outgoing?: boolean; attachment?: FamilyPhoto }
 type FamilyEvent = { id: string; date: string; icon: string; title: string; time: string; location: string; kind: EventKind }
 type FamilyTask = { id: string; title: string; dueDate: string; assignedTo: string; completed: boolean; completedAt?: number }
+type NavItem = { label: string; icon: string; tab?: HomeTab; tool?: ToolMode; wide?: boolean }
 
 const demoMembers: FamilyMember[] = [
   { id: 'member-1', label: 'Family Member 1', initials: 'FM', accent: 'member-accent-one', phone: '+44 7700 900001', bio: 'Keeping the family moving.', locationLabel: 'Work', lastUpdated: '2 min ago', mapX: 25, mapY: 37 },
@@ -30,6 +32,23 @@ const initialNotifications: FamilyNotification[] = [
   { id: 'notification-1', kind: 'Chat', title: 'Family Member 1 sent a message', detail: "Who's up for takeaway tonight? 🍕", time: '2 min ago' },
   { id: 'notification-2', kind: 'Task', title: 'Task update', detail: 'Take bins out is due today.', time: '1 hr ago' },
   { id: 'notification-3', kind: 'Calendar', title: 'Upcoming family event', detail: 'Family Dinner is today at 19:00.', time: 'Today' },
+]
+
+const navItems: NavItem[] = [
+  { tab: 'home', label: 'Home', icon: '⌂' },
+  { tab: 'chat', label: 'Chat', icon: '◌' },
+  { tab: 'photos', label: 'Photos', icon: '▧' },
+  { tab: 'calendar', label: 'Calendar', icon: '▦' },
+  { tab: 'tasks', label: 'Tasks', icon: '✓' },
+  { tool: 'map', label: 'Where Is Everyone?', icon: '📍', wide: true },
+]
+
+const quickTiles: { title: string; subtitle: string; icon: string; tone: string; tab?: HomeTab; tool?: ToolMode }[] = [
+  { tab: 'chat', title: 'Chat', subtitle: 'Message the family', icon: '◌', tone: 'tile-cyan' },
+  { tab: 'photos', title: 'Photos', subtitle: 'Our memories together', icon: '▧', tone: 'tile-purple' },
+  { tool: 'emergency', title: 'Family Emergency', subtitle: 'Get family help quickly', icon: '!', tone: 'tile-pink' },
+  { tab: 'tasks', title: 'Tasks', subtitle: 'Jobs & responsibilities', icon: '✓', tone: 'tile-green' },
+  { tab: 'calendar', title: 'Calendar', subtitle: 'Events & plans', icon: '▦', tone: 'tile-magenta' },
 ]
 
 function todayDate() {
@@ -103,21 +122,15 @@ function initialTasks(): FamilyTask[] {
   ]
 }
 
-const quickTiles: { title: string; subtitle: string; icon: string; tone: string; tab?: HomeTab; tool?: ToolMode }[] = [
-  { tab: 'chat', title: 'Chat', subtitle: 'Message the family', icon: '◌', tone: 'tile-cyan' },
-  { tab: 'photos', title: 'Photos', subtitle: 'Our memories together', icon: '▧', tone: 'tile-purple' },
-  { tool: 'emergency', title: 'Family Emergency', subtitle: 'Get family help quickly', icon: '!', tone: 'tile-pink' },
-  { tab: 'tasks', title: 'Tasks', subtitle: 'Jobs & responsibilities', icon: '✓', tone: 'tile-green' },
-  { tab: 'calendar', title: 'Calendar', subtitle: 'Events & plans', icon: '▦', tone: 'tile-magenta' },
-]
-
-const navItems: { tab: HomeTab; label: string; icon: string }[] = [
-  { tab: 'home', label: 'Home', icon: '⌂' },
-  { tab: 'chat', label: 'Chat', icon: '◌' },
-  { tab: 'photos', label: 'Photos', icon: '▧' },
-  { tab: 'calendar', label: 'Calendar', icon: '▦' },
-  { tab: 'tasks', label: 'Tasks', icon: '✓' },
-]
+function getCalendarCells(cursor: Date) {
+  const firstDay = new Date(cursor.getFullYear(), cursor.getMonth(), 1)
+  const daysInMonth = new Date(cursor.getFullYear(), cursor.getMonth() + 1, 0).getDate()
+  const startOffset = (firstDay.getDay() + 6) % 7
+  return Array.from({ length: 42 }, (_, index) => {
+    const dayNumber = index - startOffset + 1
+    return dayNumber >= 1 && dayNumber <= daysInMonth ? dayNumber : null
+  })
+}
 
 function Greeting() {
   const hour = new Date().getHours()
@@ -140,16 +153,6 @@ function SectionHeader({ icon, title, tone, onAction, actionLabel }: { icon: str
 
 function FeatureHeader({ title, description, onHome }: { title: string; description: string; onHome: () => void }) {
   return <div className="feature-topbar"><div><p className="feature-kicker">Family Circle</p><h1>{title}</h1><p className="muted">{description}</p></div><button className="back-button" type="button" onClick={onHome}>← Home</button></div>
-}
-
-function getCalendarCells(cursor: Date) {
-  const firstDay = new Date(cursor.getFullYear(), cursor.getMonth(), 1)
-  const daysInMonth = new Date(cursor.getFullYear(), cursor.getMonth() + 1, 0).getDate()
-  const startOffset = (firstDay.getDay() + 6) % 7
-  return Array.from({ length: 42 }, (_, index) => {
-    const dayNumber = index - startOffset + 1
-    return dayNumber >= 1 && dayNumber <= daysInMonth ? dayNumber : null
-  })
 }
 
 function Logo() {
@@ -202,7 +205,7 @@ export default function App() {
 
   function submitPin() {
     if (pin.length !== 4) return setError('Enter all 4 digits to continue.')
-    setScreen('home'); setActiveTab('home'); closePin()
+    setScreen('home'); setActiveTab('home'); setToolMode(null); closePin()
   }
 
   function goToTab(tab: HomeTab) {
@@ -256,7 +259,6 @@ export default function App() {
   }
 
   function isTaskOverdue(task: FamilyTask) { return !task.completed && task.dueDate < todayKey }
-
   function getTaskAssignee(task: FamilyTask) { return demoMembers.find((member) => member.id === task.assignedTo) ?? demoMembers[0] }
 
   function shiftMonth(amount: number) {
@@ -271,27 +273,30 @@ export default function App() {
   function handleEmergencyAlert(reason: EmergencyReason, coordinates: { latitude: number; longitude: number } | null) {
     const now = new Date().toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })
     const locationText = coordinates ? '📍 Current location shared with the family.' : 'Location was unavailable.'
-    const text = `🚨 FAMILY EMERGENCY — ${selectedMember.label}: ${reason.title}. ${locationText}`
+    const messageText = reason.message ? ` ${reason.message}` : ''
+    const text = `🚨 FAMILY EMERGENCY — ${selectedMember.label}: ${reason.title}.${messageText} ${locationText}`
     setMessages((current) => [{ initials: selectedMember.initials, time: now, name: selectedMember.label, text, accent: selectedMember.accent, outgoing: true }, ...current])
-    setNotifications((current) => [{ id: `notification-${Date.now()}`, kind: 'Emergency', title: `${selectedMember.label}: ${reason.title}`, detail: coordinates ? 'Family alert sent with current location.' : 'Family alert sent; current location was unavailable.', time: 'Now' }, ...current])
+    setNotifications((current) => [{ id: `notification-${Date.now()}`, kind: 'Emergency', title: `${selectedMember.label}: ${reason.title}`, detail: reason.message ? reason.message : coordinates ? 'Family alert sent with current location.' : 'Family alert sent; current location was unavailable.', time: 'Now' }, ...current])
+  }
+
+  function getProfilePhoto() {
+    try { return localStorage.getItem(`family-circle-profile-photo-${selectedMember.id}`) } catch { return null }
   }
 
   function renderBottomNav() {
-    return <nav className="bottom-nav" aria-label="Family Circle navigation">{navItems.map((item) => <button className={activeTab === item.tab ? 'nav-item active' : 'nav-item'} key={item.tab} type="button" onClick={() => goToTab(item.tab)}><span aria-hidden="true">{item.icon}</span><small>{item.label}</small></button>)}</nav>
+    return <nav className="bottom-nav" aria-label="Family Circle navigation">{navItems.map((item) => { const active = item.tool ? toolMode === item.tool : !toolMode && activeTab === item.tab; return <button className={active ? `nav-item active${item.wide ? ' nav-item-wide' : ''}` : `nav-item${item.wide ? ' nav-item-wide' : ''}`} key={item.label} type="button" onClick={() => item.tool ? openTool(item.tool) : item.tab && goToTab(item.tab)}><span aria-hidden="true">{item.icon}</span><small>{item.label}</small></button> })}</nav>
   }
 
   function renderHomeDashboard() {
+    const storedPhoto = getProfilePhoto()
     return <>
       <header className="home-topbar">
         <button className="home-profile profile-trigger" type="button" onClick={() => openTool('profile')} aria-label="Open My Profile">
-          <span className={`home-avatar ${selectedMember.accent}`}>{selectedMember.initials}</span>
+          {storedPhoto ? <img className="home-avatar profile-avatar-photo" src={storedPhoto} alt="Profile" /> : <span className={`home-avatar ${selectedMember.accent}`}>{selectedMember.initials}</span>}
           <div><p className="greeting"><Greeting /></p><strong>{selectedMember.label}</strong><span>The Family Circle</span></div>
         </button>
         <div className="hero-brand" aria-label="Family Circle"><img className="hero-logo" src={logoUrl} alt="Family Circle" /></div>
-        <div className="home-tools">
-          <button className="icon-button notification-button" type="button" aria-label="Notifications" onClick={() => openTool('notifications')}><span aria-hidden="true">🔔</span>{notifications.length > 0 && <b>{notifications.length}</b>}</button>
-          <button className="icon-button" type="button" aria-label="Settings" onClick={() => openTool('settings')}>⚙</button>
-        </div>
+        <div className="home-tools"><button className="icon-button notification-button" type="button" aria-label="Notifications" onClick={() => openTool('notifications')}><span aria-hidden="true">🔔</span>{notifications.length > 0 && <b>{notifications.length}</b>}</button><button className="icon-button" type="button" aria-label="Settings" onClick={() => openTool('settings')}>⚙</button></div>
       </header>
 
       <div className="home-motto">Different places. Same circle. ♡</div>
@@ -306,9 +311,9 @@ export default function App() {
 
       <section className="quick-tile-grid" aria-label="Family shortcuts">{quickTiles.map((tile) => <button className={`quick-tile ${tile.tone}`} type="button" key={tile.title} onClick={() => tile.tool ? openTool(tile.tool) : tile.tab && goToTab(tile.tab)}><span className="quick-tile-icon" aria-hidden="true">{tile.icon}</span><strong>{tile.title}</strong><span>{tile.subtitle}</span></button>)}</section>
 
-      <button className="family-map-preview" type="button" onClick={() => openTool('map')} aria-label="Open Family Map">
-        <div className="family-map-preview-copy"><p className="feature-kicker">Family Map</p><strong>Where's Everyone?</strong><span>{Object.values(locationSharing).filter(Boolean).length} family members sharing location</span></div>
-        <span className="family-map-preview-arrow">View Map →</span>
+      <button className="family-map-preview" type="button" onClick={() => openTool('map')} aria-label="Open Where Is Everyone?">
+        <div className="family-map-preview-copy"><p className="feature-kicker">Where Is Everyone?</p><strong>See the family on the map</strong><span>{Object.values(locationSharing).filter(Boolean).length} family members sharing location</span></div>
+        <span className="family-map-preview-arrow">Open →</span>
         <div className="family-map-preview-graphic" aria-hidden="true"><span className="preview-pin one member-accent-one">FM</span><span className="preview-pin two member-accent-two">FM</span><span className="preview-pin three member-accent-three">FM</span></div>
       </button>
 
@@ -336,7 +341,7 @@ export default function App() {
   }
 
   function renderActiveHomeTab() {
-    if (toolMode) return <FamilyTools mode={toolMode} selectedMember={selectedMember} members={demoMembers} notifications={notifications} locationSharing={locationSharing} locationPermission={locationPermission} activeTab={activeTab} onHome={() => setToolMode(null)} onNavigate={goToTab} onEmergencyAlert={handleEmergencyAlert} onClearNotifications={() => setNotifications([])} onToggleLocationSharing={(memberId, enabled) => setLocationSharing((current) => ({ ...current, [memberId]: enabled }))} onLocationPermission={(status) => setLocationPermission(status)} />
+    if (toolMode) return <FamilyTools mode={toolMode} selectedMember={selectedMember} members={demoMembers} notifications={notifications} locationSharing={locationSharing} locationPermission={locationPermission} activeTab={activeTab} onHome={() => setToolMode(null)} onNavigate={goToTab} onOpenMap={() => openTool('map')} onEmergencyAlert={handleEmergencyAlert} onClearNotifications={() => setNotifications([])} onToggleLocationSharing={(memberId, enabled) => setLocationSharing((current) => ({ ...current, [memberId]: enabled }))} onLocationPermission={(status) => setLocationPermission(status)} />
     if (activeTab === 'chat') return renderChat()
     if (activeTab === 'photos') return renderPhotos()
     if (activeTab === 'calendar') return renderCalendar()
