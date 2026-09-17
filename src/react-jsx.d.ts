@@ -1,3 +1,3 @@
 declare namespace JSX {
-  interface Element {}
+  interface Element extends React.ReactElement {}
 }
