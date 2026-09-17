@@ -1,9 +1,11 @@
 import { useState } from 'react'
 import logoUrl from '../design/brand/family-circle-logo.png'
 import './batch1.css'
+import './batch11.css'
 
 type Screen = 'members' | 'home'
 type HomeTab = 'home' | 'chat' | 'photos' | 'calendar' | 'tasks' | 'more'
+type EventKind = 'standard' | 'birthday' | 'important'
 
 type Member = {
   id: string
@@ -23,17 +25,19 @@ type ChatMessage = {
 
 type FamilyEvent = {
   id: string
-  day: string
+  date: string
   icon: string
   title: string
   time: string
   location: string
+  kind: EventKind
 }
 
 type FamilyTask = {
   id: string
   title: string
-  due: string
+  dueDate: string
+  assignedTo: string
   completed: boolean
 }
 
@@ -49,18 +53,106 @@ const initialMessages: ChatMessage[] = [
   { initials: 'FM', time: '12:03', name: 'Family Member 3', text: 'Check this out! 📷', accent: 'member-accent-three' },
 ]
 
-const initialEvents: FamilyEvent[] = [
-  { id: 'event-1', day: 'today', icon: '🎂', title: 'Family Dinner', time: '19:00 – 20:00', location: 'At Home' },
-  { id: 'event-2', day: 'today', icon: '⚽', title: 'Football Training', time: '17:00 – 18:00', location: 'Leisure Centre' },
-  { id: 'event-3', day: 'tomorrow', icon: '🛒', title: 'Weekly Food Shop', time: '18:00 – 19:00', location: 'Supermarket' },
-  { id: 'event-4', day: 'weekend', icon: '🎬', title: 'Family Movie Night', time: '19:30 – 21:30', location: 'At Home' },
-]
+function todayDate() {
+  const now = new Date()
+  return new Date(now.getFullYear(), now.getMonth(), now.getDate())
+}
 
-const initialTasks: FamilyTask[] = [
-  { id: 'task-1', title: 'Take bins out', due: 'Due today', completed: false },
-  { id: 'task-2', title: 'Tidy your room', due: 'Due today', completed: false },
-  { id: 'task-3', title: 'Feed the dog', due: 'Due tomorrow', completed: false },
-]
+function toDateKey(date: Date) {
+  const year = date.getFullYear()
+  const month = String(date.getMonth() + 1).padStart(2, '0')
+  const day = String(date.getDate()).padStart(2, '0')
+  return `${year}-${month}-${day}`
+}
+
+function addDays(date: Date, amount: number) {
+  const result = new Date(date)
+  result.setDate(result.getDate() + amount)
+  return result
+}
+
+function dateFromKey(key: string) {
+  const [year, month, day] = key.split('-').map(Number)
+  return new Date(year, month - 1, day)
+}
+
+function formatLongDate(key: string) {
+  return new Intl.DateTimeFormat('en-GB', {
+    weekday: 'long',
+    day: 'numeric',
+    month: 'long',
+    year: 'numeric',
+  }).format(dateFromKey(key))
+}
+
+function formatShortDate(key: string) {
+  return new Intl.DateTimeFormat('en-GB', {
+    day: 'numeric',
+    month: 'short',
+  }).format(dateFromKey(key))
+}
+
+function formatRelativeDate(key: string) {
+  const today = todayDate()
+  const date = dateFromKey(key)
+  const diff = Math.round((date.getTime() - today.getTime()) / 86400000)
+
+  if (diff === 0) return 'Today'
+  if (diff === 1) return 'Tomorrow'
+  if (diff === -1) return 'Yesterday'
+  return formatShortDate(key)
+}
+
+function eventIcon(kind: EventKind) {
+  if (kind === 'birthday') return '🎂'
+  if (kind === 'important') return '⭐'
+  return '📅'
+}
+
+function isPastEvent(event: FamilyEvent) {
+  const todayKey = toDateKey(todayDate())
+  if (event.date < todayKey) return true
+  if (event.date > todayKey) return false
+
+  const [hours, minutes] = event.time.split(':').map(Number)
+  const now = new Date()
+  const eventTime = new Date(now.getFullYear(), now.getMonth(), now.getDate(), hours, minutes)
+  return eventTime.getTime() < now.getTime()
+}
+
+function getDaysUntil(key: string) {
+  const today = todayDate()
+  const date = dateFromKey(key)
+  return Math.round((date.getTime() - today.getTime()) / 86400000)
+}
+
+function reminderLabel(event: FamilyEvent) {
+  const days = getDaysUntil(event.date)
+  if (isPastEvent(event)) return 'Past event'
+  if (days === 7) return '7-day reminder due today'
+  if (days === 1) return '1-day reminder due today'
+  return 'Reminders: 7 days + 1 day before'
+}
+
+function initialEvents(): FamilyEvent[] {
+  const today = todayDate()
+  return [
+    { id: 'event-1', date: toDateKey(today), icon: '🎂', title: 'Family Dinner', time: '19:00', location: 'At Home', kind: 'standard' },
+    { id: 'event-2', date: toDateKey(today), icon: '⚽', title: 'Football Training', time: '17:00', location: 'Leisure Centre', kind: 'standard' },
+    { id: 'event-3', date: toDateKey(addDays(today, 1)), icon: '🛒', title: 'Weekly Food Shop', time: '18:00', location: 'Supermarket', kind: 'standard' },
+    { id: 'event-4', date: toDateKey(addDays(today, 3)), icon: '🎬', title: 'Family Movie Night', time: '19:30', location: 'At Home', kind: 'standard' },
+    { id: 'event-5', date: toDateKey(addDays(today, 7)), icon: '🎂', title: 'Family Birthday', time: '15:00', location: 'At Home', kind: 'birthday' },
+  ]
+}
+
+function initialTasks(): FamilyTask[] {
+  const today = todayDate()
+  return [
+    { id: 'task-1', title: 'Take bins out', dueDate: toDateKey(today), assignedTo: 'member-2', completed: false },
+    { id: 'task-2', title: 'Tidy your room', dueDate: toDateKey(today), assignedTo: 'member-1', completed: false },
+    { id: 'task-3', title: 'Feed the dog', dueDate: toDateKey(addDays(today, 1)), assignedTo: 'member-3', completed: false },
+  ]
+}
 
 const quickTiles: { tab: HomeTab; title: string; subtitle: string; icon: string; tone: string }[] = [
   { tab: 'chat', title: 'Chat', subtitle: 'Message the family', icon: '◌', tone: 'tile-cyan' },
@@ -138,6 +230,16 @@ function FeatureHeader({ title, description, onHome }: { title: string; descript
   )
 }
 
+function getCalendarCells(cursor: Date) {
+  const firstDay = new Date(cursor.getFullYear(), cursor.getMonth(), 1)
+  const daysInMonth = new Date(cursor.getFullYear(), cursor.getMonth() + 1, 0).getDate()
+  const startOffset = (firstDay.getDay() + 6) % 7
+  return Array.from({ length: 42 }, (_, index) => {
+    const dayNumber = index - startOffset + 1
+    return dayNumber >= 1 && dayNumber <= daysInMonth ? dayNumber : null
+  })
+}
+
 export default function App() {
   const [screen, setScreen] = useState<Screen>('members')
   const [selectedMemberId, setSelectedMemberId] = useState<string | null>(null)
@@ -148,15 +250,34 @@ export default function App() {
   const [messages, setMessages] = useState<ChatMessage[]>(initialMessages)
   const [chatDraft, setChatDraft] = useState('')
   const [events, setEvents] = useState<FamilyEvent[]>(initialEvents)
-  const [selectedCalendarDay, setSelectedCalendarDay] = useState('today')
-  const [calendarDraft, setCalendarDraft] = useState('')
   const [tasks, setTasks] = useState<FamilyTask[]>(initialTasks)
-  const [taskDraft, setTaskDraft] = useState('')
+  const [selectedCalendarDate, setSelectedCalendarDate] = useState(toDateKey(todayDate()))
+  const [calendarCursor, setCalendarCursor] = useState(() => {
+    const now = todayDate()
+    return new Date(now.getFullYear(), now.getMonth(), 1)
+  })
+  const [calendarForm, setCalendarForm] = useState({
+    title: '',
+    date: toDateKey(todayDate()),
+    time: '',
+    location: '',
+    kind: 'standard' as EventKind,
+  })
+  const [calendarError, setCalendarError] = useState('')
+  const [taskForm, setTaskForm] = useState({
+    title: '',
+    dueDate: toDateKey(todayDate()),
+    assignedTo: '',
+  })
+  const [taskError, setTaskError] = useState('')
 
   const selectedMember = demoMembers.find((member) => member.id === selectedMemberId) ?? demoMembers[0]
-  const todaysEvents = events.filter((event) => event.day === 'today')
-  const selectedEvents = events.filter((event) => event.day === selectedCalendarDay)
+  const todayKey = toDateKey(todayDate())
+  const todaysEvents = events.filter((event) => event.date === todayKey).sort((a, b) => a.time.localeCompare(b.time))
+  const selectedDayEvents = events.filter((event) => event.date === selectedCalendarDate).sort((a, b) => a.time.localeCompare(b.time))
   const completedTasks = tasks.filter((task) => task.completed).length
+  const calendarCells = getCalendarCells(calendarCursor)
+  const monthLabel = new Intl.DateTimeFormat('en-GB', { month: 'long', year: 'numeric' }).format(calendarCursor)
 
   function openPin(memberId: string) {
     setSelectedMemberId(memberId)
@@ -222,40 +343,79 @@ export default function App() {
   }
 
   function addCalendarEvent() {
-    const title = calendarDraft.trim()
-    if (!title) return
-
-    const dayLabels: Record<string, string> = {
-      today: 'today',
-      tomorrow: 'tomorrow',
-      weekend: 'weekend',
-      all: 'family calendar',
+    const title = calendarForm.title.trim()
+    if (!title || !calendarForm.date || !calendarForm.time) {
+      setCalendarError('Event name, date and time are required.')
+      return
     }
+
     const newEvent: FamilyEvent = {
       id: `event-${Date.now()}`,
-      day: selectedCalendarDay === 'all' ? 'today' : selectedCalendarDay,
-      icon: selectedCalendarDay === 'weekend' ? '🎉' : '📅',
+      date: calendarForm.date,
+      icon: eventIcon(calendarForm.kind),
       title,
-      time: 'Time to be added',
-      location: dayLabels[selectedCalendarDay],
+      time: calendarForm.time,
+      location: calendarForm.location.trim(),
+      kind: calendarForm.kind,
     }
+
     setEvents((current) => [...current, newEvent])
-    setCalendarDraft('')
+    setSelectedCalendarDate(calendarForm.date)
+    const date = dateFromKey(calendarForm.date)
+    setCalendarCursor(new Date(date.getFullYear(), date.getMonth(), 1))
+    setCalendarForm({
+      title: '',
+      date: calendarForm.date,
+      time: '',
+      location: '',
+      kind: 'standard',
+    })
+    setCalendarError('')
   }
 
   function addTask() {
-    const title = taskDraft.trim()
-    if (!title) return
+    const title = taskForm.title.trim()
+    if (!title || !taskForm.dueDate || !taskForm.assignedTo) {
+      setTaskError('Task name, due date and family member are required.')
+      return
+    }
 
     setTasks((current) => [
       ...current,
-      { id: `task-${Date.now()}`, title, due: 'Added just now', completed: false },
+      {
+        id: `task-${Date.now()}`,
+        title,
+        dueDate: taskForm.dueDate,
+        assignedTo: taskForm.assignedTo,
+        completed: false,
+      },
     ])
-    setTaskDraft('')
+    setTaskForm((current) => ({ ...current, title: '' }))
+    setTaskError('')
   }
 
   function toggleTask(taskId: string) {
     setTasks((current) => current.map((task) => task.id === taskId ? { ...task, completed: !task.completed } : task))
+  }
+
+  function selectCalendarDate(dateKey: string) {
+    setSelectedCalendarDate(dateKey)
+  }
+
+  function shiftMonth(amount: number) {
+    const next = new Date(calendarCursor.getFullYear(), calendarCursor.getMonth() + amount, 1)
+    setCalendarCursor(next)
+    setSelectedCalendarDate(toDateKey(new Date(next.getFullYear(), next.getMonth(), 1)))
+  }
+
+  function jumpToToday() {
+    const today = todayDate()
+    setCalendarCursor(new Date(today.getFullYear(), today.getMonth(), 1))
+    setSelectedCalendarDate(toDateKey(today))
+  }
+
+  function getTaskAssignee(task: FamilyTask) {
+    return demoMembers.find((member) => member.id === task.assignedTo) ?? demoMembers[0]
   }
 
   function renderBottomNav() {
@@ -332,12 +492,12 @@ export default function App() {
               {todaysEvents.length === 0 ? (
                 <div className="event-row"><span className="event-icon" aria-hidden="true">✓</span><div className="event-copy"><strong>No more events today</strong><span>Enjoy your evening</span></div></div>
               ) : (
-                todaysEvents.map((event) => (
-                  <div className="event-row" key={event.id}>
+                todaysEvents.slice(0, 3).map((event) => (
+                  <div className={isPastEvent(event) ? 'event-row event-past' : 'event-row'} key={event.id}>
                     <span className="event-icon" aria-hidden="true">{event.icon}</span>
                     <div className="event-copy">
                       <strong>{event.title}</strong>
-                      <span>{event.time}</span>
+                      <span>{event.time} {isPastEvent(event) ? '· Completed' : ''}</span>
                       {event.location && <small>⌖ {event.location}</small>}
                     </div>
                   </div>
@@ -362,12 +522,18 @@ export default function App() {
           <article className="dashboard-card card-tasks">
             <SectionHeader icon="✓" title="Your Tasks" tone="tone-cyan" onAction={() => goToTab('tasks')} actionLabel="Open tasks" />
             <div className="task-list">
-              {tasks.slice(0, 3).map((task) => (
-                <button className="task-row" type="button" key={task.id} onClick={() => toggleTask(task.id)}>
-                  <span className={task.completed ? 'task-check completed' : 'task-check'} aria-hidden="true">{task.completed ? '✓' : ''}</span>
-                  <span className={task.completed ? 'task-copy task-completed' : 'task-copy'}><strong>{task.title}</strong><small>{task.due}</small></span>
-                </button>
-              ))}
+              {tasks.slice(0, 3).map((task) => {
+                const assignee = getTaskAssignee(task)
+                return (
+                  <button className="task-row" type="button" key={task.id} onClick={() => toggleTask(task.id)}>
+                    <span className={task.completed ? 'task-check completed' : 'task-check'} aria-hidden="true">{task.completed ? '✓' : ''}</span>
+                    <span className={task.completed ? 'task-copy task-completed' : 'task-copy'}>
+                      <strong>{task.title}</strong>
+                      <small>{formatRelativeDate(task.dueDate)} · {assignee.label}</small>
+                    </span>
+                  </button>
+                )
+              })}
             </div>
             <button className="outline-action cyan-action" type="button" onClick={() => goToTab('tasks')}>View All Tasks <span>›</span></button>
           </article>
@@ -424,83 +590,242 @@ export default function App() {
   }
 
   function renderCalendar() {
-    const dayLabels = [
-      { key: 'today', label: 'Today' },
-      { key: 'tomorrow', label: 'Tomorrow' },
-      { key: 'weekend', label: 'Weekend' },
-      { key: 'all', label: 'All' },
-    ]
-    const visibleEvents = selectedCalendarDay === 'all' ? events : selectedEvents
+    const visibleEvents = events.filter((event) => event.date === selectedCalendarDate).sort((a, b) => a.time.localeCompare(b.time))
 
     return (
       <section className="feature-view" aria-label="Family calendar">
         <FeatureHeader title="Family Calendar" description="Keep plans, appointments and family events visible in one place." onHome={() => setActiveTab('home')} />
-        <div className="feature-grid">
-          <div className="feature-card">
-            <div className="feature-heading-row">
-              <h2>Upcoming plans</h2>
-              <span className="feature-badge">Foundation</span>
+
+        <div className="feature-card calendar-main-card">
+          <div className="calendar-toolbar">
+            <button className="calendar-nav-button" type="button" onClick={() => shiftMonth(-1)} aria-label="Previous month">‹</button>
+            <div className="calendar-month-heading">
+              <h2>{monthLabel}</h2>
+              <button className="today-button" type="button" onClick={jumpToToday}>Today</button>
             </div>
-            <div className="calendar-days">
-              {dayLabels.map((day) => (
-                <button className={selectedCalendarDay === day.key ? 'calendar-day active' : 'calendar-day'} type="button" key={day.key} onClick={() => setSelectedCalendarDay(day.key)}>{day.label}</button>
-              ))}
-            </div>
-            <div className="calendar-events">
-              {visibleEvents.length === 0 ? (
-                <div className="calendar-event"><span className="calendar-event-icon">✓</span><div className="calendar-event-copy"><strong>No events yet</strong><span>Add the next family plan below.</span></div></div>
-              ) : (
-                visibleEvents.map((event) => (
-                  <div className="calendar-event" key={event.id}>
-                    <span className="calendar-event-icon">{event.icon}</span>
-                    <div className="calendar-event-copy"><strong>{event.title}</strong><span>{event.time}</span><small>{event.location}</small></div>
-                  </div>
-                ))
-              )}
-            </div>
+            <button className="calendar-nav-button" type="button" onClick={() => shiftMonth(1)} aria-label="Next month">›</button>
           </div>
 
-          <div className="feature-card">
-            <div className="feature-heading-row"><h2>Add a family event</h2><span className="feature-badge">Demo</span></div>
-            <p className="muted">Add a quick placeholder event to test the calendar flow.</p>
-            <div className="inline-form">
-              <input value={calendarDraft} onChange={(event) => setCalendarDraft(event.target.value)} onKeyDown={(event) => { if (event.key === 'Enter') addCalendarEvent() }} placeholder="Event name" aria-label="New event name" />
-              <button type="button" onClick={addCalendarEvent}>Add</button>
-            </div>
+          <div className="calendar-weekdays" aria-hidden="true">
+            {['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map((day) => <span key={day}>{day}</span>)}
+          </div>
+
+          <div className="month-grid">
+            {calendarCells.map((dayNumber, index) => {
+              if (dayNumber === null) {
+                return <div className="calendar-cell calendar-cell-empty" key={`empty-${index}`} aria-hidden="true" />
+              }
+
+              const date = new Date(calendarCursor.getFullYear(), calendarCursor.getMonth(), dayNumber)
+              const key = toDateKey(date)
+              const dayEvents = events.filter((event) => event.date === key)
+              const isToday = key === todayKey
+              const isSelected = key === selectedCalendarDate
+              const isPast = key < todayKey
+              const hasImportant = dayEvents.some((event) => event.kind === 'important')
+              const hasBirthday = dayEvents.some((event) => event.kind === 'birthday')
+
+              const className = [
+                'calendar-cell',
+                isToday ? 'is-today' : '',
+                isSelected ? 'is-selected' : '',
+                isPast ? 'is-past' : '',
+                hasImportant ? 'has-important' : '',
+                hasBirthday ? 'has-birthday' : '',
+              ].filter(Boolean).join(' ')
+
+              return (
+                <button className={className} type="button" key={key} onClick={() => selectCalendarDate(key)} aria-label={`${formatLongDate(key)}${dayEvents.length ? `, ${dayEvents.length} event${dayEvents.length === 1 ? '' : 's'}` : ''}`}>
+                  <span className="calendar-cell-day">{dayNumber}</span>
+                  {dayEvents.length > 0 && (
+                    <span className="calendar-marker-row" aria-hidden="true">
+                      {dayEvents.slice(0, 3).map((event) => <span key={event.id} className={`calendar-marker marker-${event.kind}`} />)}
+                    </span>
+                  )}
+                </button>
+              )
+            })}
+          </div>
+
+          <div className="calendar-key">
+            <span><i className="key-dot key-today" /> Today</span>
+            <span><i className="key-dot key-birthday" /> Birthday</span>
+            <span><i className="key-dot key-important" /> Important</span>
+            <span><i className="key-dot key-event" /> Event</span>
           </div>
         </div>
+
+        <div className="calendar-selected-card">
+          <div className="feature-heading-row">
+            <div>
+              <p className="feature-kicker">Selected day</p>
+              <h2>{formatLongDate(selectedCalendarDate)}</h2>
+            </div>
+            <span className="feature-badge">{visibleEvents.length} event{visibleEvents.length === 1 ? '' : 's'}</span>
+          </div>
+
+          <div className="calendar-events">
+            {visibleEvents.length === 0 ? (
+              <div className="calendar-empty-state">
+                <span>♡</span>
+                <div>
+                  <strong>No family events on this date.</strong>
+                  <p className="muted">Use the form below to add one.</p>
+                </div>
+              </div>
+            ) : (
+              visibleEvents.map((event) => (
+                <div className={isPastEvent(event) ? 'calendar-event event-past' : 'calendar-event'} key={event.id}>
+                  <span className={`calendar-event-icon event-kind-${event.kind}`}>{event.icon}</span>
+                  <div className="calendar-event-copy">
+                    <strong>{event.title}</strong>
+                    <span>{event.time} · {formatRelativeDate(event.date)}</span>
+                    {event.location && <small>⌖ {event.location}</small>}
+                    <em>{reminderLabel(event)}</em>
+                  </div>
+                  {isPastEvent(event) && <span className="calendar-complete">✓</span>}
+                </div>
+              ))
+            )}
+          </div>
+        </div>
+
+        <div className="feature-card event-form-card">
+          <div className="feature-heading-row">
+            <div>
+              <p className="feature-kicker">Add to family calendar</p>
+              <h2>New family event</h2>
+            </div>
+            <span className="feature-badge">7d + 1d reminders</span>
+          </div>
+          <p className="muted">Events are added to the calendar and the Home dashboard from the same family event record.</p>
+
+          <div className="form-grid">
+            <label className="form-field form-field-wide">
+              <span>Event name *</span>
+              <input value={calendarForm.title} onChange={(event) => setCalendarForm((current) => ({ ...current, title: event.target.value }))} placeholder="Family dinner" />
+            </label>
+
+            <label className="form-field">
+              <span>Date *</span>
+              <input type="date" min={todayKey} value={calendarForm.date} onChange={(event) => setCalendarForm((current) => ({ ...current, date: event.target.value }))} />
+            </label>
+
+            <label className="form-field">
+              <span>Time *</span>
+              <input type="time" value={calendarForm.time} onChange={(event) => setCalendarForm((current) => ({ ...current, time: event.target.value }))} />
+            </label>
+
+            <label className="form-field">
+              <span>Location</span>
+              <input value={calendarForm.location} onChange={(event) => setCalendarForm((current) => ({ ...current, location: event.target.value }))} placeholder="At home" />
+            </label>
+
+            <label className="form-field">
+              <span>Event type</span>
+              <select value={calendarForm.kind} onChange={(event) => setCalendarForm((current) => ({ ...current, kind: event.target.value as EventKind }))}>
+                <option value="standard">Family event</option>
+                <option value="birthday">Birthday</option>
+                <option value="important">Important occasion</option>
+              </select>
+            </label>
+          </div>
+
+          {calendarError && <p className="form-error" role="alert">{calendarError}</p>}
+
+          <div className="form-actions">
+            <button type="button" className="primary-form-button" onClick={addCalendarEvent}>Add Family Event</button>
+          </div>
+
+          <p className="form-note">Notification delivery will be connected to the family backend later. The reminder schedule is already represented as 7 days and 1 day before the event.</p>
+        </div>
+
         {renderBottomNav()}
       </section>
     )
   }
 
   function renderTasks() {
+    const sortedTasks = [...tasks].sort((a, b) => {
+      if (a.completed !== b.completed) return a.completed ? 1 : -1
+      return a.dueDate.localeCompare(b.dueDate)
+    })
+
     return (
       <section className="feature-view" aria-label="Family tasks">
         <FeatureHeader title="Family Tasks" description="Share jobs and responsibilities so everyone knows what needs doing." onHome={() => setActiveTab('home')} />
+
         <div className="feature-grid">
           <div className="feature-card">
-            <div className="feature-heading-row"><h2>Everyone's tasks</h2><span className="feature-badge">{completedTasks}/{tasks.length} done</span></div>
-            <div className="tasks-summary"><strong>{tasks.length - completedTasks} tasks remaining</strong><span>Keep the family moving together.</span></div>
+            <div className="feature-heading-row">
+              <div>
+                <p className="feature-kicker">Shared responsibilities</p>
+                <h2>Everyone's tasks</h2>
+              </div>
+              <span className="feature-badge">{completedTasks}/{tasks.length} done</span>
+            </div>
+
+            <div className="tasks-summary">
+              <strong>{tasks.length - completedTasks} tasks remaining</strong>
+              <span>Assigned and dated.</span>
+            </div>
+
             <div className="task-detail-list">
-              {tasks.map((task) => (
-                <button className={task.completed ? 'task-detail done' : 'task-detail'} type="button" key={task.id} onClick={() => toggleTask(task.id)}>
-                  <span className="task-detail-check" aria-hidden="true">{task.completed ? '✓' : ''}</span>
-                  <span className="task-detail-copy"><strong>{task.title}</strong><small>{task.due}</small></span>
-                </button>
-              ))}
+              {sortedTasks.map((task) => {
+                const assignee = getTaskAssignee(task)
+                return (
+                  <button className={task.completed ? 'task-detail done' : 'task-detail'} type="button" key={task.id} onClick={() => toggleTask(task.id)}>
+                    <span className="task-detail-check" aria-hidden="true">{task.completed ? '✓' : ''}</span>
+                    <span className="task-detail-copy">
+                      <strong>{task.title}</strong>
+                      <small>Due {formatLongDate(task.dueDate)} · {assignee.label}</small>
+                    </span>
+                    <span className="assigned-avatar">{assignee.initials}</span>
+                  </button>
+                )
+              })}
             </div>
           </div>
 
           <div className="feature-card">
-            <div className="feature-heading-row"><h2>Add a task</h2><span className="feature-badge">Demo</span></div>
-            <p className="muted">Create a quick task here. Assignment and real due dates come later.</p>
-            <div className="inline-form">
-              <input value={taskDraft} onChange={(event) => setTaskDraft(event.target.value)} onKeyDown={(event) => { if (event.key === 'Enter') addTask() }} placeholder="Task name" aria-label="New task name" />
-              <button type="button" onClick={addTask}>Add</button>
+            <div className="feature-heading-row">
+              <div>
+                <p className="feature-kicker">Create responsibility</p>
+                <h2>Add a task</h2>
+              </div>
+              <span className="feature-badge">Required details</span>
+            </div>
+
+            <p className="muted">Every task needs a due date and a family member before it can be added.</p>
+
+            <div className="form-grid">
+              <label className="form-field form-field-wide">
+                <span>Task name *</span>
+                <input value={taskForm.title} onChange={(event) => setTaskForm((current) => ({ ...current, title: event.target.value }))} placeholder="Take bins out" />
+              </label>
+
+              <label className="form-field">
+                <span>Due date *</span>
+                <input type="date" min={todayKey} value={taskForm.dueDate} onChange={(event) => setTaskForm((current) => ({ ...current, dueDate: event.target.value }))} />
+              </label>
+
+              <label className="form-field">
+                <span>Assign to *</span>
+                <select value={taskForm.assignedTo} onChange={(event) => setTaskForm((current) => ({ ...current, assignedTo: event.target.value }))}>
+                  <option value="">Choose family member</option>
+                  {demoMembers.map((member) => <option value={member.id} key={member.id}>{member.label}</option>)}
+                </select>
+              </label>
+            </div>
+
+            {taskError && <p className="form-error" role="alert">{taskError}</p>}
+
+            <div className="form-actions">
+              <button type="button" className="primary-form-button" onClick={addTask}>Add Family Task</button>
             </div>
           </div>
         </div>
+
         {renderBottomNav()}
       </section>
     )
