@@ -274,7 +274,6 @@ export default function App() {
   const selectedMember = demoMembers.find((member) => member.id === selectedMemberId) ?? demoMembers[0]
   const todayKey = toDateKey(todayDate())
   const todaysEvents = events.filter((event) => event.date === todayKey).sort((a, b) => a.time.localeCompare(b.time))
-  const selectedDayEvents = events.filter((event) => event.date === selectedCalendarDate).sort((a, b) => a.time.localeCompare(b.time))
   const completedTasks = tasks.filter((task) => task.completed).length
   const calendarCells = getCalendarCells(calendarCursor)
   const monthLabel = new Intl.DateTimeFormat('en-GB', { month: 'long', year: 'numeric' }).format(calendarCursor)
