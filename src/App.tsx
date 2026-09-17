@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import logoUrl from '../design/brand/family-circle-logo.png'
 
 type Screen = 'members' | 'home'
 
@@ -24,7 +25,7 @@ const quickActions = [
 function Logo() {
   return (
     <div className="brand-lockup" aria-label="Family Circle">
-      <img className="brand-logo" src="/design/brand/family-circle-logo.png" alt="Family Circle" />
+      <img className="brand-logo" src={logoUrl} alt="Family Circle" />
       <span className="brand-name">Family Circle</span>
     </div>
   )
