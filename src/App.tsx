@@ -361,7 +361,7 @@ export default function App() {
   }
 
   function renderCalendar() {
-    return <CalendarPanel events={events} todaysEvents={todaysEvents} onAdd={addEvent} onBack={() => goToTab('home')} onNav={renderBottomNav} />
+    return <CalendarPanel events={events} onAdd={addEvent} onBack={() => goToTab('home')} onNav={renderBottomNav} />
   }
 
   function renderTasks() {
@@ -383,16 +383,22 @@ export default function App() {
 
     if (emergencyView === 'confirm' && emergencyPending) return <div className="fc-page"><FeatureHeader title="Confirm Request" description="Make sure you want to send this family alert." onHome={() => openTool('emergency')} /><div className="fc-panel fc-confirm"><div className="fc-confirm-icon">{emergencyPending.tone === 'danger' ? '🚨' : '📣'}</div><h2>{emergencyPending.title}</h2><p className="fc-muted">{emergencyPending.description}</p>{emergencyPending.message && <p className="fc-muted">{emergencyPending.message}</p>}<p className="fc-muted">Your current location will be requested once you confirm.</p><div className="fc-action-row"><button className="fc-ghost-button" type="button" onClick={() => setEmergencyView('main')}>Cancel</button><button className="fc-primary-button" type="button" onClick={() => postEmergency(emergencyPending)}>Confirm & Send</button></div></div>{renderBottomNav()}</div>
 
+    const openOtherEmergency = () => {
+      setEmergencyPending({ title: 'Something Else / Urgent Help', description: 'Tell your family what is happening and send an urgent request.', tone: 'other', needsLocation: true })
+      setEmergencyText('')
+      setEmergencyView('message')
+    }
+
     const emergencyButtons = [
-      ['I’m Not Safe', '🚨', 'Instantly alert everyone and share your current location.', () => triggerEmergency({ title: 'I’m Not Safe', description: 'Immediate family alert.', tone: 'danger', needsLocation: true }, true), 'danger'],
       ['Medical Help', '🩺', 'Urgent or non-urgent family medical help.', () => setEmergencyView('medical'), 'medical'],
       ['I Need a Lift', '🚗', 'Ask the family for help getting somewhere.', () => triggerEmergency({ title: 'I Need a Lift', description: 'Family lift request.', tone: 'lift', needsLocation: true }), 'lift'],
       ['Child Needs Help', '🧒', 'Choose a child-friendly help request.', () => setEmergencyView('child'), 'child'],
       ['I’m Lost / Need Help', '📍', 'Alert the family and share your current location.', () => triggerEmergency({ title: 'I’m Lost / Need Help', description: 'Family help request.', tone: 'lost', needsLocation: true }), 'lost'],
       ['I Need Money', '💷', 'Ask the family for a specific amount and repayment date.', () => setEmergencyView('money'), 'money'],
+      ['Something Else / Urgent Help', '!', 'Tell your family what is happening and send an urgent request.', openOtherEmergency, 'other'],
     ] as const
 
-    return <div className="fc-page"><FeatureHeader title="Family Emergency" description="Family help without the clutter. Call someone or send a family alert." onHome={() => goToTab('home')} /><div className="fc-panel fc-call-family"><div className="fc-panel-head"><div><small>Call family</small><h2>Call a family member</h2></div><span className="fc-pill">Tap to call</span></div><div className="fc-contact-grid">{members.map((member) => <a key={member.id} className="fc-contact" href={`tel:${member.phone}`}><AppAvatar member={member} /><span><strong>{member.label}</strong><small>{member.phone}</small></span><b>☎</b></a>)}</div></div><div className="fc-panel"><div className="fc-panel-head"><div><small>Family Emergency</small><h2>What do you need?</h2></div><span className="fc-pill danger">Family-focused help</span></div><div className="fc-emergency-grid">{emergencyButtons.map(([label, icon, desc, action, tone]) => <button key={String(label)} className={`fc-emergency-button ${tone}`} type="button" onClick={action}><span>{icon}</span><strong>{label}</strong><small>{desc}</small></button>)}</div>{pendingMoney.length > 0 && <div className="fc-money-summary"><strong>Money requests</strong>{pendingMoney.slice(0, 3).map((request) => { const requester = members.find((m) => m.id === request.requesterId) ?? selectedMember; return <span key={request.id}>£{request.amount} — {requester.label} · {request.purpose}</span> })}</div>}</div>{renderBottomNav()}</div>
+    return <div className="fc-page"><FeatureHeader title="Family Emergency" description="Family help without the clutter. Call someone or send a family alert." onHome={() => goToTab('home')} /><div className="fc-panel fc-call-family"><div className="fc-panel-head"><div><small>Call family</small><h2>Call a family member</h2></div><span className="fc-pill">Tap to call</span></div><div className="fc-contact-grid">{members.map((member) => <a key={member.id} className="fc-contact" href={`tel:${member.phone}`}><AppAvatar member={member} /><span><strong>{member.label}</strong><small>{member.phone}</small></span><b>☎</b></a>)}</div></div><button className="fc-emergency-unsafe" type="button" onClick={() => triggerEmergency({ title: 'I’m Not Safe', description: 'Immediate family alert.', tone: 'danger', needsLocation: true }, true)}><span className="fc-emergency-unsafe-icon">🚨</span><span><strong>I’m Not Safe</strong><small>Instantly alert everyone and share your current location.</small></span><b>→</b></button><div className="fc-panel"><div className="fc-panel-head"><div><small>Family Emergency</small><h2>What do you need?</h2></div><span className="fc-pill danger">Family-focused help</span></div><div className="fc-emergency-grid">{emergencyButtons.map(([label, icon, desc, action, tone]) => <button key={String(label)} className={`fc-emergency-button ${tone}`} type="button" onClick={action}><span>{icon}</span><strong>{label}</strong><small>{desc}</small></button>)}</div>{pendingMoney.length > 0 && <div className="fc-money-summary"><strong>Money requests</strong>{pendingMoney.slice(0, 3).map((request) => { const requester = members.find((m) => m.id === request.requesterId) ?? selectedMember; return <span key={request.id}>£{request.amount} — {requester.label} · {request.purpose}</span> })}</div>}</div>{renderBottomNav()}</div>
   }
 
   function renderFamily() {
@@ -452,10 +458,64 @@ function TaskForm({ members, onAdd }: { members: FamilyMember[]; onAdd: (title: 
   return <div className="fc-form-grid"><label><span>Task name *</span><input value={title} onChange={(event) => setTitle(event.target.value)} placeholder="Take bins out" /></label><label><span>Due date *</span><input type="date" min={todayKey()} value={dueDate} onChange={(event) => setDueDate(event.target.value)} /></label><label><span>Assign to *</span><select value={assignedTo} onChange={(event) => setAssignedTo(event.target.value)}>{members.map((member) => <option key={member.id} value={member.id}>{member.label}</option>)}</select></label><button className="fc-primary-button" type="button" onClick={() => { if (!title.trim()) return; onAdd(title.trim(), dueDate, assignedTo); setTitle('') }}>Add Family Task</button></div>
 }
 
-function CalendarPanel({ events, todaysEvents, onAdd, onBack, onNav }: { events: FamilyEvent[]; todaysEvents: FamilyEvent[]; onAdd: (title: string, date: string, time: string, location: string) => void; onBack: () => void; onNav: () => JSX.Element }) {
+function getCalendarCells(cursor: Date) {
+  const firstDay = new Date(cursor.getFullYear(), cursor.getMonth(), 1)
+  const daysInMonth = new Date(cursor.getFullYear(), cursor.getMonth() + 1, 0).getDate()
+  const startOffset = (firstDay.getDay() + 6) % 7
+  return Array.from({ length: 42 }, (_, index) => {
+    const dayNumber = index - startOffset + 1
+    return dayNumber >= 1 && dayNumber <= daysInMonth ? dayNumber : null
+  })
+}
+
+function CalendarPanel({ events, onAdd, onBack, onNav }: { events: FamilyEvent[]; todaysEvents?: FamilyEvent[]; onAdd: (title: string, date: string, time: string, location: string) => void; onBack: () => void; onNav: () => JSX.Element }) {
+  const today = todayKey()
+  const [selectedDate, setSelectedDate] = useState(today)
+  const [cursor, setCursor] = useState(() => {
+    const now = new Date()
+    return new Date(now.getFullYear(), now.getMonth(), 1)
+  })
   const [title, setTitle] = useState('')
-  const [date, setDate] = useState(todayKey())
+  const [date, setDate] = useState(today)
   const [time, setTime] = useState('19:00')
   const [location, setLocation] = useState('At Home')
-  return <div className="fc-page"><FeatureHeader title="Family Calendar" description="Keep plans, appointments and family events visible in one place." onHome={onBack} /><div className="fc-two-col"><div className="fc-panel"><div className="fc-panel-head"><div><small>Upcoming family plans</small><h2>Calendar</h2></div><span className="fc-pill">{events.length} events</span></div>{events.slice().sort((a, b) => `${a.date}-${a.time}`.localeCompare(`${b.date}-${b.time}`)).map((event) => <div className="fc-calendar-event" key={event.id}><span>📅</span><div><strong>{event.title}</strong><small>{formatLongDate(event.date)} · {event.time} · {event.location}</small></div></div>)}</div><div className="fc-panel"><div className="fc-panel-head"><div><small>Add to family calendar</small><h2>New family event</h2></div></div><div className="fc-form-grid"><label><span>Event name *</span><input value={title} onChange={(event) => setTitle(event.target.value)} placeholder="Family dinner" /></label><label><span>Date *</span><input type="date" min={todayKey()} value={date} onChange={(event) => setDate(event.target.value)} /></label><label><span>Time *</span><input type="time" value={time} onChange={(event) => setTime(event.target.value)} /></label><label><span>Location</span><input value={location} onChange={(event) => setLocation(event.target.value)} /></label><button className="fc-primary-button" type="button" onClick={() => { if (!title.trim()) return; onAdd(title.trim(), date, time, location); setTitle('') }}>Add Family Event</button></div><p className="fc-form-note">Today has {todaysEvents.length} event{todaysEvents.length === 1 ? '' : 's'}.</p></div></div>{onNav()}</div>
+
+  const cells = getCalendarCells(cursor)
+  const monthLabel = new Intl.DateTimeFormat('en-GB', { month: 'long', year: 'numeric' }).format(cursor)
+  const selectedEvents = events.filter((event) => event.date === selectedDate).sort((a, b) => a.time.localeCompare(b.time))
+
+  function changeMonth(amount: number) {
+    const next = new Date(cursor.getFullYear(), cursor.getMonth() + amount, 1)
+    setCursor(next)
+    const now = new Date()
+    const nextSelected = next.getFullYear() === now.getFullYear() && next.getMonth() === now.getMonth() ? todayKey() : `${next.getFullYear()}-${String(next.getMonth() + 1).padStart(2, '0')}-01`
+    setSelectedDate(nextSelected)
+    setDate(nextSelected)
+  }
+
+  function jumpToToday() {
+    const now = new Date()
+    setCursor(new Date(now.getFullYear(), now.getMonth(), 1))
+    setSelectedDate(today)
+    setDate(today)
+  }
+
+  function addEvent() {
+    if (!title.trim() || !date || !time) return
+    onAdd(title.trim(), date, time, location.trim())
+    setSelectedDate(date)
+    const added = new Date(`${date}T00:00:00`)
+    setCursor(new Date(added.getFullYear(), added.getMonth(), 1))
+    setTitle('')
+  }
+
+  function isPast(event: FamilyEvent) {
+    if (event.date < today) return true
+    if (event.date > today) return false
+    const [hours, minutes] = event.time.split(':').map(Number)
+    const now = new Date()
+    return new Date(now.getFullYear(), now.getMonth(), now.getDate(), hours, minutes).getTime() < now.getTime()
+  }
+
+  return <div className="fc-page"><FeatureHeader title="Family Calendar" description="Keep plans, appointments and family events visible in one place." onHome={onBack} /><div className="fc-calendar-layout"><div className="fc-panel fc-calendar-main"><div className="fc-calendar-toolbar"><button className="fc-calendar-nav" type="button" onClick={() => changeMonth(-1)} aria-label="Previous month">‹</button><div><small>Family plans</small><h2>{monthLabel}</h2></div><div className="fc-calendar-toolbar-actions"><button className="fc-today-button" type="button" onClick={jumpToToday}>Today</button><button className="fc-calendar-nav" type="button" onClick={() => changeMonth(1)} aria-label="Next month">›</button></div></div><div className="fc-calendar-weekdays">{['Mon','Tue','Wed','Thu','Fri','Sat','Sun'].map((day) => <span key={day}>{day}</span>)}</div><div className="fc-calendar-grid">{cells.map((dayNumber, index) => { if (dayNumber === null) return <div className="fc-calendar-cell empty" key={`empty-${index}`} />; const cellDate = new Date(cursor.getFullYear(), cursor.getMonth(), dayNumber); const key = `${cellDate.getFullYear()}-${String(cellDate.getMonth() + 1).padStart(2, '0')}-${String(cellDate.getDate()).padStart(2, '0')}`; const dayEvents = events.filter((event) => event.date === key); const isToday = key === today; const isSelected = key === selectedDate; return <button className={`fc-calendar-cell${isToday ? ' today' : ''}${isSelected ? ' selected' : ''}${key < today ? ' past' : ''}`} type="button" key={key} onClick={() => { setSelectedDate(key); setDate(key) }} aria-label={`${formatLongDate(key)}${dayEvents.length ? `, ${dayEvents.length} event${dayEvents.length === 1 ? '' : 's'}` : ''}`}><span className="fc-calendar-day-number">{dayNumber}</span>{dayEvents.length > 0 && <span className="fc-calendar-markers">{dayEvents.slice(0, 3).map((event) => <i key={event.id} />)}</span>}</button> })}</div><div className="fc-calendar-key"><span><i className="today-key" /> Today</span><span><i className="event-key" /> Family event</span><span><i className="selected-key" /> Selected</span></div></div><div className="fc-calendar-side"><div className="fc-panel"><div className="fc-panel-head"><div><small>Selected day</small><h2>{formatLongDate(selectedDate)}</h2></div><span className="fc-pill">{selectedEvents.length} event{selectedEvents.length === 1 ? '' : 's'}</span></div>{selectedEvents.length === 0 ? <div className="fc-calendar-empty"><span>♡</span><strong>No family events on this date.</strong><small>Choose another date or add an event below.</small></div> : <div className="fc-calendar-events">{selectedEvents.map((event) => <div className={isPast(event) ? 'fc-calendar-event past' : 'fc-calendar-event'} key={event.id}><span>📅</span><div><strong>{event.title}</strong><small>{event.time}{event.location ? ` · ${event.location}` : ''}</small></div>{isPast(event) && <b>✓</b>}</div>)}</div>}</div><div className="fc-panel"><div className="fc-panel-head"><div><small>Add to family calendar</small><h2>New family event</h2></div></div><div className="fc-form-grid"><label><span>Event name *</span><input value={title} onChange={(event) => setTitle(event.target.value)} placeholder="Family dinner" /></label><label><span>Date *</span><input type="date" min={today} value={date} onChange={(event) => { setDate(event.target.value); setSelectedDate(event.target.value) }} /></label><label><span>Time *</span><input type="time" value={time} onChange={(event) => setTime(event.target.value)} /></label><label><span>Location</span><input value={location} onChange={(event) => setLocation(event.target.value)} /></label><button className="fc-primary-button" type="button" onClick={addEvent}>Add Family Event</button></div></div></div></div>{onNav()}</div>
 }
