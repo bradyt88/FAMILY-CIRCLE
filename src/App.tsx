@@ -1,355 +1,461 @@
 import { useState } from 'react'
 import logoUrl from '../design/brand/family-circle-logo.png'
-import { FamilyTools, type EmergencyReason, type FamilyMember, type FamilyNotification, type ToolMode } from './FamilyTools'
-import './batch1.css'
-import './batch11.css'
-import './batch12.css'
-import './batch13.css'
-import './batch14.css'
+import './batch15.css'
 
-type Screen = 'members' | 'home'
+type ToolMode = 'emergency' | 'profile' | 'family' | 'games' | 'notifications' | 'settings' | 'map'
 type HomeTab = 'home' | 'chat' | 'photos' | 'calendar' | 'tasks'
-type EventKind = 'standard' | 'birthday' | 'important'
+type StatusOption = 'Home' | 'Work' | 'Partying' | 'Recovering' | 'Playing' | 'Gaming' | 'Toilet 😂' | 'Movies' | 'Sleeping' | 'Gym' | 'Travelling' | 'Holiday' | 'Out & About'
+type SocialName = 'Facebook' | 'TikTok' | 'Snapchat' | 'YouTube'
+type FamilyMember = { id: string; label: string; initials: string; accent: string; phone: string; bio: string; status: StatusOption; locationLabel: string; lastUpdated: string; mapX: number; mapY: number; photo?: string | null; socials: Record<SocialName, string> }
+type ChatMessage = { id: string; memberId: string; name: string; initials: string; accent: string; time: string; text: string; image?: string }
+type Notification = { id: string; kind: 'Chat' | 'Task' | 'Calendar' | 'Emergency' | 'Profile' | 'Money'; title: string; detail: string; time: string }
 type FamilyPhoto = { id: string; src: string; name: string; time: string }
-type ChatMessage = { initials: string; time: string; name: string; text: string; accent: string; outgoing?: boolean; attachment?: FamilyPhoto }
-type FamilyEvent = { id: string; date: string; icon: string; title: string; time: string; location: string; kind: EventKind }
-type FamilyTask = { id: string; title: string; dueDate: string; assignedTo: string; completed: boolean; completedAt?: number }
-type NavItem = { label: string; icon: string; tab?: HomeTab; tool?: ToolMode; wide?: boolean }
+type FamilyEvent = { id: string; title: string; date: string; time: string; location: string }
+type FamilyTask = { id: string; title: string; dueDate: string; assignedTo: string; completed: boolean }
+type MoneyRequest = { id: string; requesterId: string; amount: string; purpose: string; dueDate: string; status: 'Pending' | 'Accepted'; lenderId?: string }
+type EmergencyPending = { title: string; description: string; tone: string; needsLocation: boolean; message?: string }
 
-const demoMembers: FamilyMember[] = [
-  { id: 'member-1', label: 'Family Member 1', initials: 'FM', accent: 'member-accent-one', phone: '+44 7700 900001', bio: 'Keeping the family moving.', locationLabel: 'Work', lastUpdated: '2 min ago', mapX: 25, mapY: 37 },
-  { id: 'member-2', label: 'Family Member 2', initials: 'FM', accent: 'member-accent-two', phone: '+44 7700 900002', bio: 'Home is wherever we are together.', locationLabel: 'Home', lastUpdated: '4 min ago', mapX: 57, mapY: 61 },
-  { id: 'member-3', label: 'Family Member 3', initials: 'FM', accent: 'member-accent-three', phone: '+44 7700 900003', bio: 'Always part of the circle.', locationLabel: 'School', lastUpdated: '8 min ago', mapX: 76, mapY: 24 },
+const statusOptions: StatusOption[] = ['Home', 'Work', 'Partying', 'Recovering', 'Playing', 'Gaming', 'Toilet 😂', 'Movies', 'Sleeping', 'Gym', 'Travelling', 'Holiday', 'Out & About']
+const socialNames: SocialName[] = ['Facebook', 'TikTok', 'Snapchat', 'YouTube']
+const socialIcons: Record<SocialName, string> = { Facebook: 'f', TikTok: '♪', Snapchat: '👻', YouTube: '▶' }
+
+const memberSeeds: FamilyMember[] = [
+  { id: 'member-1', label: 'Family Member 1', initials: 'FM', accent: 'member-accent-one', phone: '+44 7700 900001', bio: 'Keeping the family moving.', status: 'Work', locationLabel: 'Work', lastUpdated: '2 min ago', mapX: 25, mapY: 37, photo: null, socials: { Facebook: '', TikTok: '', Snapchat: '', YouTube: '' } },
+  { id: 'member-2', label: 'Family Member 2', initials: 'FM', accent: 'member-accent-two', phone: '+44 7700 900002', bio: 'Home is wherever we are together.', status: 'Home', locationLabel: 'Home', lastUpdated: '4 min ago', mapX: 57, mapY: 61, photo: null, socials: { Facebook: '', TikTok: '', Snapchat: '', YouTube: '' } },
+  { id: 'member-3', label: 'Family Member 3', initials: 'FM', accent: 'member-accent-three', phone: '+44 7700 900003', bio: 'Always part of the circle.', status: 'Playing', locationLabel: 'Out & About', lastUpdated: '8 min ago', mapX: 76, mapY: 24, photo: null, socials: { Facebook: '', TikTok: '', Snapchat: '', YouTube: '' } },
 ]
 
 const initialMessages: ChatMessage[] = [
-  { initials: 'FM', time: '19:42', name: 'Family Member 1', text: "Who's up for takeaway tonight? 🍕", accent: 'member-accent-one' },
-  { initials: 'FM', time: '17:15', name: 'Family Member 2', text: "I'll be home around 6pm.", accent: 'member-accent-two' },
-  { initials: 'FM', time: '12:03', name: 'Family Member 3', text: 'Check this out! 📷', accent: 'member-accent-three' },
+  { id: 'chat-1', memberId: 'member-1', name: 'Family Member 1', initials: 'FM', accent: 'member-accent-one', time: '19:42', text: "Who's up for takeaway tonight? 🍕" },
+  { id: 'chat-2', memberId: 'member-2', name: 'Family Member 2', initials: 'FM', accent: 'member-accent-two', time: '17:15', text: "I'll be home around 6pm." },
+  { id: 'chat-3', memberId: 'member-3', name: 'Family Member 3', initials: 'FM', accent: 'member-accent-three', time: '12:03', text: 'Check this out! 📷' },
 ]
 
-const initialNotifications: FamilyNotification[] = [
+const initialNotifications: Notification[] = [
   { id: 'notification-1', kind: 'Chat', title: 'Family Member 1 sent a message', detail: "Who's up for takeaway tonight? 🍕", time: '2 min ago' },
   { id: 'notification-2', kind: 'Task', title: 'Task update', detail: 'Take bins out is due today.', time: '1 hr ago' },
   { id: 'notification-3', kind: 'Calendar', title: 'Upcoming family event', detail: 'Family Dinner is today at 19:00.', time: 'Today' },
 ]
 
-const navItems: NavItem[] = [
-  { tab: 'home', label: 'Home', icon: '⌂' },
-  { tab: 'chat', label: 'Chat', icon: '◌' },
-  { tab: 'photos', label: 'Photos', icon: '▧' },
-  { tab: 'calendar', label: 'Calendar', icon: '▦' },
-  { tab: 'tasks', label: 'Tasks', icon: '✓' },
-  { tool: 'map', label: 'Where Is Everyone?', icon: '📍', wide: true },
-]
-
-const quickTiles: { title: string; subtitle: string; icon: string; tone: string; tab?: HomeTab; tool?: ToolMode }[] = [
-  { tab: 'chat', title: 'Chat', subtitle: 'Message the family', icon: '◌', tone: 'tile-cyan' },
-  { tab: 'photos', title: 'Photos', subtitle: 'Our memories together', icon: '▧', tone: 'tile-purple' },
-  { tool: 'emergency', title: 'Family Emergency', subtitle: 'Get family help quickly', icon: '!', tone: 'tile-pink' },
-  { tab: 'tasks', title: 'Tasks', subtitle: 'Jobs & responsibilities', icon: '✓', tone: 'tile-green' },
-  { tab: 'calendar', title: 'Calendar', subtitle: 'Events & plans', icon: '▦', tone: 'tile-magenta' },
-]
-
-function todayDate() {
-  const now = new Date()
-  return new Date(now.getFullYear(), now.getMonth(), now.getDate())
-}
-
-function toDateKey(date: Date) {
-  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`
-}
-
-function addDays(date: Date, amount: number) {
-  const result = new Date(date)
-  result.setDate(result.getDate() + amount)
-  return result
-}
-
-function dateFromKey(key: string) {
-  const [year, month, day] = key.split('-').map(Number)
-  return new Date(year, month - 1, day)
-}
-
-function formatLongDate(key: string) {
-  return new Intl.DateTimeFormat('en-GB', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }).format(dateFromKey(key))
-}
-
-function formatShortDate(key: string) {
-  return new Intl.DateTimeFormat('en-GB', { day: 'numeric', month: 'short' }).format(dateFromKey(key))
-}
-
-function formatRelativeDate(key: string) {
-  const diff = Math.round((dateFromKey(key).getTime() - todayDate().getTime()) / 86400000)
-  if (diff === 0) return 'Today'
-  if (diff === 1) return 'Tomorrow'
-  if (diff === -1) return 'Yesterday'
-  return formatShortDate(key)
-}
-
-function eventIcon(kind: EventKind) {
-  if (kind === 'birthday') return '🎂'
-  if (kind === 'important') return '⭐'
-  return '📅'
-}
-
-function isPastEvent(event: FamilyEvent) {
-  const todayKey = toDateKey(todayDate())
-  if (event.date < todayKey) return true
-  if (event.date > todayKey) return false
-  const [hours, minutes] = event.time.split(':').map(Number)
-  const now = new Date()
-  return new Date(now.getFullYear(), now.getMonth(), now.getDate(), hours, minutes).getTime() < now.getTime()
-}
-
-function initialEvents(): FamilyEvent[] {
-  const today = todayDate()
-  return [
-    { id: 'event-1', date: toDateKey(today), icon: '🎂', title: 'Family Dinner', time: '19:00', location: 'At Home', kind: 'standard' },
-    { id: 'event-2', date: toDateKey(today), icon: '⚽', title: 'Football Training', time: '17:00', location: 'Leisure Centre', kind: 'standard' },
-    { id: 'event-3', date: toDateKey(addDays(today, 1)), icon: '🛒', title: 'Weekly Food Shop', time: '18:00', location: 'Supermarket', kind: 'standard' },
-    { id: 'event-4', date: toDateKey(addDays(today, 3)), icon: '🎬', title: 'Family Movie Night', time: '19:30', location: 'At Home', kind: 'standard' },
-    { id: 'event-5', date: toDateKey(addDays(today, 7)), icon: '🎂', title: 'Family Birthday', time: '15:00', location: 'At Home', kind: 'birthday' },
-  ]
-}
-
-function initialTasks(): FamilyTask[] {
-  const today = todayDate()
-  return [
-    { id: 'task-1', title: 'Take bins out', dueDate: toDateKey(today), assignedTo: 'member-2', completed: false },
-    { id: 'task-2', title: 'Tidy your room', dueDate: toDateKey(today), assignedTo: 'member-1', completed: false },
-    { id: 'task-3', title: 'Feed the dog', dueDate: toDateKey(addDays(today, 1)), assignedTo: 'member-3', completed: false },
-  ]
-}
-
-function getCalendarCells(cursor: Date) {
-  const firstDay = new Date(cursor.getFullYear(), cursor.getMonth(), 1)
-  const daysInMonth = new Date(cursor.getFullYear(), cursor.getMonth() + 1, 0).getDate()
-  const startOffset = (firstDay.getDay() + 6) % 7
-  return Array.from({ length: 42 }, (_, index) => {
-    const dayNumber = index - startOffset + 1
-    return dayNumber >= 1 && dayNumber <= daysInMonth ? dayNumber : null
+function loadMembers() {
+  return memberSeeds.map((member) => {
+    try {
+      const saved = localStorage.getItem(`family-circle-member-${member.id}`)
+      return saved ? { ...member, ...JSON.parse(saved) as Partial<FamilyMember> } : member
+    } catch {
+      return member
+    }
   })
 }
 
-function Greeting() {
+function todayKey() {
+  const now = new Date()
+  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`
+}
+
+function formatTime() {
+  return new Date().toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })
+}
+
+function formatLongDate(key: string) {
+  const [year, month, day] = key.split('-').map(Number)
+  return new Intl.DateTimeFormat('en-GB', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }).format(new Date(year, month - 1, day))
+}
+
+function formatShortDate(key: string) {
+  const [year, month, day] = key.split('-').map(Number)
+  return new Intl.DateTimeFormat('en-GB', { day: 'numeric', month: 'short' }).format(new Date(year, month - 1, day))
+}
+
+function timeGreeting() {
   const hour = new Date().getHours()
-  if (hour < 12) return 'Good morning,'
-  if (hour < 18) return 'Good afternoon,'
-  return 'Good evening,'
+  return hour < 12 ? 'Good morning,' : hour < 18 ? 'Good afternoon,' : 'Good evening,'
 }
 
-function CurrentDate() {
-  const parts = new Intl.DateTimeFormat('en-GB', { weekday: 'long', day: 'numeric', month: 'long' }).formatToParts(new Date())
-  const weekday = parts.find((part) => part.type === 'weekday')?.value ?? ''
-  const day = parts.find((part) => part.type === 'day')?.value ?? ''
-  const month = parts.find((part) => part.type === 'month')?.value ?? ''
-  return <span className="date-stack"><strong>{weekday}</strong><span>{day} {month}</span></span>
-}
-
-function SectionHeader({ icon, title, tone, onAction, actionLabel }: { icon: string; title: string; tone: string; onAction?: () => void; actionLabel?: string }) {
-  return <div className={`dashboard-heading ${tone}`}><div className="dashboard-title"><span className="heading-icon" aria-hidden="true">{icon}</span><h2>{title}</h2></div>{onAction && <button className="heading-action" type="button" onClick={onAction} aria-label={actionLabel ?? `Open ${title}`}>→</button>}</div>
+function AppAvatar({ member, className = '' }: { member: FamilyMember; className?: string }) {
+  return member.photo ? <img className={`fc-avatar ${className}`} src={member.photo} alt={`${member.label} profile`} /> : <span className={`fc-avatar ${member.accent} ${className}`}>{member.initials}</span>
 }
 
 function FeatureHeader({ title, description, onHome }: { title: string; description: string; onHome: () => void }) {
-  return <div className="feature-topbar"><div><p className="feature-kicker">Family Circle</p><h1>{title}</h1><p className="muted">{description}</p></div><button className="back-button" type="button" onClick={onHome}>← Home</button></div>
-}
-
-function Logo() {
-  return <div className="brand-lockup" aria-label="Family Circle"><img className="brand-logo" src={logoUrl} alt="Family Circle" /><span className="brand-name">Family Circle</span></div>
+  return <div className="fc-feature-header"><div><p className="fc-kicker">Family Circle</p><h1>{title}</h1><p className="fc-muted">{description}</p></div><button className="fc-ghost-button" type="button" onClick={onHome}>← Home</button></div>
 }
 
 export default function App() {
-  const [screen, setScreen] = useState<Screen>('members')
-  const [selectedMemberId, setSelectedMemberId] = useState<string | null>(null)
+  const [screen, setScreen] = useState<'members' | 'home'>('members')
+  const [selectedMemberId, setSelectedMemberId] = useState<string>(memberSeeds[0].id)
+  const [members, setMembers] = useState<FamilyMember[]>(loadMembers)
   const [pinOpen, setPinOpen] = useState(false)
   const [pin, setPin] = useState('')
-  const [error, setError] = useState('')
+  const [pinError, setPinError] = useState('')
   const [activeTab, setActiveTab] = useState<HomeTab>('home')
   const [toolMode, setToolMode] = useState<ToolMode | null>(null)
   const [messages, setMessages] = useState<ChatMessage[]>(initialMessages)
   const [photos, setPhotos] = useState<FamilyPhoto[]>([])
-  const [pendingPhoto, setPendingPhoto] = useState<{ src: string; name: string } | null>(null)
+  const [pendingChatPhoto, setPendingChatPhoto] = useState<string | null>(null)
   const [chatDraft, setChatDraft] = useState('')
-  const [events, setEvents] = useState<FamilyEvent[]>(initialEvents)
-  const [tasks, setTasks] = useState<FamilyTask[]>(initialTasks)
-  const [notifications, setNotifications] = useState<FamilyNotification[]>(initialNotifications)
+  const [notifications, setNotifications] = useState<Notification[]>(initialNotifications)
+  const [events, setEvents] = useState<FamilyEvent[]>([
+    { id: 'event-1', title: 'Family Dinner', date: todayKey(), time: '19:00', location: 'At Home' },
+    { id: 'event-2', title: 'Football Training', date: todayKey(), time: '17:00', location: 'Leisure Centre' },
+    { id: 'event-3', title: 'Weekly Food Shop', date: (() => { const d = new Date(); d.setDate(d.getDate() + 1); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}` })(), time: '18:00', location: 'Supermarket' },
+  ])
+  const [tasks, setTasks] = useState<FamilyTask[]>([
+    { id: 'task-1', title: 'Take bins out', dueDate: todayKey(), assignedTo: 'member-2', completed: false },
+    { id: 'task-2', title: 'Tidy your room', dueDate: todayKey(), assignedTo: 'member-1', completed: false },
+    { id: 'task-3', title: 'Feed the dog', dueDate: (() => { const d = new Date(); d.setDate(d.getDate() + 1); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}` })(), assignedTo: 'member-3', completed: false },
+  ])
   const [locationSharing, setLocationSharing] = useState<Record<string, boolean>>({ 'member-1': true, 'member-2': true, 'member-3': false })
   const [locationPermission, setLocationPermission] = useState<'unknown' | 'granted' | 'denied'>('unknown')
-  const [selectedCalendarDate, setSelectedCalendarDate] = useState(toDateKey(todayDate()))
-  const [calendarCursor, setCalendarCursor] = useState(() => {
-    const now = todayDate()
-    return new Date(now.getFullYear(), now.getMonth(), 1)
-  })
-  const [calendarForm, setCalendarForm] = useState({ title: '', date: toDateKey(todayDate()), time: '', location: '', kind: 'standard' as EventKind })
-  const [calendarError, setCalendarError] = useState('')
-  const [taskForm, setTaskForm] = useState({ title: '', dueDate: toDateKey(todayDate()), assignedTo: '' })
-  const [taskError, setTaskError] = useState('')
+  const [profileTargetId, setProfileTargetId] = useState<string>(memberSeeds[0].id)
+  const [profileBio, setProfileBio] = useState('')
+  const [profileStatus, setProfileStatus] = useState<StatusOption>('Home')
+  const [profileSocials, setProfileSocials] = useState<Record<SocialName, string>>({ Facebook: '', TikTok: '', Snapchat: '', YouTube: '' })
+  const [profileMessage, setProfileMessage] = useState('')
+  const [moneyRequests, setMoneyRequests] = useState<MoneyRequest[]>([])
+  const [emergencyView, setEmergencyView] = useState<'main' | 'medical' | 'child' | 'confirm' | 'message' | 'money' | 'sent'>('main')
+  const [emergencyPending, setEmergencyPending] = useState<EmergencyPending | null>(null)
+  const [emergencyText, setEmergencyText] = useState('')
+  const [moneyForm, setMoneyForm] = useState({ amount: '', purpose: '', dueDate: '' })
+  const [sentEmergency, setSentEmergency] = useState<{ title: string; coordinates: { latitude: number; longitude: number } | null } | null>(null)
 
-  const selectedMember = demoMembers.find((member) => member.id === selectedMemberId) ?? demoMembers[0]
-  const todayKey = toDateKey(todayDate())
-  const todaysEvents = events.filter((event) => event.date === todayKey).sort((a, b) => a.time.localeCompare(b.time))
-  const visibleTasks = tasks.filter((task) => !task.completed || !task.completedAt || Date.now() - task.completedAt < 86400000)
-  const completedTasks = visibleTasks.filter((task) => task.completed).length
-  const latestPhoto = photos[0]
-  const calendarCells = getCalendarCells(calendarCursor)
-  const monthLabel = new Intl.DateTimeFormat('en-GB', { month: 'long', year: 'numeric' }).format(calendarCursor)
+  const selectedMember = members.find((member) => member.id === selectedMemberId) ?? members[0]
+  const profileTarget = members.find((member) => member.id === profileTargetId) ?? selectedMember
+  const sharedMembers = members.filter((member) => locationSharing[member.id])
+  const todaysEvents = events.filter((event) => event.date === todayKey()).sort((a, b) => a.time.localeCompare(b.time))
+  const openTasks = tasks.filter((task) => !task.completed)
+  const pendingMoney = moneyRequests.filter((request) => request.status === 'Pending')
 
-  function openPin(memberId: string) {
-    setSelectedMemberId(memberId); setPin(''); setError(''); setPinOpen(true)
+  function persistMember(updated: FamilyMember) {
+    setMembers((current) => current.map((member) => member.id === updated.id ? updated : member))
+    localStorage.setItem(`family-circle-member-${updated.id}`, JSON.stringify(updated))
   }
 
-  function closePin() {
-    setPinOpen(false); setPin(''); setError('')
+  function chooseMember(memberId: string) {
+    setSelectedMemberId(memberId)
+    setProfileTargetId(memberId)
+    setPin('')
+    setPinError('')
+    setPinOpen(true)
   }
 
   function submitPin() {
-    if (pin.length !== 4) return setError('Enter all 4 digits to continue.')
-    setScreen('home'); setActiveTab('home'); setToolMode(null); closePin()
+    if (pin.length !== 4) {
+      setPinError('Enter all 4 digits to continue.')
+      return
+    }
+    setScreen('home')
+    setActiveTab('home')
+    setToolMode(null)
+    setPinOpen(false)
+    setPin('')
   }
 
   function goToTab(tab: HomeTab) {
-    setToolMode(null); setActiveTab(tab)
+    setActiveTab(tab)
+    setToolMode(null)
   }
 
   function openTool(mode: ToolMode) {
-    setToolMode(mode); setActiveTab('home')
+    setToolMode(mode)
+    setActiveTab('home')
+    if (mode === 'profile') openProfile(selectedMember.id)
+    if (mode === 'emergency') {
+      setEmergencyView('main')
+      setEmergencyPending(null)
+      setEmergencyText('')
+      setSentEmergency(null)
+    }
   }
 
-  function switchMember() {
-    setScreen('members'); setToolMode(null); setActiveTab('home')
+  function openProfile(memberId: string) {
+    const target = members.find((member) => member.id === memberId) ?? selectedMember
+    setProfileTargetId(target.id)
+    setProfileBio(target.bio)
+    setProfileStatus(target.status)
+    setProfileSocials(target.socials)
+    setProfileMessage('')
+    setToolMode('profile')
+    setActiveTab('home')
   }
 
-  function stagePhoto(file: File) {
+  function changeStatus(nextStatus: StatusOption) {
+    if (nextStatus === selectedMember.status) return
+    const updated = { ...selectedMember, status: nextStatus, locationLabel: nextStatus, lastUpdated: 'just now' }
+    persistMember(updated)
+    setProfileStatus(nextStatus)
+    const now = formatTime()
+    setMessages((current) => [{ id: `chat-${Date.now()}`, memberId: updated.id, name: updated.label, initials: updated.initials, accent: updated.accent, time: now, text: `${updated.label} changed their status — 🎬 ${nextStatus}.` }, ...current])
+    setNotifications((current) => [{ id: `notification-${Date.now()}`, kind: 'Profile', title: `${updated.label} changed their status`, detail: `Status: ${nextStatus}`, time: 'Now' }, ...current])
+  }
+
+  function saveProfile() {
+    const bio = profileBio.trim().slice(0, 100)
+    const updated = { ...profileTarget, bio, socials: profileSocials }
+    persistMember(updated)
+    setProfileMessage('Profile details saved.')
+  }
+
+  function uploadProfilePhoto(file: File) {
+    if (!file.type.startsWith('image/') || profileTarget.id !== selectedMember.id) return
+    const reader = new FileReader()
+    reader.onload = () => {
+      const photo = typeof reader.result === 'string' ? reader.result : ''
+      if (!photo) return
+      persistMember({ ...selectedMember, photo })
+      setProfileMessage('Profile photo updated.')
+    }
+    reader.readAsDataURL(file)
+  }
+
+  function removeProfilePhoto() {
+    if (profileTarget.id !== selectedMember.id) return
+    persistMember({ ...selectedMember, photo: null })
+    setProfileMessage('Profile photo removed.')
+  }
+
+  function requestBrowserLocation(callback: (coords: { latitude: number; longitude: number } | null) => void) {
+    if (!navigator.geolocation) {
+      setLocationPermission('denied')
+      callback(null)
+      return
+    }
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        setLocationPermission('granted')
+        callback({ latitude: position.coords.latitude, longitude: position.coords.longitude })
+      },
+      () => {
+        setLocationPermission('denied')
+        callback(null)
+      },
+      { enableHighAccuracy: true, timeout: 8000, maximumAge: 30000 },
+    )
+  }
+
+  function postEmergency(pending: EmergencyPending, extraText = '') {
+    requestBrowserLocation((coordinates) => {
+      const now = formatTime()
+      const locationText = coordinates ? ' 📍 Current location shared with the family.' : ' Location unavailable.'
+      const combined = `${pending.title}.${extraText ? ` ${extraText}` : ''}${locationText}`
+      setMessages((current) => [{ id: `chat-${Date.now()}`, memberId: selectedMember.id, name: selectedMember.label, initials: selectedMember.initials, accent: selectedMember.accent, time: now, text: `🚨 ${combined}` }, ...current])
+      setNotifications((current) => [{ id: `notification-${Date.now()}`, kind: 'Emergency', title: `${selectedMember.label}: ${pending.title}`, detail: extraText || pending.description, time: 'Now' }, ...current])
+      setSentEmergency({ title: pending.title, coordinates })
+      setEmergencyView('sent')
+    })
+  }
+
+  function triggerEmergency(pending: EmergencyPending, instant = false) {
+    setEmergencyPending(pending)
+    setEmergencyText('')
+    if (instant) postEmergency(pending)
+    else setEmergencyView('confirm')
+  }
+
+  function sendEmergencyMessage() {
+    if (!emergencyText.trim() || !emergencyPending) return
+    postEmergency(emergencyPending, emergencyText.trim())
+  }
+
+  function submitMoneyRequest() {
+    if (!moneyForm.amount.trim() || !moneyForm.purpose.trim() || !moneyForm.dueDate) return
+    const request: MoneyRequest = { id: `money-${Date.now()}`, requesterId: selectedMember.id, amount: moneyForm.amount.trim(), purpose: moneyForm.purpose.trim(), dueDate: moneyForm.dueDate, status: 'Pending' }
+    setMoneyRequests((current) => [request, ...current])
+    setMessages((current) => [{ id: `chat-${Date.now()}`, memberId: selectedMember.id, name: selectedMember.label, initials: selectedMember.initials, accent: selectedMember.accent, time: formatTime(), text: `💷 ${selectedMember.label} needs £${request.amount} for ${request.purpose} until ${formatShortDate(request.dueDate)}.` }, ...current])
+    setNotifications((current) => [{ id: `notification-${Date.now()}`, kind: 'Money', title: 'New money request', detail: `${selectedMember.label} requested £${request.amount} for ${request.purpose}.`, time: 'Now' }, ...current])
+    setMoneyForm({ amount: '', purpose: '', dueDate: '' })
+    setEmergencyView('sent')
+    setSentEmergency({ title: 'I Need Money', coordinates: null })
+  }
+
+  function acceptMoneyRequest(id: string) {
+    const lenderId = selectedMember.id
+    setMoneyRequests((current) => current.map((request) => request.id === id ? { ...request, status: 'Accepted', lenderId } : request))
+  }
+
+  function sendChatMessage() {
+    if (!chatDraft.trim() && !pendingChatPhoto) return
+    const now = formatTime()
+    const image = pendingChatPhoto ?? undefined
+    const message: ChatMessage = { id: `chat-${Date.now()}`, memberId: selectedMember.id, name: selectedMember.label, initials: selectedMember.initials, accent: selectedMember.accent, time: now, text: chatDraft.trim() || 'Shared a photo', image }
+    setMessages((current) => [message, ...current])
+    if (image) setPhotos((current) => [{ id: `photo-${Date.now()}`, src: image, name: 'Family photo', time: now }, ...current])
+    setChatDraft('')
+    setPendingChatPhoto(null)
+  }
+
+  function stageChatPhoto(file: File) {
     if (!file.type.startsWith('image/')) return
-    setPendingPhoto((current) => { if (current) URL.revokeObjectURL(current.src); return { src: URL.createObjectURL(file), name: file.name } })
+    const reader = new FileReader()
+    reader.onload = () => setPendingChatPhoto(typeof reader.result === 'string' ? reader.result : null)
+    reader.readAsDataURL(file)
   }
 
-  function sendMessage() {
-    const text = chatDraft.trim()
-    if (!text && !pendingPhoto) return
-    const now = new Date().toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })
-    const photo = pendingPhoto ? { id: `photo-${Date.now()}`, src: pendingPhoto.src, name: pendingPhoto.name, time: now } : undefined
-    const newMessage: ChatMessage = { initials: selectedMember.initials, time: now, name: selectedMember.label, text: text || 'Shared a photo', accent: selectedMember.accent, outgoing: true, attachment: photo }
-    if (photo) setPhotos((current) => [photo, ...current])
-    setMessages((current) => [newMessage, ...current])
-    setChatDraft(''); setPendingPhoto(null)
+  function addEvent(title: string, date: string, time: string, location: string) {
+    if (!title.trim() || !date || !time) return
+    setEvents((current) => [...current, { id: `event-${Date.now()}`, title: title.trim(), date, time, location: location.trim() }])
   }
 
-  function addCalendarEvent() {
-    const title = calendarForm.title.trim()
-    if (!title || !calendarForm.date || !calendarForm.time) return setCalendarError('Event name, date and time are required.')
-    const newEvent: FamilyEvent = { id: `event-${Date.now()}`, date: calendarForm.date, icon: eventIcon(calendarForm.kind), title, time: calendarForm.time, location: calendarForm.location.trim(), kind: calendarForm.kind }
-    setEvents((current) => [...current, newEvent]); setSelectedCalendarDate(calendarForm.date)
-    const date = dateFromKey(calendarForm.date); setCalendarCursor(new Date(date.getFullYear(), date.getMonth(), 1))
-    setCalendarForm({ title: '', date: calendarForm.date, time: '', location: '', kind: 'standard' }); setCalendarError('')
-  }
-
-  function addTask() {
-    const title = taskForm.title.trim()
-    if (!title || !taskForm.dueDate || !taskForm.assignedTo) return setTaskError('Task name, due date and family member are required.')
-    setTasks((current) => [...current, { id: `task-${Date.now()}`, title, dueDate: taskForm.dueDate, assignedTo: taskForm.assignedTo, completed: false }])
-    setTaskForm((current) => ({ ...current, title: '' })); setTaskError('')
-  }
-
-  function toggleTask(taskId: string) {
-    const completionTime = Date.now()
-    setTasks((current) => current.map((task) => task.id === taskId ? { ...task, completed: !task.completed, completedAt: !task.completed ? completionTime : undefined } : task))
-    window.setTimeout(() => setTasks((current) => current.filter((task) => task.id !== taskId || task.completedAt !== completionTime)), 86400000)
-  }
-
-  function isTaskOverdue(task: FamilyTask) { return !task.completed && task.dueDate < todayKey }
-  function getTaskAssignee(task: FamilyTask) { return demoMembers.find((member) => member.id === task.assignedTo) ?? demoMembers[0] }
-
-  function shiftMonth(amount: number) {
-    const next = new Date(calendarCursor.getFullYear(), calendarCursor.getMonth() + amount, 1)
-    setCalendarCursor(next); setSelectedCalendarDate(toDateKey(new Date(next.getFullYear(), next.getMonth(), 1)))
-  }
-
-  function jumpToToday() {
-    const today = todayDate(); setCalendarCursor(new Date(today.getFullYear(), today.getMonth(), 1)); setSelectedCalendarDate(toDateKey(today))
-  }
-
-  function handleEmergencyAlert(reason: EmergencyReason, coordinates: { latitude: number; longitude: number } | null) {
-    const now = new Date().toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })
-    const locationText = coordinates ? '📍 Current location shared with the family.' : 'Location was unavailable.'
-    const messageText = reason.message ? ` ${reason.message}` : ''
-    const text = `🚨 FAMILY EMERGENCY — ${selectedMember.label}: ${reason.title}.${messageText} ${locationText}`
-    setMessages((current) => [{ initials: selectedMember.initials, time: now, name: selectedMember.label, text, accent: selectedMember.accent, outgoing: true }, ...current])
-    setNotifications((current) => [{ id: `notification-${Date.now()}`, kind: 'Emergency', title: `${selectedMember.label}: ${reason.title}`, detail: reason.message ? reason.message : coordinates ? 'Family alert sent with current location.' : 'Family alert sent; current location was unavailable.', time: 'Now' }, ...current])
-  }
-
-  function getProfilePhoto() {
-    try { return localStorage.getItem(`family-circle-profile-photo-${selectedMember.id}`) } catch { return null }
+  function toggleTask(id: string) {
+    setTasks((current) => current.map((task) => task.id === id ? { ...task, completed: !task.completed } : task))
   }
 
   function renderBottomNav() {
-    return <nav className="bottom-nav" aria-label="Family Circle navigation">{navItems.map((item) => { const active = item.tool ? toolMode === item.tool : !toolMode && activeTab === item.tab; return <button className={active ? `nav-item active${item.wide ? ' nav-item-wide' : ''}` : `nav-item${item.wide ? ' nav-item-wide' : ''}`} key={item.label} type="button" onClick={() => item.tool ? openTool(item.tool) : item.tab && goToTab(item.tab)}><span aria-hidden="true">{item.icon}</span><small>{item.label}</small></button> })}</nav>
+    const items: { label: string; icon: string; tab?: HomeTab; tool?: ToolMode }[] = [
+      { label: 'Home', icon: '⌂', tab: 'home' },
+      { label: 'Chat', icon: '◌', tab: 'chat' },
+      { label: 'Photos', icon: '▧', tab: 'photos' },
+      { label: 'Calendar', icon: '▦', tab: 'calendar' },
+      { label: 'Tasks', icon: '✓', tab: 'tasks' },
+      { label: 'Where Is Everyone?', icon: '📍', tool: 'map' },
+    ]
+    return <nav className="fc-bottom-nav" aria-label="Family Circle navigation">{items.map((item) => { const active = item.tool ? toolMode === item.tool : toolMode === null && activeTab === item.tab; return <button className={active ? 'fc-nav-item active' : 'fc-nav-item'} type="button" key={item.label} onClick={() => item.tool ? openTool(item.tool) : item.tab && goToTab(item.tab)}><span aria-hidden="true">{item.icon}</span><small>{item.label}</small></button> })}</nav>
   }
 
-  function renderHomeDashboard() {
-    const storedPhoto = getProfilePhoto()
-    return <>
-      <header className="home-topbar">
-        <button className="home-profile profile-trigger" type="button" onClick={() => openTool('profile')} aria-label="Open My Profile">
-          {storedPhoto ? <img className="home-avatar profile-avatar-photo" src={storedPhoto} alt="Profile" /> : <span className={`home-avatar ${selectedMember.accent}`}>{selectedMember.initials}</span>}
-          <div><p className="greeting"><Greeting /></p><strong>{selectedMember.label}</strong><span>The Family Circle</span></div>
+  function renderHome() {
+    const firstThreeMessages = messages.slice(0, 3)
+    const firstThreeTasks = tasks.slice(0, 3)
+    return <div className="fc-page">
+      <header className="fc-home-topbar">
+        <button className="fc-home-profile" type="button" onClick={() => openProfile(selectedMember.id)}>
+          <AppAvatar member={selectedMember} className="fc-home-avatar" />
+          <span className="fc-home-profile-copy"><small>{timeGreeting()}</small><strong>{selectedMember.label}</strong><em>{selectedMember.bio || 'No bio yet.'}</em><span>My Status · {selectedMember.status}</span></span>
         </button>
-        <div className="hero-brand" aria-label="Family Circle"><img className="hero-logo" src={logoUrl} alt="Family Circle" /></div>
-        <div className="home-tools"><button className="icon-button notification-button" type="button" aria-label="Notifications" onClick={() => openTool('notifications')}><span aria-hidden="true">🔔</span>{notifications.length > 0 && <b>{notifications.length}</b>}</button><button className="icon-button" type="button" aria-label="Settings" onClick={() => openTool('settings')}>⚙</button></div>
+        <div className="fc-home-logo"><img src={logoUrl} alt="Family Circle" /></div>
+        <div className="fc-home-actions"><button className="fc-round-button" type="button" onClick={() => openTool('notifications')} aria-label="Notifications">🔔{notifications.length > 0 && <b>{notifications.length}</b>}</button><button className="fc-round-button" type="button" onClick={() => openTool('settings')} aria-label="Settings">⚙️</button></div>
       </header>
 
-      <div className="home-motto">Different places. Same circle. ♡</div>
-      <section className="family-banner" aria-label="Family message"><div className="family-banner-icon" aria-hidden="true">♡</div><div className="family-banner-copy"><strong>Family isn't just who you live with,</strong><span>it's who you do life with. ♡</span></div><CurrentDate /></section>
+      <section className="fc-banner"><span className="fc-banner-heart">♡</span><div><strong>Family isn't just who you live with,</strong><span>it's who you do life with. ♡</span></div><time>{formatLongDate(todayKey())}</time></section>
 
-      <section className="dashboard-grid" aria-label="Family dashboard">
-        <article className="dashboard-card card-chat"><SectionHeader icon="◌" title="Family Chat" tone="tone-cyan" onAction={() => goToTab('chat')} actionLabel="View all messages" /><div className="message-list">{messages.slice(0, 3).map((message) => <div className="message-row" key={`${message.time}-${message.name}-${message.text}`}><span className={`row-avatar ${message.accent}`}>{message.initials}</span><div className="message-copy"><div className="row-meta"><strong>{message.name}</strong><time>{message.time}</time></div><span>{message.text}</span></div><span className="unread-dot" aria-hidden="true" /></div>)}</div><button className="outline-action" type="button" onClick={() => goToTab('chat')}>View All Messages <span>›</span></button></article>
-        <article className="dashboard-card card-events"><SectionHeader icon="▦" title="Today's Events" tone="tone-pink" onAction={() => goToTab('calendar')} actionLabel="Open calendar" /><div className="event-list">{todaysEvents.length === 0 ? <div className="event-row"><span className="event-icon">✓</span><div className="event-copy"><strong>No more events today</strong><span>Enjoy your evening</span></div></div> : todaysEvents.slice(0, 3).map((event) => <div className={isPastEvent(event) ? 'event-row event-past' : 'event-row'} key={event.id}><span className="event-icon">{event.icon}</span><div className="event-copy"><strong>{event.title}</strong><span>{event.time}{isPastEvent(event) ? ' · Completed' : ''}</span>{event.location && <small>⌖ {event.location}</small>}</div></div>)}</div><button className="outline-action pink-action" type="button" onClick={() => goToTab('calendar')}>View Full Calendar <span>›</span></button></article>
-        <article className="dashboard-card card-photo"><SectionHeader icon="▧" title="Latest Photo" tone="tone-purple" actionLabel="Open photos" onAction={() => goToTab('photos')} /><button className="memory-frame" type="button" onClick={() => goToTab('photos')} aria-label="Open family memories">{latestPhoto ? <div className="memory-photo"><img src={latestPhoto.src} alt={latestPhoto.name || 'Recent family photo'} /></div> : <div className="memory-scene" aria-hidden="true"><span /></div>}<div className="memory-caption"><strong>{latestPhoto ? 'Recent family photo' : 'Family memories'}</strong><span>{latestPhoto ? `Added in Family Chat · ${latestPhoto.time}` : 'Moments that matter ♡'}</span></div><div className="memory-dots" aria-hidden="true"><span className="active" /><span /><span /><span /></div></button></article>
-        <article className="dashboard-card card-tasks"><SectionHeader icon="✓" title="Your Tasks" tone="tone-cyan" onAction={() => goToTab('tasks')} actionLabel="Open tasks" /><div className="task-list">{visibleTasks.slice(0, 3).map((task) => { const assignee = getTaskAssignee(task); const overdue = isTaskOverdue(task); return <button className={overdue ? 'task-row task-overdue' : 'task-row'} type="button" key={task.id} onClick={() => toggleTask(task.id)}><span className={task.completed ? 'task-check completed' : 'task-check'} aria-hidden="true">{task.completed ? '✓' : ''}</span><span className={task.completed ? 'task-copy task-completed' : 'task-copy'}><strong>{task.title}</strong><small>{formatRelativeDate(task.dueDate)} · {assignee.label}{overdue ? ' · Overdue' : ''}</small></span></button> })}</div><button className="outline-action cyan-action" type="button" onClick={() => goToTab('tasks')}>View All Tasks <span>›</span></button></article>
+      <section className="fc-dashboard-grid">
+        <article className="fc-dashboard-card cyan"><div className="fc-card-head"><div><small>Family Chat</small><h2>Latest conversation</h2></div><button type="button" onClick={() => goToTab('chat')}>→</button></div>{firstThreeMessages.map((message) => <div className="fc-mini-row" key={message.id}><AppAvatar member={members.find((m) => m.id === message.memberId) ?? selectedMember} /><div><strong>{message.name}</strong><span>{message.text}</span></div><time>{message.time}</time></div>)}<button className="fc-outline-button" type="button" onClick={() => goToTab('chat')}>View All Messages →</button></article>
+        <article className="fc-dashboard-card pink"><div className="fc-card-head"><div><small>Today's Events</small><h2>Family plans</h2></div><button type="button" onClick={() => goToTab('calendar')}>→</button></div>{todaysEvents.length ? todaysEvents.slice(0, 3).map((event) => <div className="fc-mini-row" key={event.id}><span className="fc-event-icon">📅</span><div><strong>{event.title}</strong><span>{event.time} · {event.location}</span></div></div>) : <p className="fc-muted">No more events today.</p>}<button className="fc-outline-button pink" type="button" onClick={() => goToTab('calendar')}>View Calendar →</button></article>
+        <article className="fc-dashboard-card purple"><div className="fc-card-head"><div><small>Family Memories</small><h2>Latest photo</h2></div><button type="button" onClick={() => goToTab('photos')}>→</button></div>{photos[0] ? <img className="fc-latest-photo" src={photos[0].src} alt="Latest family" /> : <div className="fc-photo-placeholder"><span>▧</span><strong>Moments that matter ♡</strong><small>Send a photo in Family Chat.</small></div>}<button className="fc-outline-button purple" type="button" onClick={() => goToTab('photos')}>Open Photos →</button></article>
+        <article className="fc-dashboard-card green"><div className="fc-card-head"><div><small>Family Tasks</small><h2>Your responsibilities</h2></div><button type="button" onClick={() => goToTab('tasks')}>→</button></div>{firstThreeTasks.map((task) => { const assigned = members.find((m) => m.id === task.assignedTo) ?? selectedMember; return <button className="fc-task-row" type="button" key={task.id} onClick={() => toggleTask(task.id)}><span className={task.completed ? 'fc-check done' : 'fc-check'}>{task.completed ? '✓' : ''}</span><span><strong>{task.title}</strong><small>{task.completed ? 'Completed' : `Due ${formatShortDate(task.dueDate)} · ${assigned.label}`}</small></span></button> })}<button className="fc-outline-button green" type="button" onClick={() => goToTab('tasks')}>View All Tasks →</button></article>
       </section>
 
-      <section className="quick-tile-grid" aria-label="Family shortcuts">{quickTiles.map((tile) => <button className={`quick-tile ${tile.tone}`} type="button" key={tile.title} onClick={() => tile.tool ? openTool(tile.tool) : tile.tab && goToTab(tile.tab)}><span className="quick-tile-icon" aria-hidden="true">{tile.icon}</span><strong>{tile.title}</strong><span>{tile.subtitle}</span></button>)}</section>
+      <section className="fc-quick-grid" aria-label="Family shortcuts">{[
+        { label: 'Chat', desc: 'Message the family', icon: '◌', tone: 'cyan', action: () => goToTab('chat') },
+        { label: 'Photos', desc: 'Our memories together', icon: '▧', tone: 'purple', action: () => goToTab('photos') },
+        { label: 'Family Emergency', desc: 'Get family help quickly', icon: '!', tone: 'pink', action: () => openTool('emergency') },
+        { label: 'Tasks', desc: 'Jobs & responsibilities', icon: '✓', tone: 'green', action: () => goToTab('tasks') },
+        { label: 'Calendar', desc: 'Events & plans', icon: '▦', tone: 'magenta', action: () => goToTab('calendar') },
+      ].map((item) => <button className={`fc-quick-tile ${item.tone}`} type="button" key={item.label} onClick={item.action}><span>{item.icon}</span><strong>{item.label}</strong><small>{item.desc}</small></button>)}</section>
 
-      <button className="family-map-preview" type="button" onClick={() => openTool('map')} aria-label="Open Where Is Everyone?">
-        <div className="family-map-preview-copy"><p className="feature-kicker">Where Is Everyone?</p><strong>See the family on the map</strong><span>{Object.values(locationSharing).filter(Boolean).length} family members sharing location</span></div>
-        <span className="family-map-preview-arrow">Open →</span>
-        <div className="family-map-preview-graphic" aria-hidden="true"><span className="preview-pin one member-accent-one">FM</span><span className="preview-pin two member-accent-two">FM</span><span className="preview-pin three member-accent-three">FM</span></div>
-      </button>
+      <section className="fc-feature-grid">
+        <button className="fc-feature-card map-card" type="button" onClick={() => openTool('map')}><span className="fc-feature-icon">📍</span><div><small>Family location</small><strong>Where Is Everyone?</strong><span>{sharedMembers.length} family member{sharedMembers.length === 1 ? '' : 's'} sharing location</span></div><b>→</b></button>
+        <button className="fc-feature-card members-card" type="button" onClick={() => openTool('family')}><span className="fc-feature-icon">👨‍👩‍👧‍👦</span><div><small>Your family</small><strong>Family Members</strong><span>View the family tree and profiles.</span></div><b>→</b></button>
+        <button className="fc-feature-card games-card" type="button" onClick={() => openTool('games')}><span className="fc-feature-icon">🎮</span><div><small>Fun together</small><strong>Challenge a Family Member</strong><span>Games hub coming soon.</span></div><b>→</b></button>
+      </section>
 
       {renderBottomNav()}
-      <div className="home-footer-actions"><button type="button" onClick={switchMember}>Switch family member</button><span>Foundation build</span></div>
-    </>
+      <div className="fc-footer"><button type="button" onClick={() => setScreen('members')}>Switch family member</button><span>Foundation build</span></div>
+    </div>
   }
 
   function renderChat() {
-    return <section className="feature-view" aria-label="Family chat"><FeatureHeader title="Family Chat" description="Keep the family conversation together in one private space." onHome={() => goToTab('home')} /><div className="feature-card"><div className="feature-heading-row"><h2>Family conversation</h2><span className="feature-badge">Live demo</span></div><div className="chat-list">{messages.map((message) => <div className={message.outgoing ? 'chat-row outgoing' : 'chat-row'} key={`${message.time}-${message.name}-${message.text}`}><span className={`chat-avatar ${message.accent}`}>{message.initials}</span><div className="chat-bubble"><div className="chat-meta"><strong>{message.name}</strong><time>{message.time}</time></div><p>{message.text}</p>{message.attachment && <img className="chat-photo" src={message.attachment.src} alt={message.attachment.name || 'Family photo'} />}</div></div>)}</div><div className="chat-composer" onPaste={(event) => { const image = Array.from(event.clipboardData.files).find((file) => file.type.startsWith('image/')); if (image) { event.preventDefault(); stagePhoto(image) } }}>{pendingPhoto && <div className="chat-pending-photo"><img src={pendingPhoto.src} alt="Photo ready to send" /><button type="button" onClick={() => setPendingPhoto(null)} aria-label="Remove photo">×</button></div>}<input id="chat-photo-upload" className="visually-hidden-input" type="file" accept="image/*" onChange={(event) => { const file = event.target.files?.[0]; if (file) stagePhoto(file); event.currentTarget.value = '' }} /><label className="chat-attach-button" htmlFor="chat-photo-upload">＋ Photo</label><input value={chatDraft} onChange={(event) => setChatDraft(event.target.value)} onKeyDown={(event) => { if (event.key === 'Enter') sendMessage() }} placeholder="Write a family message…" aria-label="Write a family message" /><button type="button" onClick={sendMessage}>Send</button></div><p className="picker-hint">Add a photo or paste an image into the chat box.</p></div>{renderBottomNav()}</section>
+    return <div className="fc-page"><FeatureHeader title="Family Chat" description="Keep the family conversation together in one private space." onHome={() => goToTab('home')} /><div className="fc-feature-shell"><div className="fc-panel"><div className="fc-panel-head"><div><small>Family conversation</small><h2>Chat</h2></div><span className="fc-pill">Private family space</span></div><div className="fc-chat-list">{messages.map((message) => <div className="fc-chat-row" key={message.id}><AppAvatar member={members.find((m) => m.id === message.memberId) ?? selectedMember} className="fc-chat-avatar" /><div className="fc-chat-bubble"><div><strong>{message.name}</strong><time>{message.time}</time></div><p>{message.text}</p>{message.image && <img src={message.image} alt="Family shared" />}</div></div>)}</div>{pendingChatPhoto && <div className="fc-pending-photo"><img src={pendingChatPhoto} alt="Ready to send" /><button type="button" onClick={() => setPendingChatPhoto(null)}>×</button></div>}<div className="fc-composer"><label className="fc-attach"><input className="fc-hidden" type="file" accept="image/*" onChange={(event) => { const file = event.target.files?.[0]; if (file) stageChatPhoto(file); event.currentTarget.value = '' }} />＋ Photo</label><input value={chatDraft} onChange={(event) => setChatDraft(event.target.value)} onKeyDown={(event) => { if (event.key === 'Enter') sendChatMessage() }} placeholder="Write a family message…" /><button type="button" onClick={sendChatMessage}>Send</button></div></div></div>{renderBottomNav()}</div>
   }
 
   function renderPhotos() {
-    return <section className="feature-view" aria-label="Recent photos"><FeatureHeader title="Recent Photos" description="Photos shared in Family Chat also appear here." onHome={() => goToTab('home')} /><div className="feature-card"><div className="feature-heading-row"><div><p className="feature-kicker">Family memories</p><h2>Recent Photos</h2></div><span className="feature-badge">{photos.length} shared</span></div>{photos.length === 0 ? <div className="photo-empty-state"><div className="photo-empty-icon">▧</div><div><strong>No recent photos yet.</strong><p className="muted">Send a photo from Family Chat and it will appear here automatically.</p></div><button type="button" className="primary-form-button" onClick={() => goToTab('chat')}>Open Family Chat</button></div> : <div className="photo-grid">{photos.map((photo) => <article className="photo-card" key={photo.id}><img src={photo.src} alt={photo.name || 'Family photo'} /><div className="photo-card-copy"><strong>{photo.name || 'Family photo'}</strong><span>Shared in Family Chat · {photo.time}</span></div></article>)}</div>}</div>{renderBottomNav()}</section>
+    return <div className="fc-page"><FeatureHeader title="Recent Photos" description="Photos shared in Family Chat appear here as family memories." onHome={() => goToTab('home')} /><div className="fc-panel"><div className="fc-panel-head"><div><small>Family memories</small><h2>Recent Photos</h2></div><span className="fc-pill">{photos.length} shared</span></div>{photos.length === 0 ? <div className="fc-empty"><span>▧</span><strong>No recent photos yet.</strong><p>Send a photo from Family Chat and it will appear here automatically.</p><button className="fc-primary-button" type="button" onClick={() => goToTab('chat')}>Open Family Chat</button></div> : <div className="fc-photo-grid">{photos.map((photo) => <article key={photo.id}><img src={photo.src} alt={photo.name} /><div><strong>{photo.name}</strong><span>Shared in Family Chat · {photo.time}</span></div></article>)}</div>}</div>{renderBottomNav()}</div>
   }
 
   function renderCalendar() {
-    const visibleEvents = events.filter((event) => event.date === selectedCalendarDate).sort((a, b) => a.time.localeCompare(b.time))
-    return <section className="feature-view" aria-label="Family calendar"><FeatureHeader title="Family Calendar" description="Keep plans, appointments and family events visible in one place." onHome={() => goToTab('home')} /><div className="feature-card calendar-main-card"><div className="calendar-toolbar"><button className="calendar-nav-button" type="button" onClick={() => shiftMonth(-1)} aria-label="Previous month">‹</button><div className="calendar-month-heading"><h2>{monthLabel}</h2><button className="today-button" type="button" onClick={jumpToToday}>Today</button></div><button className="calendar-nav-button" type="button" onClick={() => shiftMonth(1)} aria-label="Next month">›</button></div><div className="calendar-weekdays" aria-hidden="true">{['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map((day) => <span key={day}>{day}</span>)}</div><div className="month-grid">{calendarCells.map((dayNumber, index) => { if (dayNumber === null) return <div className="calendar-cell calendar-cell-empty" key={`empty-${index}`} aria-hidden="true" />; const date = new Date(calendarCursor.getFullYear(), calendarCursor.getMonth(), dayNumber); const key = toDateKey(date); const dayEvents = events.filter((event) => event.date === key); const isToday = key === todayKey; const isSelected = key === selectedCalendarDate; const className = ['calendar-cell', isToday ? 'is-today' : '', isSelected ? 'is-selected' : '', key < todayKey ? 'is-past' : '', dayEvents.some((event) => event.kind === 'important') ? 'has-important' : '', dayEvents.some((event) => event.kind === 'birthday') ? 'has-birthday' : ''].filter(Boolean).join(' '); return <button className={className} type="button" key={key} onClick={() => setSelectedCalendarDate(key)} aria-label={`${formatLongDate(key)}${dayEvents.length ? `, ${dayEvents.length} event${dayEvents.length === 1 ? '' : 's'}` : ''}`}><span className="calendar-cell-day">{dayNumber}</span>{dayEvents.length > 0 && <span className="calendar-marker-row" aria-hidden="true">{dayEvents.slice(0, 3).map((event) => <span key={event.id} className={`calendar-marker marker-${event.kind}`} />)}</span>}</button> })}</div><div className="calendar-key"><span><i className="key-dot key-today" /> Today</span><span><i className="key-dot key-birthday" /> Birthday</span><span><i className="key-dot key-important" /> Important</span><span><i className="key-dot key-event" /> Event</span></div></div><div className="calendar-selected-card"><div className="feature-heading-row"><div><p className="feature-kicker">Selected day</p><h2>{formatLongDate(selectedCalendarDate)}</h2></div><span className="feature-badge">{visibleEvents.length} event{visibleEvents.length === 1 ? '' : 's'}</span></div><div className="calendar-events">{visibleEvents.length === 0 ? <div className="calendar-empty-state"><span>♡</span><div><strong>No family events on this date.</strong><p className="muted">Use the form below to add one.</p></div></div> : visibleEvents.map((event) => <div className={isPastEvent(event) ? 'calendar-event event-past' : 'calendar-event'} key={event.id}><span className={`calendar-event-icon event-kind-${event.kind}`}>{event.icon}</span><div className="calendar-event-copy"><strong>{event.title}</strong><span>{event.time} · {formatRelativeDate(event.date)}</span>{event.location && <small>⌖ {event.location}</small>}</div>{isPastEvent(event) && <span className="calendar-complete">✓</span>}</div>)}</div></div><div className="feature-card event-form-card"><div className="feature-heading-row"><div><p className="feature-kicker">Add to family calendar</p><h2>New family event</h2></div><span className="feature-badge">7d + 1d reminders</span></div><p className="muted">Events are added to the calendar and Home from the same family event record.</p><div className="form-grid"><label className="form-field form-field-wide"><span>Event name *</span><input value={calendarForm.title} onChange={(event) => setCalendarForm((current) => ({ ...current, title: event.target.value }))} placeholder="Family dinner" /></label><label className="form-field"><span>Date *</span><input type="date" min={todayKey} value={calendarForm.date} onChange={(event) => setCalendarForm((current) => ({ ...current, date: event.target.value }))} /></label><label className="form-field"><span>Time *</span><input type="time" value={calendarForm.time} onChange={(event) => setCalendarForm((current) => ({ ...current, time: event.target.value }))} /></label><label className="form-field"><span>Location</span><input value={calendarForm.location} onChange={(event) => setCalendarForm((current) => ({ ...current, location: event.target.value }))} placeholder="At home" /></label><label className="form-field"><span>Event type</span><select value={calendarForm.kind} onChange={(event) => setCalendarForm((current) => ({ ...current, kind: event.target.value as EventKind }))}><option value="standard">Family event</option><option value="birthday">Birthday</option><option value="important">Important occasion</option></select></label></div>{calendarError && <p className="form-error" role="alert">{calendarError}</p>}<div className="form-actions"><button type="button" className="primary-form-button" onClick={addCalendarEvent}>Add Family Event</button></div><p className="form-note">Notification delivery will be connected to the family backend later.</p></div>{renderBottomNav()}</section>
+    return <CalendarPanel events={events} todaysEvents={todaysEvents} onAdd={addEvent} onBack={() => goToTab('home')} onNav={renderBottomNav} />
   }
 
   function renderTasks() {
-    const sortedTasks = [...visibleTasks].sort((a, b) => { if (isTaskOverdue(a) !== isTaskOverdue(b)) return isTaskOverdue(a) ? -1 : 1; if (a.completed !== b.completed) return a.completed ? 1 : -1; return a.dueDate.localeCompare(b.dueDate) })
-    return <section className="feature-view" aria-label="Family tasks"><FeatureHeader title="Family Tasks" description="Share jobs and responsibilities so everyone knows what needs doing." onHome={() => goToTab('home')} /><div className="feature-grid"><div className="feature-card"><div className="feature-heading-row"><div><p className="feature-kicker">Shared responsibilities</p><h2>Everyone's tasks</h2></div><span className="feature-badge">{completedTasks}/{visibleTasks.length} done</span></div><div className="tasks-summary"><strong>{visibleTasks.length - completedTasks} tasks remaining</strong><span>Completed tasks stay visible for 24 hours.</span></div><div className="task-detail-list">{sortedTasks.map((task) => { const assignee = getTaskAssignee(task); return <button className={isTaskOverdue(task) ? 'task-detail overdue' : task.completed ? 'task-detail done' : 'task-detail'} type="button" key={task.id} onClick={() => toggleTask(task.id)}><span className="task-detail-check" aria-hidden="true">{task.completed ? '✓' : ''}</span><span className="task-detail-copy"><strong>{task.title}</strong><small>Due {formatLongDate(task.dueDate)} · {assignee.label}{isTaskOverdue(task) ? ' · Overdue' : task.completed ? ' · Completed' : ''}</small></span><span className="assigned-avatar">{assignee.initials}</span></button> })}</div></div><div className="feature-card"><div className="feature-heading-row"><div><p className="feature-kicker">Create responsibility</p><h2>Add a task</h2></div><span className="feature-badge">Required details</span></div><p className="muted">Every task needs a due date and a family member before it can be added.</p><div className="form-grid"><label className="form-field form-field-wide"><span>Task name *</span><input value={taskForm.title} onChange={(event) => setTaskForm((current) => ({ ...current, title: event.target.value }))} placeholder="Take bins out" /></label><label className="form-field"><span>Due date *</span><input type="date" min={todayKey} value={taskForm.dueDate} onChange={(event) => setTaskForm((current) => ({ ...current, dueDate: event.target.value }))} /></label><label className="form-field"><span>Assign to *</span><select value={taskForm.assignedTo} onChange={(event) => setTaskForm((current) => ({ ...current, assignedTo: event.target.value }))}><option value="">Choose family member</option>{demoMembers.map((member) => <option value={member.id} key={member.id}>{member.label}</option>)}</select></label></div>{taskError && <p className="form-error" role="alert">{taskError}</p>}<div className="form-actions"><button type="button" className="primary-form-button" onClick={addTask}>Add Family Task</button></div></div></div>{renderBottomNav()}</section>
+    return <div className="fc-page"><FeatureHeader title="Family Tasks" description="Share jobs and responsibilities so everyone knows what needs doing." onHome={() => goToTab('home')} /><div className="fc-two-col"><div className="fc-panel"><div className="fc-panel-head"><div><small>Shared responsibilities</small><h2>Everyone's tasks</h2></div><span className="fc-pill">{tasks.filter((task) => task.completed).length}/{tasks.length} done</span></div><div className="fc-task-detail-list">{tasks.map((task) => { const assigned = members.find((m) => m.id === task.assignedTo) ?? selectedMember; return <button className={task.completed ? 'fc-task-detail done' : 'fc-task-detail'} type="button" key={task.id} onClick={() => toggleTask(task.id)}><span className={task.completed ? 'fc-check done' : 'fc-check'}>{task.completed ? '✓' : ''}</span><div><strong>{task.title}</strong><small>Due {formatLongDate(task.dueDate)} · {assigned.label}</small></div></button> })}</div></div><div className="fc-panel"><div className="fc-panel-head"><div><small>Create responsibility</small><h2>Add a task</h2></div></div><TaskForm members={members} onAdd={(title, dueDate, assignedTo) => setTasks((current) => [...current, { id: `task-${Date.now()}`, title, dueDate, assignedTo, completed: false }])} /><div className="fc-money-box"><div className="fc-panel-head"><div><small>Money requests</small><h2>Who owes who?</h2></div></div>{moneyRequests.length === 0 ? <p className="fc-muted">No family money requests yet.</p> : moneyRequests.map((request) => { const requester = members.find((m) => m.id === request.requesterId) ?? selectedMember; const lender = request.lenderId ? members.find((m) => m.id === request.lenderId) : null; return <div className="fc-money-row" key={request.id}><div><strong>£{request.amount}</strong><span>{request.purpose}</span><small>{request.status === 'Accepted' ? `${lender?.label ?? 'Family member'} owes ${requester.label} · due ${formatShortDate(request.dueDate)}` : `${requester.label} requested money · due ${formatShortDate(request.dueDate)}`}</small></div>{request.status === 'Pending' && request.requesterId !== selectedMember.id && <button type="button" onClick={() => acceptMoneyRequest(request.id)}>Accept</button>}</div> })}</div></div></div>{renderBottomNav()}</div>
   }
 
-  function renderActiveHomeTab() {
-    if (toolMode) return <FamilyTools mode={toolMode} selectedMember={selectedMember} members={demoMembers} notifications={notifications} locationSharing={locationSharing} locationPermission={locationPermission} activeTab={activeTab} onHome={() => setToolMode(null)} onNavigate={goToTab} onOpenMap={() => openTool('map')} onEmergencyAlert={handleEmergencyAlert} onClearNotifications={() => setNotifications([])} onToggleLocationSharing={(memberId, enabled) => setLocationSharing((current) => ({ ...current, [memberId]: enabled }))} onLocationPermission={(status) => setLocationPermission(status)} />
+  function renderEmergency() {
+    if (emergencyView === 'sent' && sentEmergency) return <div className="fc-page"><FeatureHeader title="Request Sent" description="Your Family Circle has been updated." onHome={() => openTool('emergency')} /><div className="fc-panel fc-success"><div className="fc-success-icon">✓</div><p className="fc-kicker">Family Emergency</p><h2>{sentEmergency.title}</h2><p className="fc-muted">Your family has been alerted and the request was posted into Family Chat.</p><div className="fc-status-list"><span>✓ Family Chat updated</span><span>✓ Notifications created</span><span>{sentEmergency.coordinates ? '✓ Current location shared' : '• Location unavailable'}</span></div><button className="fc-primary-button" type="button" onClick={() => goToTab('chat')}>Open Family Chat</button></div>{renderBottomNav()}</div>
+
+    if (emergencyView === 'medical') return <div className="fc-page"><FeatureHeader title="Medical Help" description="Choose the type of help you need." onHome={() => openTool('emergency')} /><div className="fc-choice-grid"><button className="fc-choice-card urgent" type="button" onClick={() => triggerEmergency({ title: 'Urgent Medical Assistance', description: 'Accident, fall, injury or suddenly unwell.', tone: 'danger', needsLocation: true })}><strong>Urgent Medical Assistance</strong><span>Accident, fall, injury, hurt leg or suddenly unwell.</span></button><button className="fc-choice-card" type="button" onClick={() => { setEmergencyPending({ title: 'Medical Help', description: 'Non-urgent family medical help request.', tone: 'medical', needsLocation: false }); setEmergencyText(''); setEmergencyView('message') }}><strong>Medical Help</strong><span>Ask the family for non-urgent help or advice.</span></button></div>{renderBottomNav()}</div>
+
+    if (emergencyView === 'child') return <div className="fc-page"><FeatureHeader title="Child Needs Help" description="Choose what your child needs right now." onHome={() => openTool('emergency')} /><div className="fc-choice-grid child-grid">{[
+      ['Homework Help', '📚', false], ['I Need Mum/Dad', '👨‍👩‍👧', false], ['I’m Upset', '💗', false], ['I Don’t Know What To Do', '❓', false], ['I’m Bored', '🎮', true], ['Something Else / Urgent Help', '🚨', 'message'],
+    ].map(([label, icon, action]) => <button className="fc-choice-card" type="button" key={String(label)} onClick={() => action === 'message' ? (setEmergencyPending({ title: String(label), description: 'Child needs family help.', tone: 'other', needsLocation: true }), setEmergencyText(''), setEmergencyView('message')) : triggerEmergency({ title: String(label), description: 'Child requested family help.', tone: 'child', needsLocation: true, message: action ? 'Are you bored?' : undefined })}><span className="fc-choice-icon">{String(icon)}</span><strong>{String(label)}</strong><span>{label === 'I’m Bored' ? 'Ask the family to come and entertain you. 😄' : 'Send a family help request.'}</span></button>)}</div>{renderBottomNav()}</div>
+
+    if (emergencyView === 'money') return <div className="fc-page"><FeatureHeader title="I Need Money" description="Send a cheeky family request with an amount, reason and repayment date." onHome={() => openTool('emergency')} /><div className="fc-panel"><div className="fc-form-grid"><label><span>How much? *</span><input value={moneyForm.amount} onChange={(event) => setMoneyForm((current) => ({ ...current, amount: event.target.value }))} placeholder="20" inputMode="decimal" /></label><label><span>What is it for? *</span><input value={moneyForm.purpose} onChange={(event) => setMoneyForm((current) => ({ ...current, purpose: event.target.value }))} placeholder="Petrol / food / school trip" /></label><label><span>Till when? *</span><input type="date" min={todayKey()} value={moneyForm.dueDate} onChange={(event) => setMoneyForm((current) => ({ ...current, dueDate: event.target.value }))} /></label></div><button className="fc-primary-button" type="button" onClick={submitMoneyRequest}>Send Money Request</button><p className="fc-form-note">Accepted requests will create a repayment record showing who owes whom and the due date.</p></div>{renderBottomNav()}</div>
+
+    if (emergencyView === 'message') return <div className="fc-page"><FeatureHeader title={emergencyPending?.title ?? 'Family Help'} description="Tell your family what is happening." onHome={() => openTool('emergency')} /><div className="fc-panel"><label className="fc-textarea-label"><span>What do you need help with?</span><textarea rows={6} value={emergencyText} onChange={(event) => setEmergencyText(event.target.value)} placeholder="Tell your family what is happening…" /></label><button className="fc-primary-button" type="button" onClick={emergencyPending?.needsLocation ? sendEmergencyMessage : () => { if (emergencyPending && emergencyText.trim()) { const now = formatTime(); setMessages((current) => [{ id: `chat-${Date.now()}`, memberId: selectedMember.id, name: selectedMember.label, initials: selectedMember.initials, accent: selectedMember.accent, time: now, text: `🩺 ${emergencyPending.title}: ${emergencyText.trim()}` }, ...current]); setNotifications((current) => [{ id: `notification-${Date.now()}`, kind: 'Emergency', title: `${selectedMember.label}: ${emergencyPending.title}`, detail: emergencyText.trim(), time: 'Now' }, ...current]); setSentEmergency({ title: emergencyPending.title, coordinates: null }); setEmergencyView('sent') } }}>{emergencyPending?.needsLocation ? 'Send Family Alert' : 'Send Family Request'}</button></div>{renderBottomNav()}</div>
+
+    if (emergencyView === 'confirm' && emergencyPending) return <div className="fc-page"><FeatureHeader title="Confirm Request" description="Make sure you want to send this family alert." onHome={() => openTool('emergency')} /><div className="fc-panel fc-confirm"><div className="fc-confirm-icon">{emergencyPending.tone === 'danger' ? '🚨' : '📣'}</div><h2>{emergencyPending.title}</h2><p className="fc-muted">{emergencyPending.description}</p><p className="fc-muted">Your current location will be requested once you confirm.</p><div className="fc-action-row"><button className="fc-ghost-button" type="button" onClick={() => setEmergencyView('main')}>Cancel</button><button className="fc-primary-button" type="button" onClick={() => postEmergency(emergencyPending)}>Confirm & Send</button></div></div>{renderBottomNav()}</div>
+
+    const emergencyButtons = [
+      ['I’m Not Safe', '🚨', 'Instantly alert everyone and share your current location.', () => triggerEmergency({ title: 'I’m Not Safe', description: 'Immediate family alert.', tone: 'danger', needsLocation: true }, true), 'danger'],
+      ['Medical Help', '🩺', 'Urgent or non-urgent family medical help.', () => setEmergencyView('medical'), 'medical'],
+      ['I Need a Lift', '🚗', 'Ask the family for help getting somewhere.', () => triggerEmergency({ title: 'I Need a Lift', description: 'Family lift request.', tone: 'lift', needsLocation: true }), 'lift'],
+      ['Child Needs Help', '🧒', 'Choose a child-friendly help request.', () => setEmergencyView('child'), 'child'],
+      ['I’m Lost / Need Help', '📍', 'Alert the family and share your current location.', () => triggerEmergency({ title: 'I’m Lost / Need Help', description: 'Family help request.', tone: 'lost', needsLocation: true }), 'lost'],
+      ['I Need Money', '💷', 'Ask the family for a specific amount and repayment date.', () => setEmergencyView('money'), 'money'],
+    ] as const
+
+    return <div className="fc-page"><FeatureHeader title="Family Emergency" description="Family help without the clutter. Call someone or send a family alert." onHome={() => goToTab('home')} /><div className="fc-panel fc-call-family"><div className="fc-panel-head"><div><small>Call family</small><h2>Call a family member</h2></div><span className="fc-pill">Tap to call</span></div><div className="fc-contact-grid">{members.map((member) => <a key={member.id} className="fc-contact" href={`tel:${member.phone}`}><AppAvatar member={member} /><span><strong>{member.label}</strong><small>{member.phone}</small></span><b>☎</b></a>)}</div></div><div className="fc-panel"><div className="fc-panel-head"><div><small>Family Emergency</small><h2>What do you need?</h2></div><span className="fc-pill danger">Family-focused help</span></div><div className="fc-emergency-grid">{emergencyButtons.map(([label, icon, desc, action, tone]) => <button key={String(label)} className={`fc-emergency-button ${tone}`} type="button" onClick={action}><span>{icon}</span><strong>{label}</strong><small>{desc}</small></button>)}</div>{pendingMoney.length > 0 && <div className="fc-money-summary"><strong>Money requests</strong>{pendingMoney.slice(0, 3).map((request) => { const requester = members.find((m) => m.id === request.requesterId) ?? selectedMember; return <span key={request.id}>£{request.amount} — {requester.label} · {request.purpose}</span> })}</div>}</div>{renderBottomNav()}</div>
+  }
+
+  function renderFamily() {
+    return <div className="fc-page"><FeatureHeader title="Family Members" description="Your family tree is about connection, not complicated relationship rules." onHome={() => goToTab('home')} /><div className="fc-panel fc-tree-panel"><div className="fc-panel-head"><div><small>Your family</small><h2>Family Circle Tree</h2></div><span className="fc-pill">3 profiles</span></div><div className="fc-tree"><div className="fc-tree-top"><button className="fc-tree-node current" type="button" onClick={() => openProfile(selectedMember.id)}><AppAvatar member={selectedMember} /><strong>{selectedMember.label}</strong><span>{selectedMember.status}</span></button></div><div className="fc-tree-connector" /><div className="fc-tree-branches">{members.filter((member) => member.id !== selectedMember.id).map((member) => <button className="fc-tree-node" type="button" key={member.id} onClick={() => openProfile(member.id)}><AppAvatar member={member} /><strong>{member.label}</strong><span>{member.status}</span><small>View profile →</small></button>)}</div></div></div>{renderBottomNav()}</div>
+  }
+
+  function renderGames() {
+    return <div className="fc-page"><FeatureHeader title="Family Games" description="The family games hub is ready for the next build." onHome={() => goToTab('home')} /><div className="fc-panel fc-coming-soon"><div className="fc-coming-icon">🎮</div><p className="fc-kicker">Coming Soon</p><h2>Challenge a Family Member</h2><p className="fc-muted">Snap, Go Fish and other simple family games will live here. The button is now in place so the experience can be built around it later.</p><div className="fc-game-pills"><span>🃏 Card games</span><span>⚡ Quick matches</span><span>👨‍👩‍👧‍👦 Family-only play</span></div></div>{renderBottomNav()}</div>
+  }
+
+  function renderMap() {
+    return <div className="fc-page"><FeatureHeader title="Where Is Everyone?" description="Only family members who have chosen to share their location appear here." onHome={() => goToTab('home')} /><div className="fc-map-layout"><div className="fc-map" aria-label="Family location preview">{sharedMembers.map((member) => <button className="fc-map-pin" style={{ left: `${member.mapX}%`, top: `${member.mapY}%` }} key={member.id} type="button" onClick={() => openProfile(member.id)}><AppAvatar member={member} /><span>{member.label}</span></button>)}<div className="fc-map-road road-one" /><div className="fc-map-road road-two" /><div className="fc-map-road road-three" /></div><div className="fc-map-sidebar"><div className="fc-panel-head"><div><small>Live sharing</small><h2>Family on the map</h2></div><span className="fc-pill">{sharedMembers.length} sharing</span></div>{members.map((member) => <label className="fc-location-row" key={member.id}><AppAvatar member={member} /><span><strong>{member.label}</strong><small>{member.status} · {member.lastUpdated}</small></span><input type="checkbox" checked={Boolean(locationSharing[member.id])} onChange={(event) => setLocationSharing((current) => ({ ...current, [member.id]: event.target.checked }))} /></label>)}</div></div>{renderBottomNav()}</div>
+  }
+
+  function renderProfile() {
+    const isOwn = profileTarget.id === selectedMember.id
+    return <div className="fc-page"><FeatureHeader title={isOwn ? 'My Profile' : profileTarget.label} description={isOwn ? 'Control your photo, bio, status and social links.' : 'Family profile details.'} onHome={() => goToTab('home')} /><div className="fc-profile-layout"><div className="fc-panel fc-profile-hero"><div className="fc-profile-photo-wrap">{isOwn ? <label className="fc-profile-photo-button"><AppAvatar member={{ ...profileTarget, photo: profileTarget.photo }} className="fc-profile-photo" /><span>Change photo</span><input className="fc-hidden" type="file" accept="image/*" onChange={(event) => { const file = event.target.files?.[0]; if (file) uploadProfilePhoto(file); event.currentTarget.value = '' }} /></label> : <AppAvatar member={profileTarget} className="fc-profile-photo" />} {isOwn && profileTarget.photo && <button className="fc-remove-photo" type="button" onClick={removeProfilePhoto}>Remove photo</button>}</div><h2>{profileTarget.label}</h2><p className="fc-status-chip">My Status · {profileTarget.status}</p><p className="fc-muted">{profileTarget.bio || 'No bio yet.'}</p><a className="fc-phone-link" href={`tel:${profileTarget.phone}`}>☎ {profileTarget.phone}</a></div><div className="fc-panel"><div className="fc-panel-head"><div><small>Profile details</small><h2>{isOwn ? 'Edit your details' : 'About this family member'}</h2></div></div>{isOwn ? <><label className="fc-textarea-label"><span>Short bio · {profileBio.length}/100</span><textarea maxLength={100} rows={4} value={profileBio} onChange={(event) => setProfileBio(event.target.value)} placeholder="A short line about you…" /></label><label className="fc-form-field"><span>My Status</span><select value={profileStatus} onChange={(event) => { setProfileStatus(event.target.value as StatusOption); changeStatus(event.target.value as StatusOption) }}>{statusOptions.map((status) => <option value={status} key={status}>{status}</option>)}</select></label><div className="fc-social-block"><strong>Social links</strong><p>Paste a real profile link. Active links show green.</p>{socialNames.map((name) => <label key={name}><span>{socialIcons[name]} {name}</span><input value={profileSocials[name]} onChange={(event) => setProfileSocials((current) => ({ ...current, [name]: event.target.value }))} placeholder={`https://${name.toLowerCase()}.com/...`} /><b className={profileSocials[name] ? 'active' : ''}>{profileSocials[name] ? 'Active' : 'Blank'}</b></label>)}</div>{profileMessage && <p className="fc-save-note">{profileMessage}</p>}<button className="fc-primary-button" type="button" onClick={saveProfile}>Save Profile</button></> : <div className="fc-read-profile"><div><strong>My Status</strong><span>{profileTarget.status}</span></div><div><strong>Bio</strong><span>{profileTarget.bio || 'No bio yet.'}</span></div><div><strong>Phone</strong><a href={`tel:${profileTarget.phone}`}>{profileTarget.phone}</a></div><div><strong>Location sharing</strong><span>{locationSharing[profileTarget.id] ? 'On' : 'Off'}</span></div></div>}</div></div>{renderBottomNav()}</div>
+  }
+
+  function renderNotifications() {
+    return <div className="fc-page"><FeatureHeader title="Notifications" description="Keep up with family chat, tasks, calendar and emergency requests." onHome={() => goToTab('home')} /><div className="fc-panel"><div className="fc-panel-head"><div><small>Family updates</small><h2>Notifications</h2></div><button className="fc-ghost-button" type="button" onClick={() => setNotifications([])}>Clear all</button></div>{notifications.length === 0 ? <div className="fc-empty"><span>✓</span><strong>You're all caught up.</strong><p>No new family notifications.</p></div> : <div className="fc-notification-list">{notifications.map((item) => <article key={item.id}><span className="fc-notification-icon">{item.kind === 'Emergency' ? '🚨' : item.kind === 'Money' ? '💷' : '•'}</span><div><strong>{item.title}</strong><p>{item.detail}</p><small>{item.time}</small></div></article>)}</div>}</div>{renderBottomNav()}</div>
+  }
+
+  function renderSettings() {
+    return <div className="fc-page"><FeatureHeader title="Settings" description="Family Circle preferences and location controls." onHome={() => goToTab('home')} /><div className="fc-panel fc-settings-list"><div className="fc-setting-row"><span><strong>Share my location with family</strong><small>Shows you on Where Is Everyone?</small></span><input type="checkbox" checked={Boolean(locationSharing[selectedMember.id])} onChange={(event) => setLocationSharing((current) => ({ ...current, [selectedMember.id]: event.target.checked }))} /></div><div className="fc-setting-row"><span><strong>Location permission</strong><small>{locationPermission === 'granted' ? 'Granted' : locationPermission === 'denied' ? 'Denied' : 'Not checked'}</small></span><button className="fc-ghost-button" type="button" onClick={() => requestBrowserLocation(() => undefined)}>Check permission</button></div><div className="fc-setting-row"><span><strong>Emergency contacts</strong><small>Family members are available from Family Emergency.</small></span><button className="fc-ghost-button" type="button" onClick={() => openTool('emergency')}>Open</button></div><div className="fc-setting-row"><span><strong>Help & Support</strong><small>Family Circle foundation help.</small></span><span className="fc-setting-badge">Available</span></div><div className="fc-setting-row"><span><strong>Terms & Privacy</strong><small>Your family space stays private.</small></span><span className="fc-setting-badge">Foundation</span></div><div className="fc-setting-row"><span><strong>App Information</strong><small>Family Circle foundation build.</small></span><span className="fc-setting-badge">Phase 0</span></div></div>{renderBottomNav()}</div>
+  }
+
+  function renderTool() {
+    if (toolMode === 'profile') return renderProfile()
+    if (toolMode === 'family') return renderFamily()
+    if (toolMode === 'games') return renderGames()
+    if (toolMode === 'notifications') return renderNotifications()
+    if (toolMode === 'settings') return renderSettings()
+    if (toolMode === 'map') return renderMap()
+    if (toolMode === 'emergency') return renderEmergency()
+    return null
+  }
+
+  function renderActive() {
+    if (toolMode) return renderTool()
     if (activeTab === 'chat') return renderChat()
     if (activeTab === 'photos') return renderPhotos()
     if (activeTab === 'calendar') return renderCalendar()
     if (activeTab === 'tasks') return renderTasks()
-    return renderHomeDashboard()
+    return renderHome()
   }
 
-  if (screen === 'home') return <main className="app-shell home-app-shell"><section className="home-shell">{renderActiveHomeTab()}</section></main>
+  if (screen === 'members') return <main className="fc-app-shell fc-members-screen"><header className="fc-brand-header"><div className="fc-brand-lockup"><img src={logoUrl} alt="Family Circle" /><strong>Family Circle</strong></div><span>● Private family space</span></header><section className="fc-members-intro"><p className="fc-kicker">Welcome</p><h1>Who's using Family Circle?</h1><p className="fc-muted">Choose your family profile to continue.</p></section><section className="fc-member-grid">{members.map((member) => <button className="fc-member-card" key={member.id} type="button" onClick={() => chooseMember(member.id)}><AppAvatar member={member} className="fc-member-avatar" /><strong>{member.label}</strong><span>{member.status}</span><small>Enter PIN →</small></button>)}</section><p className="fc-private-note">▣ Your family information stays private.</p>{pinOpen && <div className="fc-modal-backdrop" onMouseDown={() => setPinOpen(false)}><section className="fc-pin-modal" onMouseDown={(event) => event.stopPropagation()}><button className="fc-modal-close" type="button" onClick={() => setPinOpen(false)}>×</button><div className="fc-pin-profile"><AppAvatar member={selectedMember} /><div><p className="fc-kicker">Family profile</p><strong>{selectedMember.label}</strong></div></div><h2>Enter your PIN</h2><p className="fc-muted">Enter your 4-digit PIN to unlock your family space.</p><div className="fc-pin-dots">{[0, 1, 2, 3].map((index) => <span className={index < pin.length ? 'filled' : ''} key={index} />)}</div>{pinError && <p className="fc-error">{pinError}</p>}<div className="fc-keypad">{['1', '2', '3', '4', '5', '6', '7', '8', '9'].map((digit) => <button type="button" key={digit} onClick={() => setPin((current) => current.length < 4 ? current + digit : current)}>{digit}</button>)}<button type="button" onClick={() => { setPin(''); setPinOpen(false) }}>Cancel</button><button type="button" onClick={() => setPin((current) => current.length < 4 ? current + '0' : current)}>0</button><button type="button" onClick={() => setPin((current) => current.slice(0, -1))}>⌫</button></div><button className="fc-primary-button" type="button" onClick={submitPin}>Continue</button></section></div>}</main>
 
-  return <main className="app-shell"><section className="members-shell" aria-labelledby="member-title"><header className="brand-header"><Logo /><span className="secure-label"><span aria-hidden="true">●</span> Private family space</span></header><div className="member-intro"><p className="eyebrow">Welcome</p><h1 id="member-title">Who's using Family Circle?</h1><p className="muted">Choose your family profile to continue.</p></div><div className="member-grid">{demoMembers.map((member) => <button className="member-card" key={member.id} onClick={() => openPin(member.id)}><span className={`avatar ${member.accent}`}>{member.initials}</span><span className="member-name">{member.label}</span><span className="member-action">Enter PIN <span aria-hidden="true">→</span></span></button>)}</div><p className="privacy-note"><span aria-hidden="true">▣</span> Your family information stays private.</p></section>{pinOpen && <div className="modal-backdrop" role="presentation" onMouseDown={closePin}><section className="pin-modal" role="dialog" aria-modal="true" aria-labelledby="pin-title" onMouseDown={(event) => event.stopPropagation()}><button className="close-button" aria-label="Close PIN entry" onClick={closePin}>×</button><div className="pin-member"><span className="avatar modal-avatar">{selectedMember.initials}</span><div><p className="eyebrow">Family profile</p><strong>{selectedMember.label}</strong></div></div><h2 id="pin-title">Enter your PIN</h2><p className="muted pin-help">Enter your 4-digit PIN to unlock your family space.</p><div className="pin-dots" aria-label={`${pin.length} of 4 PIN digits entered`}>{[0, 1, 2, 3].map((index) => <span className={index < pin.length ? 'pin-dot filled' : 'pin-dot'} key={index} />)}</div>{error && <p className="error" role="alert">{error}</p>}<div className="keypad" aria-label="PIN keypad">{['1', '2', '3', '4', '5', '6', '7', '8', '9'].map((digit) => <button key={digit} type="button" className="keypad-button" onClick={() => setPin((current) => current.length < 4 ? current + digit : current)}>{digit}</button>)}<button type="button" className="keypad-button keypad-muted" onClick={closePin}>Cancel</button><button type="button" className="keypad-button" onClick={() => setPin((current) => current.length < 4 ? current + '0' : current)}>0</button><button type="button" className="keypad-button keypad-muted" onClick={() => setPin((current) => current.slice(0, -1))} aria-label="Delete last digit">⌫</button></div><button className="primary-button" onClick={submitPin}>Continue</button></section></div>}</main>
+  return <main className="fc-app-shell fc-home-screen"><div className="fc-home-shell">{renderActive()}</div></main>
+}
+
+function TaskForm({ members, onAdd }: { members: FamilyMember[]; onAdd: (title: string, dueDate: string, assignedTo: string) => void }) {
+  const [title, setTitle] = useState('')
+  const [dueDate, setDueDate] = useState(todayKey())
+  const [assignedTo, setAssignedTo] = useState(members[0]?.id ?? '')
+  return <div className="fc-form-grid"><label><span>Task name *</span><input value={title} onChange={(event) => setTitle(event.target.value)} placeholder="Take bins out" /></label><label><span>Due date *</span><input type="date" min={todayKey()} value={dueDate} onChange={(event) => setDueDate(event.target.value)} /></label><label><span>Assign to *</span><select value={assignedTo} onChange={(event) => setAssignedTo(event.target.value)}>{members.map((member) => <option key={member.id} value={member.id}>{member.label}</option>)}</select></label><button className="fc-primary-button" type="button" onClick={() => { if (!title.trim()) return; onAdd(title.trim(), dueDate, assignedTo); setTitle('') }}>Add Family Task</button></div>
+}
+
+function CalendarPanel({ events, todaysEvents, onAdd, onBack, onNav }: { events: FamilyEvent[]; todaysEvents: FamilyEvent[]; onAdd: (title: string, date: string, time: string, location: string) => void; onBack: () => void; onNav: () => JSX.Element }) {
+  const [title, setTitle] = useState('')
+  const [date, setDate] = useState(todayKey())
+  const [time, setTime] = useState('19:00')
+  const [location, setLocation] = useState('At Home')
+  return <div className="fc-page"><FeatureHeader title="Family Calendar" description="Keep plans, appointments and family events visible in one place." onHome={onBack} /><div className="fc-two-col"><div className="fc-panel"><div className="fc-panel-head"><div><small>Upcoming family plans</small><h2>Calendar</h2></div><span className="fc-pill">{events.length} events</span></div>{events.slice().sort((a, b) => `${a.date}-${a.time}`.localeCompare(`${b.date}-${b.time}`)).map((event) => <div className="fc-calendar-event" key={event.id}><span>📅</span><div><strong>{event.title}</strong><small>{formatLongDate(event.date)} · {event.time} · {event.location}</small></div></div>)}</div><div className="fc-panel"><div className="fc-panel-head"><div><small>Add to family calendar</small><h2>New family event</h2></div></div><div className="fc-form-grid"><label><span>Event name *</span><input value={title} onChange={(event) => setTitle(event.target.value)} placeholder="Family dinner" /></label><label><span>Date *</span><input type="date" min={todayKey()} value={date} onChange={(event) => setDate(event.target.value)} /></label><label><span>Time *</span><input type="time" value={time} onChange={(event) => setTime(event.target.value)} /></label><label><span>Location</span><input value={location} onChange={(event) => setLocation(event.target.value)} /></label><button className="fc-primary-button" type="button" onClick={() => { if (!title.trim()) return; onAdd(title.trim(), date, time, location); setTitle('') }}>Add Family Event</button></div><p className="fc-form-note">Today has {todaysEvents.length} event{todaysEvents.length === 1 ? '' : 's'}.</p></div></div>{onNav()}</div>
 }
