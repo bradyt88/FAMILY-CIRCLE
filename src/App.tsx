@@ -2,6 +2,7 @@ import { useState } from 'react'
 import logoUrl from '../design/brand/family-circle-logo.png'
 import './batch1.css'
 import './batch11.css'
+import './batch12.css'
 
 type Screen = 'members' | 'home'
 type HomeTab = 'home' | 'chat' | 'photos' | 'calendar' | 'tasks' | 'more'
@@ -14,6 +15,8 @@ type Member = {
   accent: string
 }
 
+type FamilyPhoto = { id:string; src:string; name:string; time:string }
+
 type ChatMessage = {
   initials: string
   time: string
@@ -21,6 +24,7 @@ type ChatMessage = {
   text: string
   accent: string
   outgoing?: boolean
+  attachment?: FamilyPhoto
 }
 
 type FamilyEvent = {
@@ -39,6 +43,7 @@ type FamilyTask = {
   dueDate: string
   assignedTo: string
   completed: boolean
+  completedAt?: number
 }
 
 const demoMembers: Member[] = [
@@ -248,6 +253,8 @@ export default function App() {
   const [error, setError] = useState('')
   const [activeTab, setActiveTab] = useState<HomeTab>('home')
   const [messages, setMessages] = useState<ChatMessage[]>(initialMessages)
+  const [photos, setPhotos] = useState<FamilyPhoto[]>([])
+  const [pendingPhoto, setPendingPhoto] = useState<{src:string; name:string}|null>(null)
   const [chatDraft, setChatDraft] = useState('')
   const [events, setEvents] = useState<FamilyEvent[]>(initialEvents)
   const [tasks, setTasks] = useState<FamilyTask[]>(initialTasks)
@@ -274,7 +281,9 @@ export default function App() {
   const selectedMember = demoMembers.find((member) => member.id === selectedMemberId) ?? demoMembers[0]
   const todayKey = toDateKey(todayDate())
   const todaysEvents = events.filter((event) => event.date === todayKey).sort((a, b) => a.time.localeCompare(b.time))
-  const completedTasks = tasks.filter((task) => task.completed).length
+  const visibleTasks = tasks.filter((task) => !task.completed || !task.completedAt || Date.now() - task.completedAt < 86400000)
+  const completedTasks = visibleTasks.filter((task) => task.completed).length
+  const latestPhoto = photos[0]
   const calendarCells = getCalendarCells(calendarCursor)
   const monthLabel = new Intl.DateTimeFormat('en-GB', { month: 'long', year: 'numeric' }).format(calendarCursor)
 
@@ -320,25 +329,28 @@ export default function App() {
   }
 
   function goToTab(tab: HomeTab) {
-    if (tab === 'photos' || tab === 'more') return
+    if (tab === 'more') return
     setActiveTab(tab)
+  }
+
+  function stagePhoto(file: File) {
+    if (!file.type.startsWith('image/')) return
+    setPendingPhoto((current) => { if (current) URL.revokeObjectURL(current.src); return {src:URL.createObjectURL(file), name:file.name} })
+  }
+
+  function clearPendingPhoto() {
+    setPendingPhoto((current) => { if (current) URL.revokeObjectURL(current.src); return null })
   }
 
   function sendMessage() {
     const text = chatDraft.trim()
-    if (!text) return
-
+    if (!text && !pendingPhoto) return
     const now = new Date().toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })
-    const newMessage: ChatMessage = {
-      initials: selectedMember.initials,
-      time: now,
-      name: selectedMember.label,
-      text,
-      accent: selectedMember.accent,
-      outgoing: true,
-    }
+    const photo = pendingPhoto ? {id:`photo-${Date.now()}`, src:pendingPhoto.src, name:pendingPhoto.name, time:now} : undefined
+    const newMessage: ChatMessage = { initials:selectedMember.initials, time:now, name:selectedMember.label, text:text || 'Shared a photo', accent:selectedMember.accent, outgoing:true, attachment:photo }
+    if (photo) setPhotos((current) => [photo, ...current])
     setMessages((current) => [newMessage, ...current])
-    setChatDraft('')
+    setChatDraft(''); setPendingPhoto(null)
   }
 
   function addCalendarEvent() {
@@ -394,8 +406,12 @@ export default function App() {
   }
 
   function toggleTask(taskId: string) {
-    setTasks((current) => current.map((task) => task.id === taskId ? { ...task, completed: !task.completed } : task))
+    const completionTime = Date.now()
+    setTasks((current) => current.map((task) => task.id === taskId ? { ...task, completed: !task.completed, completedAt: !task.completed ? completionTime : undefined } : task))
+    window.setTimeout(() => setTasks((current) => current.filter((task) => task.id !== taskId || task.completedAt !== completionTime)), 86400000)
   }
+
+  function isTaskOverdue(task: FamilyTask) { return !task.completed && task.dueDate < todayKey }
 
   function selectCalendarDate(dateKey: string) {
     setSelectedCalendarDate(dateKey)
@@ -509,10 +525,10 @@ export default function App() {
           <article className="dashboard-card card-photo">
             <SectionHeader icon="▧" title="Latest Photo" tone="tone-purple" actionLabel="Open photos" />
             <button className="memory-frame" type="button" onClick={() => goToTab('photos')} aria-label="Open family memories">
-              <div className="memory-scene" aria-hidden="true"><span /></div>
+              {latestPhoto ? <div className="memory-photo"><img src={latestPhoto.src} alt={latestPhoto.name || 'Recent family photo'} /></div> : <div className="memory-scene" aria-hidden="true"><span /></div>}
               <div className="memory-caption">
-                <strong>Family memories</strong>
-                <span>Moments that matter ♡</span>
+                <strong>{latestPhoto ? 'Recent family photo' : 'Family memories'}</strong>
+                <span>{latestPhoto ? `Added in Family Chat · ${latestPhoto.time}` : 'Moments that matter ♡'}</span>
               </div>
               <div className="memory-dots" aria-hidden="true"><span className="active" /><span /><span /><span /></div>
             </button>
@@ -521,14 +537,15 @@ export default function App() {
           <article className="dashboard-card card-tasks">
             <SectionHeader icon="✓" title="Your Tasks" tone="tone-cyan" onAction={() => goToTab('tasks')} actionLabel="Open tasks" />
             <div className="task-list">
-              {tasks.slice(0, 3).map((task) => {
+              {visibleTasks.slice(0, 3).map((task) => {
                 const assignee = getTaskAssignee(task)
+                const overdue = isTaskOverdue(task)
                 return (
-                  <button className="task-row" type="button" key={task.id} onClick={() => toggleTask(task.id)}>
+                  <button className={overdue ? 'task-row task-overdue' : 'task-row'} type="button" key={task.id} onClick={() => toggleTask(task.id)}>
                     <span className={task.completed ? 'task-check completed' : 'task-check'} aria-hidden="true">{task.completed ? '✓' : ''}</span>
                     <span className={task.completed ? 'task-copy task-completed' : 'task-copy'}>
                       <strong>{task.title}</strong>
-                      <small>{formatRelativeDate(task.dueDate)} · {assignee.label}</small>
+                      <small>{formatRelativeDate(task.dueDate)} · {assignee.label}{overdue ? ' · Overdue' : ''}</small>
                     </span>
                   </button>
                 )
@@ -574,18 +591,27 @@ export default function App() {
                 <div className="chat-bubble">
                   <div className="chat-meta"><strong>{message.name}</strong><time>{message.time}</time></div>
                   <p>{message.text}</p>
+                  {message.attachment && <img className="chat-photo" src={message.attachment.src} alt={message.attachment.name || 'Family photo'} />}
                 </div>
               </div>
             ))}
           </div>
-          <div className="chat-composer">
+          <div className="chat-composer" onPaste={(event) => { const image=Array.from(event.clipboardData.files).find((file)=>file.type.startsWith('image/')); if(image){event.preventDefault();stagePhoto(image)} }}>
+            {pendingPhoto && <div className="chat-pending-photo"><img src={pendingPhoto.src} alt="Photo ready to send"/><button type="button" onClick={clearPendingPhoto} aria-label="Remove photo">×</button></div>}
+            <input id="chat-photo-upload" className="visually-hidden-input" type="file" accept="image/*" onChange={(event)=>{const file=event.target.files?.[0];if(file)stagePhoto(file);event.currentTarget.value=''}}/>
+            <label className="chat-attach-button" htmlFor="chat-photo-upload">＋ Photo</label>
             <input value={chatDraft} onChange={(event) => setChatDraft(event.target.value)} onKeyDown={(event) => { if (event.key === 'Enter') sendMessage() }} placeholder="Write a family message…" aria-label="Write a family message" />
             <button type="button" onClick={sendMessage}>Send</button>
           </div>
+          <p className="picker-hint">Add a photo or paste an image into the chat box.</p>
         </div>
         {renderBottomNav()}
       </section>
     )
+  }
+
+  function renderPhotos() {
+    return (<section className="feature-view" aria-label="Recent photos"><FeatureHeader title="Recent Photos" description="Photos shared in Family Chat also appear here." onHome={() => setActiveTab('home')} /><div className="feature-card"><div className="feature-heading-row"><div><p className="feature-kicker">Family memories</p><h2>Recent Photos</h2></div><span className="feature-badge">{photos.length} shared</span></div>{photos.length===0?<div className="photo-empty-state"><div className="photo-empty-icon">▧</div><div><strong>No recent photos yet.</strong><p className="muted">Send a photo from Family Chat and it will appear here automatically.</p></div><button type="button" className="primary-form-button" onClick={()=>setActiveTab('chat')}>Open Family Chat</button></div>:<div className="photo-grid">{photos.map((photo)=><article className="photo-card" key={photo.id}><img src={photo.src} alt={photo.name||'Family photo'}/><div className="photo-card-copy"><strong>{photo.name||'Family photo'}</strong><span>Shared in Family Chat · {photo.time}</span></div></article>)}</div>}</div>{renderBottomNav()}</section>)
   }
 
   function renderCalendar() {
@@ -745,7 +771,8 @@ export default function App() {
   }
 
   function renderTasks() {
-    const sortedTasks = [...tasks].sort((a, b) => {
+    const sortedTasks = [...visibleTasks].sort((a, b) => {
+      if (isTaskOverdue(a) !== isTaskOverdue(b)) return isTaskOverdue(a) ? -1 : 1
       if (a.completed !== b.completed) return a.completed ? 1 : -1
       return a.dueDate.localeCompare(b.dueDate)
     })
@@ -761,23 +788,23 @@ export default function App() {
                 <p className="feature-kicker">Shared responsibilities</p>
                 <h2>Everyone's tasks</h2>
               </div>
-              <span className="feature-badge">{completedTasks}/{tasks.length} done</span>
+              <span className="feature-badge">{completedTasks}/{visibleTasks.length} done</span>
             </div>
 
             <div className="tasks-summary">
-              <strong>{tasks.length - completedTasks} tasks remaining</strong>
-              <span>Assigned and dated.</span>
+              <strong>{visibleTasks.length - completedTasks} tasks remaining</strong>
+              <span>Completed tasks stay visible for 24 hours.</span>
             </div>
 
             <div className="task-detail-list">
               {sortedTasks.map((task) => {
                 const assignee = getTaskAssignee(task)
                 return (
-                  <button className={task.completed ? 'task-detail done' : 'task-detail'} type="button" key={task.id} onClick={() => toggleTask(task.id)}>
+                  <button className={isTaskOverdue(task) ? 'task-detail overdue' : task.completed ? 'task-detail done' : 'task-detail'} type="button" key={task.id} onClick={() => toggleTask(task.id)}>
                     <span className="task-detail-check" aria-hidden="true">{task.completed ? '✓' : ''}</span>
                     <span className="task-detail-copy">
                       <strong>{task.title}</strong>
-                      <small>Due {formatLongDate(task.dueDate)} · {assignee.label}</small>
+                      <small>Due {formatLongDate(task.dueDate)} · {assignee.label}{isTaskOverdue(task) ? ' · Overdue' : task.completed ? ' · Completed' : ''}</small>
                     </span>
                     <span className="assigned-avatar">{assignee.initials}</span>
                   </button>
@@ -832,6 +859,7 @@ export default function App() {
 
   function renderActiveHomeTab() {
     if (activeTab === 'chat') return renderChat()
+    if (activeTab === 'photos') return renderPhotos()
     if (activeTab === 'calendar') return renderCalendar()
     if (activeTab === 'tasks') return renderTasks()
     return renderHomeDashboard()
