@@ -21,6 +21,15 @@ const quickActions = [
   { icon: '✦', title: 'Family space', text: 'Your shared family hub.' },
 ]
 
+function Logo() {
+  return (
+    <div className="brand-lockup" aria-label="Family Circle">
+      <img className="brand-logo" src="/design/brand/family-circle-logo.png" alt="Family Circle" />
+      <span className="brand-name">Family Circle</span>
+    </div>
+  )
+}
+
 export default function App() {
   const [screen, setScreen] = useState<Screen>('members')
   const [selectedMemberId, setSelectedMemberId] = useState<string | null>(null)
@@ -69,10 +78,7 @@ export default function App() {
       <main className="app-shell">
         <section className="home-shell">
           <header className="topbar">
-            <div className="brand-lockup" aria-label="Family Circle">
-              <span className="brand-mark">FC</span>
-              <span className="brand-name">Family Circle</span>
-            </div>
+            <Logo />
             <button className="profile-button" onClick={() => setScreen('members')} aria-label="Switch family member">
               <span className="mini-avatar">FM</span>
               <span>Switch</span>
@@ -128,10 +134,7 @@ export default function App() {
     <main className="app-shell">
       <section className="members-shell" aria-labelledby="member-title">
         <header className="brand-header">
-          <div className="brand-lockup" aria-label="Family Circle">
-            <span className="brand-mark">FC</span>
-            <span className="brand-name">Family Circle</span>
-          </div>
+          <Logo />
           <span className="secure-label"><span aria-hidden="true">●</span> Private family space</span>
         </header>
 
