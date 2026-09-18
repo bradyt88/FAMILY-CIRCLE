@@ -4,7 +4,7 @@ import Onboarding from './Onboarding'
 import './batch15.css'
 
 type ToolMode = 'emergency' | 'profile' | 'family' | 'games' | 'notifications' | 'settings' | 'map'
-type HomeTab = 'home' | 'chat' | 'photos' | 'calendar' | 'tasks'
+type HomeTab = 'home' | 'chat' | 'photos' | 'calendar' | 'tasks' | 'shopping'
 type StatusOption = 'Home' | 'Work' | 'Partying' | 'Recovering' | 'Playing' | 'Gaming' | 'Toilet 😂' | 'Movies' | 'Sleeping' | 'Gym' | 'Travelling' | 'Holiday' | 'Out & About'
 type SocialName = 'Facebook' | 'TikTok' | 'Snapchat' | 'YouTube'
 type FamilyMember = { id: string; label: string; initials: string; accent: string; phone: string; bio: string; status: StatusOption; locationLabel: string; lastUpdated: string; mapX: number; mapY: number; photo?: string | null; socials: Record<SocialName, string> }
@@ -128,6 +128,9 @@ export default function App() {
   const [profileSocials, setProfileSocials] = useState<Record<SocialName, string>>({ Facebook: '', TikTok: '', Snapchat: '', YouTube: '' })
   const [profileMessage, setProfileMessage] = useState('')
   const [moneyRequests, setMoneyRequests] = useState<MoneyRequest[]>([])
+  const [shoppingItems, setShoppingItems] = useState<string[]>([])
+  const [shoppingInput, setShoppingInput] = useState('')
+  const [familyShopperIds, setFamilyShopperIds] = useState<string[]>([memberSeeds[0].id, memberSeeds[1].id])
   const [readMessageIdsByMember, setReadMessageIdsByMember] = useState<Record<string, string[]>>(() => loadReadMessageIds())
   const [emergencyView, setEmergencyView] = useState<'main' | 'medical' | 'child' | 'confirm' | 'message' | 'money' | 'sent'>('main')
   const [emergencyPending, setEmergencyPending] = useState<EmergencyPending | null>(null)
@@ -307,6 +310,44 @@ export default function App() {
     setSentEmergency({ title: 'I Need Money', coordinates: null })
   }
 
+  function addShoppingItem() {
+    const item = shoppingInput.trim()
+    if (!item) return
+    setShoppingItems((current) => [...current, item])
+    setShoppingInput('')
+  }
+
+  function completeShoppingList() {
+    if (!familyShopperIds.includes(selectedMember.id) || shoppingItems.length === 0) return
+    setShoppingItems([])
+    setNotifications((current) => [{ id: `notification-shopping-${Date.now()}`, kind: 'Task', title: 'Weekly shopping completed', detail: `${selectedMember.label} marked the family shopping list complete.`, time: 'Now' }, ...current])
+  }
+
+  function toggleFamilyShopper(memberId: string) {
+    setFamilyShopperIds((current) => current.includes(memberId) ? current.filter((id) => id !== memberId) : [...current, memberId])
+  }
+
+  function logoutDemo() {
+    setShowOnboarding(true)
+    setOnboardingView('splash')
+    setScreen('members')
+    setToolMode(null)
+  }
+
+  function leaveFamilyDemo() {
+    setShowOnboarding(true)
+    setOnboardingView('families')
+    setScreen('members')
+    setToolMode(null)
+  }
+
+  function deleteProfileDemo() {
+    if (!window.confirm('Delete this demo family profile from this device?')) return
+    localStorage.removeItem(`family-circle-member-${selectedMember.id}`)
+    setMembers((current) => current.map((member) => member.id === selectedMember.id ? { ...member, bio: '', photo: null, socials: {} as Record<SocialName, string> } : member))
+    logoutDemo()
+  }
+
   function acceptMoneyRequest(id: string) {
     const request = moneyRequests.find((item) => item.id === id)
     if (!request || request.status !== 'Pending' || request.requesterId === selectedMember.id) return
@@ -351,15 +392,17 @@ export default function App() {
   }
 
   function renderBottomNav() {
-    const items: { label: string; icon: string; tab?: HomeTab; tool?: ToolMode }[] = [
+    const items: { label: string; icon: string; tab?: HomeTab; tool?: ToolMode; emergency?: boolean }[] = [
       { label: 'Home', icon: '⌂', tab: 'home' },
       { label: 'Chat', icon: '◌', tab: 'chat' },
       { label: 'Photos', icon: '▧', tab: 'photos' },
       { label: 'Calendar', icon: '▦', tab: 'calendar' },
       { label: 'Tasks', icon: '✓', tab: 'tasks' },
+      { label: 'Weekly Shop', icon: '🛒', tab: 'shopping' },
       { label: 'Where Is Everyone?', icon: '📍', tool: 'map' },
+      { label: 'Emergency', icon: '🚨', tool: 'emergency', emergency: true },
     ]
-    return <nav className="fc-bottom-nav" aria-label="Family Circle navigation">{items.map((item) => { const active = item.tool ? toolMode === item.tool : toolMode === null && activeTab === item.tab; return <button className={active ? 'fc-nav-item active' : 'fc-nav-item'} type="button" key={item.label} onClick={() => item.tool ? openTool(item.tool) : item.tab && goToTab(item.tab)}><span aria-hidden="true" className="fc-nav-icon">{item.icon}{item.tab === 'chat' && unreadMessageCount > 0 && <b className="fc-nav-unread-dot">{unreadMessageCount > 9 ? '9+' : unreadMessageCount}</b>}</span><small>{item.label}</small></button> })}</nav>
+    return <nav className="fc-bottom-nav" aria-label="Family Circle navigation">{items.map((item) => { const active = item.tool ? toolMode === item.tool : toolMode === null && activeTab === item.tab; return <button className={`fc-nav-item${active ? ' active' : ''}${item.emergency ? ' emergency-nav' : ''}`} type="button" key={item.label} onClick={() => item.tool ? openTool(item.tool) : item.tab && goToTab(item.tab)}><span aria-hidden="true" className="fc-nav-icon">{item.icon}{item.tab === 'chat' && unreadMessageCount > 0 && <b className="fc-nav-unread-dot">{unreadMessageCount > 9 ? '9+' : unreadMessageCount}</b>}</span><small>{item.label}</small></button> })}</nav>
   }
 
   function renderHome() {
@@ -384,10 +427,17 @@ export default function App() {
         <article className="fc-dashboard-card green"><div className="fc-card-head"><div><small>Family Tasks · {openTasks.length} open</small><h2>Your responsibilities</h2></div><button type="button" onClick={() => goToTab('tasks')}>→</button></div>{firstThreeTasks.map((task) => { const assigned = members.find((m) => m.id === task.assignedTo) ?? selectedMember; return <button className="fc-task-row" type="button" key={task.id} onClick={() => toggleTask(task.id)}><span className={task.completed ? 'fc-check done' : 'fc-check'}>{task.completed ? '✓' : ''}</span><span><strong>{task.title}</strong><small>{task.completed ? 'Completed' : `Due ${formatShortDate(task.dueDate)} · ${assigned.label}`}</small></span></button> })}<button className="fc-outline-button green" type="button" onClick={() => goToTab('tasks')}>View All Tasks →</button></article>
       </section>
 
+      <section className="fc-shopping-dashboard-card">
+        <div className="fc-shopping-dashboard-head"><div><small>Family organisation</small><h2>Weekly Shopping List</h2></div><button type="button" onClick={() => goToTab('shopping')}>Open →</button></div>
+        <div className="fc-shopping-dashboard-paper">{shoppingItems.length ? shoppingItems.slice(0, 5).map((item, index) => <div className="fc-shopping-dashboard-item" key={`${item}-${index}`}><span>□</span><strong>{item}</strong></div>) : <div className="fc-shopping-dashboard-empty">The list is empty — add something the family needs. 🛒</div>}</div>
+        <button className="fc-outline-button shopping" type="button" onClick={() => goToTab('shopping')}>Add to Weekly Shopping List →</button>
+      </section>
+
       <section className="fc-quick-grid" aria-label="Family shortcuts">{[
         { label: 'Chat', desc: 'Message the family', icon: '◌', tone: 'cyan', action: () => goToTab('chat') },
         { label: 'Photos', desc: 'Our memories together', icon: '▧', tone: 'purple', action: () => goToTab('photos') },
-        { label: 'Family Emergency', desc: 'Get family help quickly', icon: '!', tone: 'pink', action: () => openTool('emergency') },
+        { label: 'Family Emergency', desc: 'Get family help quickly', icon: '!', tone: 'emergency', action: () => openTool('emergency') },
+        { label: 'Weekly Shop', desc: 'Add items to the family shop', icon: '🛒', tone: 'shopping', action: () => goToTab('shopping') },
         { label: 'Tasks', desc: 'Jobs & responsibilities', icon: '✓', tone: 'green', action: () => goToTab('tasks') },
         { label: 'Calendar', desc: 'Events & plans', icon: '▦', tone: 'magenta', action: () => goToTab('calendar') },
       ].map((item) => <button className={`fc-quick-tile ${item.tone}`} type="button" key={item.label} onClick={item.action}><span>{item.icon}</span><strong>{item.label}</strong><small>{item.desc}</small></button>)}</section>
@@ -458,6 +508,29 @@ export default function App() {
     return <div className="fc-page"><FeatureHeader title="Family Games" description="The family games hub is ready for the next build." onHome={() => goToTab('home')} /><div className="fc-panel fc-coming-soon"><div className="fc-coming-icon">🎮</div><p className="fc-kicker">Coming Soon</p><h2>Challenge a Family Member</h2><p className="fc-muted">Snap, Go Fish and other simple family games will live here. The button is now in place so the experience can be built around it later.</p><div className="fc-game-pills"><span>🃏 Card games</span><span>⚡ Quick matches</span><span>👨‍👩‍👧‍👦 Family-only play</span></div></div>{renderBottomNav()}</div>
   }
 
+  function renderShoppingList() {
+    const canComplete = familyShopperIds.includes(selectedMember.id)
+    return <div className="fc-page">
+      <FeatureHeader title="Weekly Shopping List" description="Everyone can add. Family shoppers complete the list when the shop is done." onHome={() => goToTab('home')} />
+      <div className="fc-shopping-layout">
+        <section className="fc-panel fc-shopping-panel">
+          <div className="fc-shopping-paper">
+            <div className="fc-shopping-paper-top"><div><p className="fc-kicker">Family Circle</p><h2>Weekly Shop</h2></div><span>🛒</span></div>
+            <div className="fc-shopping-add"><input value={shoppingInput} onChange={(event) => setShoppingInput(event.target.value)} onKeyDown={(event) => { if (event.key === 'Enter') addShoppingItem() }} placeholder="Add food, sweets, chocolate..." aria-label="Add shopping item" /><button className="fc-primary-button" type="button" onClick={addShoppingItem}>Add</button></div>
+            <div className="fc-shopping-list" aria-label="Weekly shopping list">{shoppingItems.length === 0 ? <div className="fc-shopping-empty"><span>📝</span><strong>Nothing on the list yet.</strong><small>Anyone in the family can add something for this week's shop.</small></div> : shoppingItems.map((item, index) => <div className="fc-shopping-item" key={`${item}-${index}`}><span className="fc-shopping-line-number">{index + 1}</span><strong>{item}</strong></div>)}</div>
+            <div className="fc-shopping-complete"><div><strong>Shopping complete?</strong><small>Only a designated family shopper can start the next list.</small></div><button className="fc-shopping-complete-button" type="button" disabled={!canComplete || shoppingItems.length === 0} onClick={completeShoppingList}>{canComplete ? '✓ Shopping List Complete' : '🔒 Shopper Only'}</button></div>
+          </div>
+        </section>
+        <aside className="fc-panel fc-shopping-info"><div className="fc-panel-head"><div><small>Family rules</small><h2>Who can do what?</h2></div></div>
+          <div className="fc-shopping-rule"><span>➕</span><div><strong>Everyone can add</strong><small>Parents, adults and kids can put items on the list.</small></div></div>
+          <div className="fc-shopping-rule"><span>🛒</span><div><strong>Family shoppers complete</strong><small>Designated shoppers tick off the whole weekly list once the shop is finished.</small></div></div>
+          <div className="fc-shopping-rule"><span>🔄</span><div><strong>New list starts automatically</strong><small>Completing the list clears it ready for the next weekly shop.</small></div></div>
+        </aside>
+      </div>
+      {renderBottomNav()}
+    </div>
+  }
+
   function renderMap() {
     return <div className="fc-page"><FeatureHeader title="Where Is Everyone?" description="Only family members who have chosen to share their location appear here." onHome={() => goToTab('home')} /><div className="fc-map-layout"><div className="fc-map" aria-label="Family location preview">{sharedMembers.map((member) => <button className="fc-map-pin" style={{ left: `${member.mapX}%`, top: `${member.mapY}%` }} key={member.id} type="button" onClick={() => openProfile(member.id)}><AppAvatar member={member} /><span>{member.label}</span></button>)}<div className="fc-map-road road-one" /><div className="fc-map-road road-two" /><div className="fc-map-road road-three" /></div><div className="fc-map-sidebar"><div className="fc-panel-head"><div><small>Live sharing</small><h2>Family on the map</h2></div><span className="fc-pill">{sharedMembers.length} sharing</span></div>{members.map((member) => <label className="fc-location-row" key={member.id}><AppAvatar member={member} /><span><strong>{member.label}</strong><small>{member.status} · {member.lastUpdated}</small></span><input type="checkbox" checked={Boolean(locationSharing[member.id])} onChange={(event) => setLocationSharing((current) => ({ ...current, [member.id]: event.target.checked }))} /></label>)}</div></div>{renderBottomNav()}</div>
   }
@@ -472,7 +545,27 @@ export default function App() {
   }
 
   function renderSettings() {
-    return <div className="fc-page"><FeatureHeader title="Settings" description="Family Circle preferences and location controls." onHome={() => goToTab('home')} /><div className="fc-panel fc-settings-list"><div className="fc-setting-row"><span><strong>Share my location with family</strong><small>Shows you on Where Is Everyone?</small></span><input type="checkbox" checked={Boolean(locationSharing[selectedMember.id])} onChange={(event) => setLocationSharing((current) => ({ ...current, [selectedMember.id]: event.target.checked }))} /></div><div className="fc-setting-row"><span><strong>Location permission</strong><small>{locationPermission === 'granted' ? 'Granted' : locationPermission === 'denied' ? 'Denied' : 'Not checked'}</small></span><button className="fc-ghost-button" type="button" onClick={() => requestBrowserLocation(() => undefined)}>Check permission</button></div><div className="fc-setting-row"><span><strong>Emergency contacts</strong><small>Family members are available from Family Emergency.</small></span><button className="fc-ghost-button" type="button" onClick={() => openTool('emergency')}>Open</button></div><div className="fc-setting-row"><span><strong>Help & Support</strong><small>Family Circle foundation help.</small></span><span className="fc-setting-badge">Available</span></div><div className="fc-setting-row"><span><strong>Terms & Privacy</strong><small>Your family space stays private.</small></span><span className="fc-setting-badge">Foundation</span></div><div className="fc-setting-row"><span><strong>App Information</strong><small>Family Circle foundation build.</small></span><span className="fc-setting-badge">Phase 0</span></div></div>{renderBottomNav()}</div>
+    return <div className="fc-page">
+      <FeatureHeader title="Settings" description="Family Circle preferences, permissions and family controls." onHome={() => goToTab('home')} />
+      <div className="fc-panel fc-settings-list">
+        <div className="fc-settings-section"><p className="fc-kicker">Location & safety</p></div>
+        <div className="fc-setting-row"><span><strong>Share my location with family</strong><small>Shows you on Where Is Everyone?</small></span><input type="checkbox" checked={Boolean(locationSharing[selectedMember.id])} onChange={(event) => setLocationSharing((current) => ({ ...current, [selectedMember.id]: event.target.checked }))} /></div>
+        <div className="fc-setting-row"><span><strong>Location permission</strong><small>{locationPermission === 'granted' ? 'Granted' : locationPermission === 'denied' ? 'Denied' : 'Not checked'}</small></span><button className="fc-ghost-button" type="button" onClick={() => requestBrowserLocation(() => undefined)}>Check permission</button></div>
+        <div className="fc-setting-row"><span><strong>Emergency contacts</strong><small>Family members are available from Family Emergency.</small></span><button className="fc-ghost-button" type="button" onClick={() => openTool('emergency')}>Open</button></div>
+        <div className="fc-settings-section"><p className="fc-kicker">Family organisation</p><h2>Weekly Shopping List</h2><p className="fc-muted">Everyone can add items. Designated family shoppers can complete the full list.</p></div>
+        {members.map((member) => <label className="fc-setting-row" key={member.id}><span><strong>{member.label}</strong><small>Family shopper</small></span><input type="checkbox" checked={familyShopperIds.includes(member.id)} onChange={() => toggleFamilyShopper(member.id)} /></label>)}
+        <div className="fc-setting-row"><span><strong>Weekly Shopping List</strong><small>Open the shared family shopping list.</small></span><button className="fc-ghost-button" type="button" onClick={() => goToTab('shopping')}>Open</button></div>
+        <div className="fc-settings-section"><p className="fc-kicker">Account & family</p></div>
+        <div className="fc-setting-row"><span><strong>Switch family</strong><small>Choose another connected family.</small></span><button className="fc-ghost-button" type="button" onClick={switchFamily}>Switch</button></div>
+        <div className="fc-setting-row"><span><strong>Leave family</strong><small>Leave this family on this device.</small></span><button className="fc-ghost-button danger-outline" type="button" onClick={leaveFamilyDemo}>Leave Family</button></div>
+        <div className="fc-setting-row"><span><strong>Log out</strong><small>Return to the Family Circle welcome screen.</small></span><button className="fc-ghost-button" type="button" onClick={logoutDemo}>Log Out</button></div>
+        <div className="fc-setting-row danger-setting"><span><strong>Delete profile</strong><small>Remove this demo profile from this device.</small></span><button className="fc-ghost-button danger-outline" type="button" onClick={deleteProfileDemo}>Delete Profile</button></div>
+        <div className="fc-setting-row"><span><strong>Help & Support</strong><small>Family Circle foundation help.</small></span><span className="fc-setting-badge">Available</span></div>
+        <div className="fc-setting-row"><span><strong>Terms & Privacy</strong><small>Your family space stays private.</small></span><span className="fc-setting-badge">Foundation</span></div>
+        <div className="fc-setting-row"><span><strong>App Information</strong><small>Family Circle foundation build.</small></span><span className="fc-setting-badge">Phase 0</span></div>
+      </div>
+      {renderBottomNav()}
+    </div>
   }
 
   function renderTool() {
@@ -492,6 +585,7 @@ export default function App() {
     if (activeTab === 'photos') return renderPhotos()
     if (activeTab === 'calendar') return renderCalendar()
     if (activeTab === 'tasks') return renderTasks()
+    if (activeTab === 'shopping') return renderShoppingList()
     return renderHome()
   }
 
