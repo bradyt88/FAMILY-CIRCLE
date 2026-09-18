@@ -372,3 +372,21 @@
   max-width: 760px;
   color: #b5bfd8;
 }
+
+
+/* Phase A — distinctive page title colours */
+.fc-feature-header h1 { color: #d8d4ff; }
+.fc-feature-header.pink h1 { color: #ffb6e8; text-shadow: 0 0 22px rgba(255,95,199,.24); }
+.fc-feature-header.cyan h1 { color: #a9efff; text-shadow: 0 0 22px rgba(82,217,255,.24); }
+.fc-feature-header.green h1 { color: #a9ffe9; text-shadow: 0 0 22px rgba(55,223,191,.24); }
+.fc-feature-header.shopping h1 { color: #ffe2a1; text-shadow: 0 0 22px rgba(255,196,92,.24); }
+.fc-feature-header.emergency h1 { color: #ffb1c1; text-shadow: 0 0 22px rgba(255,61,117,.28); }
+.fc-feature-header.purple h1 { color: #c9c0ff; text-shadow: 0 0 22px rgba(138,114,255,.24); }
+
+/* Matching page-description tone without overpowering the title. */
+.fc-feature-header.pink .fc-muted { color: #d9b5d0; }
+.fc-feature-header.cyan .fc-muted { color: #b5d9e3; }
+.fc-feature-header.green .fc-muted { color: #b5ddd4; }
+.fc-feature-header.shopping .fc-muted { color: #d8c8a6; }
+.fc-feature-header.emergency .fc-muted { color: #dfb7c2; }
+.fc-feature-header.purple .fc-muted { color: #c5bfdf; }
