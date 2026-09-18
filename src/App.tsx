@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import logoUrl from '../design/brand/family-circle-logo.png'
 import Onboarding from './Onboarding'
 import './batch15.css'
@@ -47,6 +47,33 @@ function loadMembers() {
       return member
     }
   })
+}
+
+
+const familyQuotes = [
+  'Family is not just who you live with, it’s who you do life with.',
+  'The best moments are the ones we share together.',
+  'Home is wherever the people you love are.',
+  'Family turns ordinary days into memories.',
+  'Together is our favourite place to be.',
+  'A family that laughs together creates memories that last.',
+  'Small moments with family become the big memories.',
+  'Love makes a family, and time makes the memories.',
+  'Family is the circle that keeps us connected.',
+  'There is always room for one more memory at home.',
+  'The greatest adventures are the ones we share.',
+  'Family days are made of little moments.',
+  'Where there is family, there is always a place to belong.',
+  'Life is better when we share it with our family.',
+  'Our family story is written one day at a time.',
+]
+
+function dailyFamilyQuote() {
+  const now = new Date()
+  const rollover = new Date(now)
+  if (now.getHours() < 6) rollover.setDate(rollover.getDate() - 1)
+  const key = Date.UTC(rollover.getFullYear(), rollover.getMonth(), rollover.getDate())
+  return familyQuotes[Math.abs(Math.floor(key / 86400000)) % familyQuotes.length]
 }
 
 function todayKey() {
@@ -138,6 +165,14 @@ export default function App() {
   const [emergencyText, setEmergencyText] = useState('')
   const [moneyForm, setMoneyForm] = useState({ amount: '', purpose: '', dueDate: '' })
   const [sentEmergency, setSentEmergency] = useState<{ title: string; coordinates: { latitude: number; longitude: number } | null } | null>(null)
+  const [dailyQuote, setDailyQuote] = useState(dailyFamilyQuote)
+
+  useEffect(() => {
+    const refreshQuote = () => setDailyQuote(dailyFamilyQuote())
+    const timer = window.setInterval(refreshQuote, 60 * 1000)
+    return () => window.clearInterval(timer)
+  }, [])
+
 
   const selectedMember = members.find((member) => member.id === selectedMemberId) ?? members[0]
   const profileTarget = members.find((member) => member.id === profileTargetId) ?? selectedMember
@@ -419,7 +454,7 @@ export default function App() {
         <div className="fc-home-actions"><button className="fc-round-button" type="button" onClick={() => openTool('notifications')} aria-label="Notifications">🔔{notifications.length > 0 && <b>{notifications.length}</b>}</button><button className="fc-round-button" type="button" onClick={() => openTool('settings')} aria-label="Settings">⚙️</button></div>
       </header>
 
-      <section className="fc-banner"><span className="fc-banner-heart">♡</span><div><strong>Family isn't just who you live with,</strong><span>it's who you do life with. ♡</span></div><time>{formatLongDate(todayKey())}</time></section>
+      <section className="fc-banner"><span className="fc-banner-heart">♡</span><div><strong>{dailyQuote}</strong><span>Family Circle · Today</span></div><time>{formatLongDate(todayKey())}</time></section>
 
       <section className="fc-dashboard-grid">
         <article className="fc-dashboard-card cyan"><div className="fc-card-head"><div><small>Family Chat</small><h2>Latest conversation</h2></div><div className="fc-card-head-actions">{unreadMessageCount > 0 && <span className="fc-unread-count">{unreadMessageCount} new</span>}<button type="button" onClick={() => goToTab('chat')}>→</button></div></div>{firstThreeMessages.map((message) => <div className={isMessageUnread(message.id) ? "fc-mini-row fc-unread-row" : "fc-mini-row"} key={message.id}><AppAvatar member={members.find((m) => m.id === message.memberId) ?? selectedMember} /><div><strong>{message.name}</strong><span>{message.text}</span></div><time>{message.time}</time></div>)}<button className="fc-outline-button" type="button" onClick={() => goToTab('chat')}>View All Messages →</button></article>
