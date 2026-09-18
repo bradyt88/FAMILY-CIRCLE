@@ -135,3 +135,143 @@
 }
 .fc-shopping-dashboard-item strong { color: #eef2ff; }
 .fc-shopping-dashboard-empty { color: #8f99b4; }
+
+
+
+/* Phase A — Family Circle visual system */
+:root {
+  --fc-surface-raised: rgba(18, 24, 48, .97);
+  --fc-surface-raised-2: rgba(13, 18, 39, .98);
+  --fc-glow-cyan: rgba(82, 217, 255, .14);
+  --fc-glow-purple: rgba(138, 114, 255, .14);
+  --fc-glow-pink: rgba(255, 95, 199, .13);
+  --fc-glow-green: rgba(55, 223, 191, .12);
+}
+
+/* The canvas stays dark; content surfaces lift gently away from it. */
+.fc-dashboard-card,
+.fc-shopping-dashboard-card,
+.fc-panel,
+.fc-feature-card,
+.fc-member-card,
+.fc-quick-tile,
+.fc-shopping-paper,
+.fc-tree-node,
+.fc-pin-modal {
+  background-color: var(--fc-surface-raised-2);
+}
+
+.fc-dashboard-card,
+.fc-shopping-dashboard-card,
+.fc-panel,
+.fc-feature-card,
+.fc-quick-tile,
+.fc-shopping-paper {
+  box-shadow: 0 18px 58px rgba(0,0,0,.26), 0 0 28px var(--fc-glow-purple);
+}
+
+/* Consistent coloured lift for major Family Circle sections. */
+.fc-dashboard-card.cyan,
+.fc-quick-tile.cyan,
+.map-card { box-shadow: 0 18px 58px rgba(0,0,0,.26), 0 0 30px var(--fc-glow-cyan); }
+.fc-dashboard-card.pink,
+.fc-quick-tile.pink,
+.games-card { box-shadow: 0 18px 58px rgba(0,0,0,.26), 0 0 30px var(--fc-glow-pink); }
+.fc-dashboard-card.purple,
+.fc-quick-tile.purple,
+.members-card { box-shadow: 0 18px 58px rgba(0,0,0,.26), 0 0 30px var(--fc-glow-purple); }
+.fc-dashboard-card.green,
+.fc-quick-tile.green { box-shadow: 0 18px 58px rgba(0,0,0,.26), 0 0 30px var(--fc-glow-green); }
+.fc-quick-tile.shopping,
+.fc-shopping-dashboard-card { box-shadow: 0 18px 58px rgba(0,0,0,.26), 0 0 30px rgba(255,196,92,.10); }
+.fc-quick-tile.emergency,
+.fc-nav-item.emergency-nav { box-shadow: 0 18px 58px rgba(0,0,0,.24), 0 0 30px rgba(255,61,117,.12); }
+
+/* Hero areas are a touch brighter than their surrounding surface. */
+.fc-card-head,
+.fc-panel-head,
+.fc-feature-header,
+.fc-shopping-paper-top,
+.fc-shopping-dashboard-head {
+  position: relative;
+}
+
+.fc-card-head::before,
+.fc-panel-head::before,
+.fc-feature-header::before,
+.fc-shopping-paper-top::before,
+.fc-shopping-dashboard-head::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: -2px;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,.12), transparent);
+  pointer-events: none;
+}
+
+.fc-card-head h2,
+.fc-panel-head h2,
+.fc-feature-header h1,
+.fc-shopping-paper-top h2,
+.fc-shopping-dashboard-head h2 {
+  text-shadow: 0 0 18px rgba(190,205,255,.10);
+}
+
+/* Inputs and inner rows remain subordinate to the main cards. */
+.fc-mini-row,
+.fc-task-row,
+.fc-chat-bubble,
+.fc-calendar-event,
+.fc-notification-list article,
+.fc-contact,
+.fc-tree-node,
+.fc-location-row,
+.fc-task-detail,
+.fc-money-chat-card {
+  background-color: rgba(7, 12, 29, .72);
+}
+
+.fc-mini-row:hover,
+.fc-task-row:hover,
+.fc-contact:hover,
+.fc-feature-card:hover,
+.fc-quick-tile:hover {
+  border-color: rgba(255,255,255,.16);
+  box-shadow: 0 12px 34px rgba(0,0,0,.20), 0 0 20px rgba(138,114,255,.08);
+}
+
+/* Navigation belongs to the same visual system but remains quieter than content. */
+.fc-bottom-nav {
+  background: rgba(8, 12, 28, .91);
+  box-shadow: 0 18px 60px rgba(0,0,0,.38), 0 0 24px rgba(82,217,255,.05);
+}
+
+.fc-nav-item.active {
+  background: rgba(124,92,255,.18);
+  box-shadow: inset 0 0 0 1px rgba(124,92,255,.40), 0 0 18px rgba(124,92,255,.10);
+}
+
+/* Keep the glow deliberately restrained on smaller screens. */
+@media (max-width: 760px) {
+  .fc-dashboard-card,
+  .fc-shopping-dashboard-card,
+  .fc-panel,
+  .fc-feature-card,
+  .fc-quick-tile,
+  .fc-shopping-paper {
+    box-shadow: 0 14px 42px rgba(0,0,0,.24), 0 0 22px rgba(138,114,255,.08);
+  }
+  .fc-dashboard-card.cyan,
+  .fc-quick-tile.cyan,
+  .map-card { box-shadow: 0 14px 42px rgba(0,0,0,.24), 0 0 22px var(--fc-glow-cyan); }
+  .fc-dashboard-card.pink,
+  .fc-quick-tile.pink,
+  .games-card { box-shadow: 0 14px 42px rgba(0,0,0,.24), 0 0 22px var(--fc-glow-pink); }
+  .fc-dashboard-card.purple,
+  .fc-quick-tile.purple,
+  .members-card { box-shadow: 0 14px 42px rgba(0,0,0,.24), 0 0 22px var(--fc-glow-purple); }
+  .fc-dashboard-card.green,
+  .fc-quick-tile.green { box-shadow: 0 14px 42px rgba(0,0,0,.24), 0 0 22px var(--fc-glow-green); }
+}
