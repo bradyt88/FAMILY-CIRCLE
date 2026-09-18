@@ -90,6 +90,17 @@ function formatLongDate(key: string) {
   return new Intl.DateTimeFormat('en-GB', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }).format(new Date(year, month - 1, day))
 }
 
+function formatBannerDate(key: string) {
+  const [year, month, day] = key.split('-').map(Number)
+  const date = new Date(year, month - 1, day)
+  const suffix = day % 100 >= 11 && day % 100 <= 13 ? 'th' : ({ 1: 'st', 2: 'nd', 3: 'rd' } as Record<number, string>)[day % 10] ?? 'th'
+  return {
+    weekday: new Intl.DateTimeFormat('en-GB', { weekday: 'long' }).format(date),
+    dayMonth: `${day}${suffix} ${new Intl.DateTimeFormat('en-GB', { month: 'long' }).format(date)}`,
+    year: String(year),
+  }
+}
+
 function formatShortDate(key: string) {
   const [year, month, day] = key.split('-').map(Number)
   return new Intl.DateTimeFormat('en-GB', { day: 'numeric', month: 'short' }).format(new Date(year, month - 1, day))
@@ -454,7 +465,11 @@ export default function App() {
         <div className="fc-home-actions"><button className="fc-round-button" type="button" onClick={() => openTool('notifications')} aria-label="Notifications">🔔{notifications.length > 0 && <b>{notifications.length}</b>}</button><button className="fc-round-button" type="button" onClick={() => openTool('settings')} aria-label="Settings">⚙️</button></div>
       </header>
 
-      <section className="fc-banner"><span className="fc-banner-heart">♡</span><div><strong>{dailyQuote}</strong><span>Family Circle · Today</span></div><time>{formatLongDate(todayKey())}</time></section>
+      <section className="fc-banner">
+        <span className="fc-banner-heart">♡</span>
+        <div className="fc-banner-quote"><strong>{dailyQuote}</strong><span>Family Circle · Today</span></div>
+        <time className="fc-banner-date">{(() => { const date = formatBannerDate(todayKey()); return <><strong>{date.weekday}</strong><span>{date.dayMonth}</span><small>{date.year}</small></> })()}</time>
+      </section>
 
       <section className="fc-dashboard-grid">
         <article className="fc-dashboard-card cyan"><div className="fc-card-head"><div><small>Family Chat</small><h2>Latest conversation</h2></div><div className="fc-card-head-actions">{unreadMessageCount > 0 && <span className="fc-unread-count">{unreadMessageCount} new</span>}<button type="button" onClick={() => goToTab('chat')}>→</button></div></div>{firstThreeMessages.map((message) => <div className={isMessageUnread(message.id) ? "fc-mini-row fc-unread-row" : "fc-mini-row"} key={message.id}><AppAvatar member={members.find((m) => m.id === message.memberId) ?? selectedMember} /><div><strong>{message.name}</strong><span>{message.text}</span></div><time>{message.time}</time></div>)}<button className="fc-outline-button" type="button" onClick={() => goToTab('chat')}>View All Messages →</button></article>
