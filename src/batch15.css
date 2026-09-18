@@ -749,3 +749,54 @@
     grid-column: auto;
   }
 }
+
+
+/* Feature content surfaces — locked Family Circle visual rule */
+/* Each feature carries the same accent established by its Home identity/header. */
+.fc-feature-header.pink ~ .fc-feature-shell .fc-panel,
+.fc-feature-header.pink ~ .fc-two-col .fc-panel,
+.fc-feature-header.pink ~ .fc-panel { border-color:rgba(255,95,199,.78); box-shadow:0 0 28px rgba(255,95,199,.10),0 18px 65px rgba(0,0,0,.28); }
+.fc-feature-header.cyan ~ .fc-feature-shell .fc-panel,
+.fc-feature-header.cyan ~ .fc-two-col .fc-panel,
+.fc-feature-header.cyan ~ .fc-panel { border-color:rgba(82,217,255,.78); box-shadow:0 0 28px rgba(82,217,255,.10),0 18px 65px rgba(0,0,0,.28); }
+.fc-feature-header.green ~ .fc-feature-shell .fc-panel,
+.fc-feature-header.green ~ .fc-two-col .fc-panel,
+.fc-feature-header.green ~ .fc-panel { border-color:rgba(55,223,191,.78); box-shadow:0 0 28px rgba(55,223,191,.10),0 18px 65px rgba(0,0,0,.28); }
+.fc-feature-header.purple ~ .fc-feature-shell .fc-panel,
+.fc-feature-header.purple ~ .fc-two-col .fc-panel,
+.fc-feature-header.purple ~ .fc-profile-layout .fc-panel,
+.fc-feature-header.purple ~ .fc-panel { border-color:rgba(138,114,255,.78); box-shadow:0 0 28px rgba(138,114,255,.10),0 18px 65px rgba(0,0,0,.28); }
+.fc-feature-header.shopping ~ .fc-shopping-layout .fc-panel,
+.fc-feature-header.shopping ~ .fc-panel { border-color:rgba(255,196,92,.78); box-shadow:0 0 28px rgba(255,196,92,.10),0 18px 65px rgba(0,0,0,.28); }
+.fc-feature-header.shopping ~ .fc-shopping-layout .fc-shopping-paper { border-color:rgba(255,196,92,.52); box-shadow:inset 0 0 24px rgba(255,196,92,.05),0 0 20px rgba(255,196,92,.06); }
+.fc-feature-header.emergency ~ .fc-feature-shell .fc-panel,
+.fc-feature-header.emergency ~ .fc-two-col .fc-panel,
+.fc-feature-header.emergency ~ .fc-panel { border-color:rgba(255,61,117,.80); box-shadow:0 0 30px rgba(255,61,117,.11),0 18px 65px rgba(0,0,0,.28); }
+
+/* Emergency choice surfaces use the same red identity without making every inner item glow. */
+.fc-feature-header.emergency ~ .fc-choice-grid .fc-choice-card { border-color:rgba(255,61,117,.64); box-shadow:0 0 22px rgba(255,61,117,.07); }
+.fc-feature-header.emergency ~ .fc-choice-grid .fc-choice-card.urgent { border-color:rgba(255,61,117,.84); }
+
+/* Chat: the conversation container and composer are the feature surfaces; message bubbles stay quiet. */
+.fc-feature-header.pink ~ .fc-feature-shell .fc-composer { padding-top:14px; border-top:1px solid rgba(255,95,199,.24); }
+
+/* Photos: the gallery itself remains a clean inner surface inside the cyan feature panel. */
+.fc-feature-header.cyan ~ .fc-panel .fc-photo-grid article { border-color:rgba(82,217,255,.18); }
+
+/* Calendar: all three major areas share the purple feature identity. */
+.fc-feature-header.purple ~ .fc-calendar-layout > .fc-panel,
+.fc-feature-header.purple ~ .fc-calendar-layout .fc-calendar-side > .fc-panel { border-color:rgba(138,114,255,.78); box-shadow:0 0 28px rgba(138,114,255,.10),0 18px 65px rgba(0,0,0,.28); }
+
+/* Family tree is a single major content surface; the nodes remain quieter inner cards. */
+.fc-feature-header.purple ~ .fc-panel.fc-tree-panel { border-color:rgba(138,114,255,.82); }
+
+@media(max-width:760px){
+  .fc-feature-header.pink ~ .fc-feature-shell .fc-panel,
+  .fc-feature-header.cyan ~ .fc-feature-shell .fc-panel,
+  .fc-feature-header.green ~ .fc-feature-shell .fc-panel,
+  .fc-feature-header.purple ~ .fc-feature-shell .fc-panel,
+  .fc-feature-header.pink ~ .fc-two-col .fc-panel,
+  .fc-feature-header.cyan ~ .fc-two-col .fc-panel,
+  .fc-feature-header.green ~ .fc-two-col .fc-panel,
+  .fc-feature-header.purple ~ .fc-two-col .fc-panel { box-shadow:0 0 22px rgba(138,114,255,.08),0 16px 48px rgba(0,0,0,.25); }
+}
