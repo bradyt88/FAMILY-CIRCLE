@@ -528,3 +528,82 @@
   .fc-emergency-unsafe { min-height:152px; }
 }
 @media (prefers-reduced-motion: reduce) { .fc-emergency-unsafe { animation:none; } }
+
+
+/* Refined desktop Home header and centred daily banner. */
+@media (min-width: 761px) {
+  .fc-home-profile {
+    min-height: 132px;
+    padding: 14px 16px;
+    margin: -14px 0;
+  }
+  .fc-home-profile-copy {
+    gap: 4px;
+  }
+  .fc-home-profile-copy em {
+    max-width: 420px;
+    white-space: normal;
+    overflow: visible;
+    text-overflow: clip;
+    line-height: 1.45;
+  }
+}
+
+.fc-banner {
+  grid-template-columns: minmax(0, 1fr) minmax(0, 2.2fr) minmax(0, 1fr);
+}
+.fc-banner-heart {
+  justify-self: start;
+}
+.fc-banner-quote {
+  justify-self: center;
+  width: min(100%, 720px);
+  text-align: center;
+}
+.fc-banner-date {
+  justify-self: end;
+  min-width: 112px;
+  display: grid;
+  justify-items: center;
+  gap: 2px;
+  padding-left: 18px;
+  border-left: 1px solid var(--fc-line);
+  text-align: center;
+}
+.fc-banner-date strong {
+  color: #f5f7ff;
+  font-size: .82rem;
+  letter-spacing: .06em;
+}
+.fc-banner-date span {
+  color: #c9d0e6;
+  font-size: .76rem;
+}
+.fc-banner-date small {
+  color: #8f9ab6;
+  font-size: .68rem;
+  letter-spacing: .12em;
+}
+
+@media (max-width: 760px) {
+  .fc-banner {
+    grid-template-columns: 1fr;
+    gap: 8px;
+    text-align: center;
+  }
+  .fc-banner-heart,
+  .fc-banner-quote,
+  .fc-banner-date {
+    justify-self: center;
+  }
+  .fc-banner-heart {
+    display: none;
+  }
+  .fc-banner-date {
+    min-width: 0;
+    padding: 8px 0 0;
+    border-left: 0;
+    border-top: 1px solid var(--fc-line);
+    width: 100%;
+  }
+}
