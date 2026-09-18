@@ -698,3 +698,54 @@
     min-height: 112px;
   }
 }
+
+
+/* Desktop bottom navigation — Emergency is the fixed two-space centre action. */
+@media (min-width: 761px) {
+  .fc-bottom-nav {
+    grid-template-columns: repeat(8, minmax(0, 1fr));
+  }
+
+  .fc-nav-item.emergency-nav {
+    grid-column: 4 / span 2;
+    min-height: 62px;
+    border-width: 2px;
+    border-color: rgba(255,61,117,.82);
+    background: linear-gradient(145deg, rgba(255,40,78,.28), rgba(104,12,35,.36));
+    box-shadow: 0 0 26px rgba(255,45,90,.14), inset 0 0 0 1px rgba(255,102,132,.16);
+    animation: fcBottomEmergencyPulse 2.7s ease-in-out infinite;
+  }
+
+  .fc-nav-item.emergency-nav span {
+    font-size: 1.3rem;
+  }
+
+  .fc-nav-item.emergency-nav small {
+    font-size: .68rem;
+    color: #fff0f5;
+    font-weight: 850;
+  }
+
+  @keyframes fcBottomEmergencyPulse {
+    0%, 70%, 100% {
+      border-color: rgba(255,61,117,.68);
+      box-shadow: 0 0 20px rgba(255,45,90,.10), inset 0 0 0 1px rgba(255,102,132,.12);
+    }
+    80% {
+      border-color: rgba(255,118,145,1);
+      box-shadow: 0 0 34px rgba(255,45,90,.28), inset 0 0 0 1px rgba(255,150,170,.20);
+    }
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .fc-nav-item.emergency-nav {
+    animation: none;
+  }
+}
+
+@media (max-width: 760px) {
+  .fc-nav-item.emergency-nav {
+    grid-column: auto;
+  }
+}
