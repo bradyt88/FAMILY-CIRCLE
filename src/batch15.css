@@ -608,3 +608,93 @@
     width: 100%;
   }
 }
+
+
+/* Home shortcuts — make Family Emergency the primary vertical action. */
+@media (min-width: 761px) {
+  .fc-home-profile {
+    transform: translateY(18px);
+  }
+
+  .fc-quick-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    grid-auto-rows: minmax(112px, auto);
+  }
+
+  .fc-quick-tile.emergency {
+    grid-column: 3;
+    grid-row: 1 / span 2;
+    min-height: 236px;
+    padding: 22px;
+    align-content: center;
+    justify-items: center;
+    text-align: center;
+    border-width: 2px;
+    border-color: rgba(255,61,117,.92);
+    background: linear-gradient(145deg, rgba(104,12,35,.58), rgba(18,10,28,.98));
+    box-shadow: 0 20px 70px rgba(0,0,0,.30), 0 0 32px rgba(255,61,117,.22);
+  }
+
+  .fc-quick-tile.emergency > span {
+    width: 58px;
+    height: 58px;
+    border-radius: 17px;
+    font-size: 1.65rem;
+    background: rgba(255,61,117,.20);
+    box-shadow: 0 0 24px rgba(255,61,117,.18);
+  }
+
+  .fc-quick-tile.emergency strong {
+    font-size: 1.05rem;
+    color: #fff0f5;
+    text-shadow: 0 0 18px rgba(255,61,117,.28);
+  }
+
+  .fc-quick-tile.emergency small {
+    max-width: 180px;
+    color: #ffc4d2;
+    line-height: 1.5;
+  }
+
+  @keyframes fcHomeEmergencyPrimaryPulse {
+    0%, 70%, 100% {
+      transform: translateY(0);
+      border-color: rgba(255,61,117,.76);
+      box-shadow: 0 20px 70px rgba(0,0,0,.30), 0 0 24px rgba(255,61,117,.15);
+    }
+    80% {
+      transform: translateY(-1px);
+      border-color: rgba(255,118,145,1);
+      box-shadow: 0 20px 70px rgba(0,0,0,.30), 0 0 42px rgba(255,61,117,.34);
+    }
+    83% { transform: translateY(1px); }
+    86% { transform: translateY(-1px); }
+    89% { transform: translateY(0); }
+  }
+
+  .fc-quick-tile.emergency {
+    animation: fcHomeEmergencyPrimaryPulse 2.7s ease-in-out infinite;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .fc-quick-tile.emergency {
+    animation: none;
+  }
+}
+
+@media (max-width: 760px) {
+  .fc-home-profile {
+    transform: translateY(8px);
+  }
+
+  .fc-quick-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .fc-quick-tile.emergency {
+    grid-column: auto;
+    grid-row: auto;
+    min-height: 112px;
+  }
+}
