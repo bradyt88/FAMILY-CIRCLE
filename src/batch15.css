@@ -476,3 +476,55 @@
 @media (prefers-reduced-motion: reduce) {
   .fc-quick-tile.emergency { animation: none; }
 }
+
+
+/* Phase A — Home header, Emergency prominence and daily quote */
+.fc-home-topbar { align-items: start; }
+.fc-home-profile { min-width: 0; width: 100%; max-width: min(100%, 520px); min-height: 102px; align-self: start; }
+.fc-home-profile-copy { min-width: 0; }
+.fc-home-profile-copy em { display: block; overflow-wrap: anywhere; }
+.fc-home-logo { margin-top: 0; }
+.fc-home-actions { padding-top: 4px; }
+.fc-home-actions .fc-round-button:first-child { width: 58px; height: 58px; font-size: 1.32rem; border-color: rgba(255,95,199,.72); box-shadow: 0 0 22px rgba(255,95,199,.16); }
+.fc-home-actions .fc-round-button:last-child { width: 52px; height: 52px; font-size: 1.16rem; }
+.fc-banner { text-align: center; }
+.fc-banner div { justify-items: center; }
+.fc-banner div strong { color: #f5f7ff; text-shadow: 0 0 18px rgba(255,255,255,.16); font-size: 1.02rem; }
+.fc-banner div span { color: #bfc9e4; font-size: .72rem; text-transform: uppercase; letter-spacing: .12em; }
+
+.fc-emergency-unsafe {
+  width: 100%;
+  min-height: 152px;
+  margin: 12px 0;
+  padding: 18px 22px;
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: 16px;
+  border: 2px solid rgba(255,61,117,.88);
+  border-radius: 20px;
+  background: linear-gradient(145deg, rgba(104,12,35,.48), rgba(18,10,28,.98));
+  color: #fff;
+  text-align: left;
+  animation: fcPrimaryEmergencyPulse 2.7s ease-in-out infinite;
+}
+.fc-emergency-unsafe-icon { font-size: 2.35rem; }
+.fc-emergency-unsafe strong { display:block; color:#fff0f5; font-size:1.18rem; text-transform:uppercase; letter-spacing:.05em; }
+.fc-emergency-unsafe small { display:block; margin-top:5px; color:#ffc4d2; font-size:.75rem; }
+.fc-emergency-unsafe > b { font-size:1.7rem; }
+@keyframes fcPrimaryEmergencyPulse {
+  0%, 70%, 100% { transform:translateX(0); border-color:rgba(255,61,117,.76); box-shadow:0 16px 55px rgba(0,0,0,.28),0 0 22px rgba(255,61,117,.15); }
+  80% { transform:translateX(-1px); border-color:rgba(255,118,145,1); box-shadow:0 16px 55px rgba(0,0,0,.28),0 0 38px rgba(255,61,117,.34); }
+  83% { transform:translateX(1px); }
+  86% { transform:translateX(-1px); }
+  89% { transform:translateX(0); }
+}
+@media (max-width:760px) {
+  .fc-home-topbar { grid-template-columns: minmax(0,1fr) auto; gap:10px; }
+  .fc-home-logo { grid-column: 1 / -1; grid-row: 2; justify-self:center; }
+  .fc-home-profile { grid-column:1; grid-row:1; max-width:100%; min-height:92px; }
+  .fc-home-actions { grid-column:2; grid-row:1; }
+  .fc-home-logo { margin-top:4px; }
+  .fc-emergency-unsafe { min-height:152px; }
+}
+@media (prefers-reduced-motion: reduce) { .fc-emergency-unsafe { animation:none; } }
