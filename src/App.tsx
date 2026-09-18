@@ -443,11 +443,10 @@ export default function App() {
       { label: 'Home', icon: '⌂', tab: 'home' },
       { label: 'Chat', icon: '◌', tab: 'chat' },
       { label: 'Photos', icon: '▧', tab: 'photos' },
+      { label: 'Emergency', icon: '🚨', tool: 'emergency', emergency: true },
       { label: 'Calendar', icon: '▦', tab: 'calendar' },
       { label: 'Tasks', icon: '✓', tab: 'tasks' },
-      { label: 'Weekly Shop', icon: '🛒', tab: 'shopping' },
       { label: 'Where Is Everyone?', icon: '📍', tool: 'map' },
-      { label: 'Emergency', icon: '🚨', tool: 'emergency', emergency: true },
     ]
     return <nav className="fc-bottom-nav" aria-label="Family Circle navigation">{items.map((item) => { const active = item.tool ? toolMode === item.tool : toolMode === null && activeTab === item.tab; return <button className={`fc-nav-item${active ? ' active' : ''}${item.emergency ? ' emergency-nav' : ''}`} type="button" key={item.label} onClick={() => item.tool ? openTool(item.tool) : item.tab && goToTab(item.tab)}><span aria-hidden="true" className="fc-nav-icon">{item.icon}{item.tab === 'chat' && unreadMessageCount > 0 && <b className="fc-nav-unread-dot">{unreadMessageCount > 9 ? '9+' : unreadMessageCount}</b>}</span><small>{item.label}</small></button> })}</nav>
   }
