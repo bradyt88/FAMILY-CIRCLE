@@ -800,3 +800,97 @@
   .fc-feature-header.green ~ .fc-two-col .fc-panel,
   .fc-feature-header.purple ~ .fc-two-col .fc-panel { box-shadow:0 0 22px rgba(138,114,255,.08),0 16px 48px rgba(0,0,0,.25); }
 }
+
+
+/* Stronger inner feature hierarchy — content should remain visibly defined inside each feature. */
+
+/* Emergency: every help action belongs to the red Emergency visual system. */
+.fc-feature-header.emergency ~ .fc-emergency-grid .fc-emergency-button {
+  border-color:rgba(255,61,117,.66);
+  background:linear-gradient(145deg,rgba(54,10,29,.54),rgba(8,11,25,.96));
+  box-shadow:0 0 22px rgba(255,61,117,.09),inset 0 0 18px rgba(255,61,117,.025);
+}
+.fc-feature-header.emergency ~ .fc-emergency-grid .fc-emergency-button:hover,
+.fc-feature-header.emergency ~ .fc-choice-grid .fc-choice-card:hover {
+  border-color:rgba(255,61,117,.90);
+  box-shadow:0 0 30px rgba(255,61,117,.15),inset 0 0 18px rgba(255,61,117,.035);
+}
+.fc-feature-header.emergency ~ .fc-choice-grid .fc-choice-card {
+  border-color:rgba(255,61,117,.66);
+  background:linear-gradient(145deg,rgba(54,10,29,.42),rgba(8,11,25,.96));
+  box-shadow:0 0 22px rgba(255,61,117,.08);
+}
+
+/* Emergency family contacts: slightly larger, with the member's existing identity colour. */
+.fc-feature-header.emergency ~ .fc-feature-shell .fc-contact-grid .fc-contact {
+  min-height:72px;
+  padding:13px;
+  border-width:1px;
+  background:linear-gradient(145deg,rgba(10,15,34,.98),rgba(6,10,25,.98));
+  box-shadow:0 0 18px rgba(82,217,255,.04);
+}
+.fc-feature-header.emergency ~ .fc-feature-shell .fc-contact-grid .fc-contact:has(.member-accent-one) {
+  border-color:rgba(124,92,255,.72);
+  box-shadow:0 0 22px rgba(124,92,255,.13);
+}
+.fc-feature-header.emergency ~ .fc-feature-shell .fc-contact-grid .fc-contact:has(.member-accent-two) {
+  border-color:rgba(82,217,255,.72);
+  box-shadow:0 0 22px rgba(82,217,255,.13);
+}
+.fc-feature-header.emergency ~ .fc-feature-shell .fc-contact-grid .fc-contact:has(.member-accent-three) {
+  border-color:rgba(255,95,199,.72);
+  box-shadow:0 0 22px rgba(255,95,199,.13);
+}
+.fc-feature-header.emergency ~ .fc-feature-shell .fc-contact-grid .fc-contact:hover {
+  transform:translateY(-2px);
+}
+
+/* Chat: message bubbles are now clearly separated from the chat surface without becoming loud. */
+.fc-feature-header.pink ~ .fc-feature-shell .fc-chat-bubble {
+  border-color:rgba(255,95,199,.28);
+  background:linear-gradient(145deg,rgba(13,17,39,.94),rgba(6,10,25,.96));
+  box-shadow:0 0 16px rgba(255,95,199,.055);
+}
+.fc-feature-header.pink ~ .fc-feature-shell .fc-chat-row.fc-unread-row .fc-chat-bubble {
+  border-color:rgba(255,95,199,.48);
+  box-shadow:0 0 22px rgba(255,95,199,.10);
+}
+
+/* Calendar: event cards inherit the purple feature identity. */
+.fc-feature-header.purple ~ .fc-calendar-layout .fc-calendar-event {
+  border-color:rgba(138,114,255,.28);
+  box-shadow:0 0 15px rgba(138,114,255,.05);
+}
+
+/* Tasks: individual responsibilities get a clearer green edge while remaining dark inside. */
+.fc-feature-header.green ~ .fc-two-col .fc-task-detail {
+  border-color:rgba(55,223,191,.24);
+  box-shadow:0 0 15px rgba(55,223,191,.045);
+}
+.fc-feature-header.green ~ .fc-two-col .fc-task-detail:hover {
+  border-color:rgba(55,223,191,.48);
+  box-shadow:0 0 20px rgba(55,223,191,.08);
+}
+
+/* Photos: individual memory cards inherit the cyan feature identity. */
+.fc-feature-header.cyan ~ .fc-panel .fc-photo-grid article {
+  border-color:rgba(82,217,255,.28);
+  box-shadow:0 0 17px rgba(82,217,255,.055);
+}
+
+/* Family tree: member nodes are clearer without competing with the main purple panel. */
+.fc-feature-header.purple ~ .fc-panel.fc-tree-panel .fc-tree-node {
+  border-color:rgba(138,114,255,.30);
+  box-shadow:0 0 18px rgba(138,114,255,.055);
+}
+.fc-feature-header.purple ~ .fc-panel.fc-tree-panel .fc-tree-node.current {
+  border-color:rgba(138,114,255,.66);
+  box-shadow:0 0 26px rgba(138,114,255,.12);
+}
+
+/* Shopping: the working list and rules remain visibly inside the gold feature identity. */
+.fc-feature-header.shopping ~ .fc-shopping-layout .fc-shopping-item,
+.fc-feature-header.shopping ~ .fc-shopping-layout .fc-shopping-rule {
+  border-color:rgba(255,196,92,.22);
+  box-shadow:0 0 14px rgba(255,196,92,.04);
+}
