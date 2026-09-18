@@ -390,3 +390,26 @@
 .fc-feature-header.shopping .fc-muted { color: #d8c8a6; }
 .fc-feature-header.emergency .fc-muted { color: #dfb7c2; }
 .fc-feature-header.purple .fc-muted { color: #c5bfdf; }
+
+
+/* Phase A — Home section title colour identity */
+.fc-dashboard-card.cyan .fc-card-head small,
+.fc-dashboard-card.cyan .fc-card-head h2,
+.fc-quick-tile.cyan strong,
+.map-card strong { color: #a9efff; text-shadow: 0 0 16px rgba(82,217,255,.18); }
+.fc-dashboard-card.pink .fc-card-head small,
+.fc-dashboard-card.pink .fc-card-head h2,
+.fc-quick-tile.pink strong,
+.games-card strong { color: #ffb6e8; text-shadow: 0 0 16px rgba(255,95,199,.18); }
+.fc-dashboard-card.purple .fc-card-head small,
+.fc-dashboard-card.purple .fc-card-head h2,
+.fc-quick-tile.purple strong,
+.members-card strong { color: #c9c0ff; text-shadow: 0 0 16px rgba(138,114,255,.18); }
+.fc-dashboard-card.green .fc-card-head small,
+.fc-dashboard-card.green .fc-card-head h2,
+.fc-quick-tile.green strong { color: #a9ffe9; text-shadow: 0 0 16px rgba(55,223,191,.18); }
+.fc-shopping-dashboard-card .fc-shopping-dashboard-head small,
+.fc-shopping-dashboard-card .fc-shopping-dashboard-head h2,
+.fc-quick-tile.shopping strong { color: #ffe2a1; text-shadow: 0 0 16px rgba(255,196,92,.18); }
+.fc-quick-tile.emergency strong { color: #ffb1c1; text-shadow: 0 0 16px rgba(255,61,117,.20); }
+.fc-quick-tile.magenta strong { color: #ffb1dd; text-shadow: 0 0 16px rgba(255,92,170,.16); }
