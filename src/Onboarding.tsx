@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import logoUrl from '../design/brand/family-circle-logo.png'
 import './onboarding.css'
 
@@ -39,14 +39,47 @@ export default function Onboarding({ onComplete, initialView = 'splash' }: { onC
   const [confirmPassword, setConfirmPassword] = useState('')
   const [error, setError] = useState('')
   const [splashDone, setSplashDone] = useState(initialView !== 'splash')
+  const [audioBlocked, setAudioBlocked] = useState(false)
+  const splashAudioRef = useRef<HTMLAudioElement | null>(null)
 
   useEffect(() => {
     if (initialView !== 'splash') return
+
+    const audio = new Audio('/audio/welcome-to-family-circle.mp3')
+    audio.preload = 'auto'
+    audio.volume = 0.88
+    splashAudioRef.current = audio
+
+    let audioStarted = false
+    const startAudio = () => {
+      if (audioStarted) return
+      audioStarted = true
+      setAudioBlocked(false)
+      void audio.play().catch(() => {
+        audioStarted = false
+        setAudioBlocked(true)
+      })
+    }
+
+    const audioTimer = window.setTimeout(startAudio, 1350)
     const timer = window.setTimeout(() => {
       setSplashDone(true)
       setView('welcome')
-    }, 1700)
-    return () => window.clearTimeout(timer)
+    }, 6800)
+
+    const resumeAfterGesture = () => startAudio()
+    window.addEventListener('pointerdown', resumeAfterGesture, { once: true })
+    window.addEventListener('keydown', resumeAfterGesture, { once: true })
+
+    return () => {
+      window.clearTimeout(audioTimer)
+      window.clearTimeout(timer)
+      window.removeEventListener('pointerdown', resumeAfterGesture)
+      window.removeEventListener('keydown', resumeAfterGesture)
+      audio.pause()
+      audio.currentTime = 0
+      splashAudioRef.current = null
+    }
   }, [initialView])
 
   const selectedFamily = useMemo(() => families.find((family) => family.id === selectedFamilyId) ?? families[0] ?? null, [families, selectedFamilyId])
@@ -120,7 +153,10 @@ export default function Onboarding({ onComplete, initialView = 'splash' }: { onC
   }
 
   if (view === 'splash' && !splashDone) {
-    return <main className="fc-onboarding-shell fc-splash-screen"><div className="fc-splash-logo"><img src={logoUrl} alt="Family Circle" /></div></main>
+    return <main className="fc-onboarding-shell fc-splash-screen">
+      <div className="fc-splash-logo"><img src={logoUrl} alt="Family Circle" /></div>
+      <div className={audioBlocked ? 'fc-splash-audio-hint visible' : 'fc-splash-audio-hint'} aria-live="polite">Tap to hear the Family Circle welcome</div>
+    </main>
   }
 
   if (view === 'welcome') {
