@@ -53,10 +53,10 @@ export default function Onboarding({ onComplete, initialView = 'splash' }: { onC
     let audioStarted = false
     const startAudio = () => {
       if (audioStarted) return
-      audioStarted = true
-      setAudioBlocked(false)
-      void audio.play().catch(() => {
-        audioStarted = false
+      void audio.play().then(() => {
+        audioStarted = true
+        setAudioBlocked(false)
+      }).catch(() => {
         setAudioBlocked(true)
       })
     }
@@ -68,8 +68,8 @@ export default function Onboarding({ onComplete, initialView = 'splash' }: { onC
     }, 6800)
 
     const resumeAfterGesture = () => startAudio()
-    window.addEventListener('pointerdown', resumeAfterGesture, { once: true })
-    window.addEventListener('keydown', resumeAfterGesture, { once: true })
+    window.addEventListener('pointerdown', resumeAfterGesture)
+    window.addEventListener('keydown', resumeAfterGesture)
 
     return () => {
       window.clearTimeout(audioTimer)
@@ -155,7 +155,7 @@ export default function Onboarding({ onComplete, initialView = 'splash' }: { onC
   if (view === 'splash' && !splashDone) {
     return <main className="fc-onboarding-shell fc-splash-screen">
       <div className="fc-splash-logo"><img src={logoUrl} alt="Family Circle" /></div>
-      <div className={audioBlocked ? 'fc-splash-audio-hint visible' : 'fc-splash-audio-hint'} aria-live="polite">Tap to hear the Family Circle welcome</div>
+      <button className={audioBlocked ? 'fc-splash-audio-hint visible' : 'fc-splash-audio-hint'} type="button" onClick={() => splashAudioRef.current?.play().then(() => setAudioBlocked(false)).catch(() => setAudioBlocked(true))} aria-label="Play the Family Circle welcome">Tap to hear the Family Circle welcome</button>
     </main>
   }
 
