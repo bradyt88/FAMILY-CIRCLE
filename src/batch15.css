@@ -413,3 +413,66 @@
 .fc-quick-tile.shopping strong { color: #ffe2a1; text-shadow: 0 0 16px rgba(255,196,92,.18); }
 .fc-quick-tile.emergency strong { color: #ffb1c1; text-shadow: 0 0 16px rgba(255,61,117,.20); }
 .fc-quick-tile.magenta strong { color: #ffb1dd; text-shadow: 0 0 16px rgba(255,92,170,.16); }
+
+
+/* Phase A — onboarding/profile surface lift and Emergency attention pulse */
+.fc-onboarding-card {
+  background: linear-gradient(145deg, rgba(24,30,58,.98), rgba(12,17,37,.99));
+  border-color: rgba(138,114,255,.52);
+  box-shadow: 0 0 0 1px rgba(138,114,255,.09), 0 0 34px rgba(138,114,255,.20), 0 30px 110px rgba(0,0,0,.42);
+}
+.fc-welcome-card {
+  background: linear-gradient(145deg, rgba(18,31,56,.98), rgba(11,17,36,.99));
+  border-color: rgba(82,217,255,.58);
+  box-shadow: 0 0 0 1px rgba(82,217,255,.10), 0 0 38px rgba(82,217,255,.24), 0 30px 110px rgba(0,0,0,.42);
+}
+.fc-auth-card {
+  background: linear-gradient(145deg, rgba(34,25,51,.98), rgba(13,16,36,.99));
+  border-color: rgba(255,95,199,.56);
+  box-shadow: 0 0 0 1px rgba(255,95,199,.10), 0 0 38px rgba(255,95,199,.22), 0 30px 110px rgba(0,0,0,.42);
+}
+.fc-family-list-card {
+  background: linear-gradient(145deg, rgba(28,25,57,.98), rgba(12,16,36,.99));
+  border-color: rgba(138,114,255,.56);
+  box-shadow: 0 0 0 1px rgba(138,114,255,.10), 0 0 38px rgba(138,114,255,.22), 0 30px 110px rgba(0,0,0,.42);
+}
+.fc-members-intro h1 {
+  color: #c9c0ff;
+  text-shadow: 0 0 22px rgba(138,114,255,.24);
+}
+.fc-member-card {
+  background: linear-gradient(145deg, rgba(24,30,55,.98), rgba(12,16,35,.99));
+  border-color: rgba(138,114,255,.24);
+  box-shadow: 0 24px 80px rgba(0,0,0,.35), 0 0 24px rgba(138,114,255,.09);
+}
+.fc-home-profile {
+  padding: 9px 12px;
+  margin: -9px 0;
+  border: 1px solid rgba(138,114,255,.42);
+  border-radius: 18px;
+  background: linear-gradient(145deg, rgba(22,28,54,.82), rgba(10,15,33,.72));
+  box-shadow: 0 0 0 1px rgba(138,114,255,.07), 0 0 28px rgba(138,114,255,.16);
+}
+.fc-home-profile-copy small { color: #c9c0ff; }
+.fc-home-profile-copy strong { color: #e5e0ff; text-shadow: 0 0 14px rgba(138,114,255,.18); }
+.fc-home-profile-copy em { color: #bdb7d8; }
+.fc-home-profile-copy span { color: #b9dff0; }
+
+/* Emergency is deliberately noticeable, but pulses slowly rather than flashing. */
+.fc-quick-tile.emergency {
+  animation: fcEmergencyPulse 3.2s ease-in-out infinite;
+  border-color: rgba(255,61,117,.86);
+}
+@keyframes fcEmergencyPulse {
+  0%, 72%, 100% {
+    border-color: rgba(255,61,117,.72);
+    box-shadow: 0 18px 58px rgba(0,0,0,.24), 0 0 22px rgba(255,61,117,.12);
+  }
+  82% {
+    border-color: rgba(255,104,137,.98);
+    box-shadow: 0 18px 58px rgba(0,0,0,.24), 0 0 34px rgba(255,61,117,.30), 0 0 8px rgba(255,95,127,.18);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .fc-quick-tile.emergency { animation: none; }
+}
