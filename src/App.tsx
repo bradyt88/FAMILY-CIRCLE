@@ -14,11 +14,7 @@ type FamilyPhoto = { id: string; src: string; name: string; time: string }
 type FamilyEvent = { id: string; title: string; date: string; time: string; location: string }
 type FamilyTask = { id: string; title: string; dueDate: string; assignedTo: string; completed: boolean }
 type MoneyRequest = { id: string; requesterId: string; amount: string; purpose: string; dueDate: string; status: 'Pending' | 'Accepted'; lenderId?: string; taskId?: string; calendarEventId?: string }
-type MusicTrack = { id: string; title: string; artist: string; genre: string; audioSrc: string; artwork?: string; youtubeUrl?: string }
-
-const musicLibrary: MusicTrack[] = []
-const musicPlaylists = ['Chilled', 'Hip-Hop', 'R&B', 'Rock', 'Pop', 'Kids / Family']
-type EmergencyPending = { title: string; description: string; tone: string; needsLocation: boolean; message?: string }
+type MusicTrack = { id: string; title: string; artist: string; genres: string[]; audioSrc: string; artwork?: string; youtubeUrl?: string }\n\nconst musicLibrary: MusicTrack[] = [\n  { id: 'late-night-ghosts', title: 'Late Night Ghosts', artist: 'Coreykt', genres: ['Chilled', 'R&B', 'Hip-Hop'], audioSrc: `${import.meta.env.BASE_URL}music/audio/Late-Night-Ghosts.mp3`, youtubeUrl: 'https://youtu.be/t6L480nXQ9M?is=RNp81PJPqzK_f4wm' },\n]\n\nconst musicPlaylists = ['Chilled', 'Hip-Hop', 'R&B', 'Rock', 'Pop', 'Kids / Family']\ntype EmergencyPending = { title: string; description: string; tone: string; needsLocation: boolean; message?: string }
 
 const statusOptions: StatusOption[] = ['Home', 'Work', 'Partying', 'Recovering', 'Playing', 'Gaming', 'Toilet 😂', 'Movies', 'Sleeping', 'Gym', 'Travelling', 'Holiday', 'Out & About']
 const socialNames: SocialName[] = ['Facebook', 'TikTok', 'Snapchat', 'YouTube']
@@ -685,7 +681,7 @@ export default function App() {
         <section className="fc-panel fc-music-player">
           <div className="fc-music-player-top"><div><small>Now Playing</small><h2>{current ? current.title : 'Ready when you are'}</h2></div><span className="fc-pill">Family Circle Music</span></div>
           <div className="fc-music-artwork">{current?.artwork ? <img src={current.artwork} alt="" /> : <div className="fc-music-artwork-placeholder"><span>♫</span><strong>Family Circle</strong><small>Your music library starts here.</small></div>}</div>
-          <div className="fc-music-track-meta"><strong>{current ? current.title : 'No track loaded yet'}</strong><span>{current ? current.artist + ' · ' + current.genre : 'Add your first original track to begin listening.'}</span></div>
+          <div className="fc-music-track-meta"><strong>{current ? current.title : 'No track loaded yet'}</strong><span>{current ? current.artist + ' · ' + current.genres.join(' · ') : 'Add your first original track to begin listening.'}</span></div>
           <div className="fc-music-progress-wrap"><div className="fc-music-progress"><span style={{ width: String(progress) + '%' }} /></div><div className="fc-music-time"><span>{current ? formatMusicTime(musicCurrentTime) : '0:00'}</span><span>{current ? formatMusicTime(musicDuration) : '0:00'}</span></div></div>
           <div className="fc-music-controls">
             <button type="button" disabled={!current} aria-label="Shuffle">↝</button><button type="button" disabled={!current} aria-label="Previous track">◀</button><button className="fc-music-play-button" type="button" disabled={!current?.audioSrc} onClick={toggleMusicPlayback} aria-label={musicPlaying ? 'Pause music' : 'Play music'}>{musicPlaying ? 'Ⅱ' : '▶'}</button><button type="button" disabled={!current} aria-label="Next track">▶</button><button type="button" disabled={!current} aria-label="Repeat">↻</button>
@@ -694,8 +690,8 @@ export default function App() {
         </section>
         <section className="fc-panel fc-music-library">
           <div className="fc-panel-head"><div><small>Your music</small><h2>Playlists</h2></div><span className="fc-pill">{musicLibrary.length} tracks</span></div>
-          <div className="fc-music-playlists">{musicPlaylists.map((playlist) => <button type="button" className="fc-music-playlist" key={playlist} disabled><span>♫</span><strong>{playlist}</strong><small>Ready for tracks</small></button>)}</div>{musicLibrary.length > 0 && <div className="fc-music-track-list">{musicLibrary.map((track) => <button type="button" className="fc-music-track-item" key={track.id} onClick={() => { setMusicCurrentTrack(track); setMusicCurrentTime(0); setMusicPlaying(Boolean(track.audioSrc)) }}><span>{track.artwork ? <img src={track.artwork} alt="" /> : '♫'}</span><strong>{track.title}</strong><small>{track.artist} · {track.genre}</small></button>)}</div>}
-          <div className="fc-music-empty"><span>♫</span><strong>Your music library is ready.</strong><p>When your original tracks are added, they will appear here with their artwork, genre, playlists and playback controls.</p></div>
+          <div className="fc-music-playlists">{musicPlaylists.map((playlist) => <button type="button" className="fc-music-playlist" key={playlist} disabled={!musicLibrary.some((track) => track.genres.includes(playlist))}><span>♫</span><strong>{playlist}</strong><small>Ready for tracks</small></button>)}</div>{musicLibrary.length > 0 && <div className="fc-music-track-list">{musicLibrary.map((track) => <button type="button" className="fc-music-track-item" key={track.id} onClick={() => { setMusicCurrentTrack(track); setMusicCurrentTime(0); setMusicPlaying(Boolean(track.audioSrc)) }}><span>{track.artwork ? <img src={track.artwork} alt="" /> : '♫'}</span><strong>{track.title}</strong><small>{track.artist} · {track.genres.join(' · ')}</small></button>)}</div>}
+          {musicLibrary.length === 0 && <div className="fc-music-empty"><span>♫</span><strong>Your music library is ready.</strong><p>When your original tracks are added, they will appear here with their artwork, genre, playlists and playback controls.</p></div>
         </section>
       </div>
       {renderBottomNav()}
