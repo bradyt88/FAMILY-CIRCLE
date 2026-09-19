@@ -208,6 +208,15 @@ export default function App() {
     if (musicPlaying) void audio.play().catch(() => setMusicPlaying(false))
   }, [musicCurrentTrack])
 
+  useEffect(() => {
+    if (musicChildMode && musicCurrentTrack && !musicCurrentTrack.kidsAllowed) {
+      musicAudioRef.current?.pause()
+      setMusicCurrentTrack(null)
+      setMusicPlaying(false)
+      setMusicCurrentTime(0)
+    }
+  }, [musicChildMode, musicCurrentTrack])
+
   function openMusic() {
     setToolMode('music')
     setActiveTab('home')
