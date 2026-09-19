@@ -213,12 +213,6 @@ export default function App() {
     else { audio.pause(); setMusicPlaying(false) }
   }
 
-  function selectMusicTrack(track: MusicTrack) {
-    setMusicCurrentTrack(track)
-    setMusicCurrentTime(0)
-    setMusicPlaying(Boolean(track.audioSrc))
-  }
-
   function handleMusicEnded() {
     setMusicPlaying(false)
     setMusicCurrentTime(0)
