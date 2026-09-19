@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import logoUrl from '../design/brand/family-circle-logo.png'
 import Onboarding from './Onboarding'
 import './batch15.css'
@@ -14,6 +14,10 @@ type FamilyPhoto = { id: string; src: string; name: string; time: string }
 type FamilyEvent = { id: string; title: string; date: string; time: string; location: string }
 type FamilyTask = { id: string; title: string; dueDate: string; assignedTo: string; completed: boolean }
 type MoneyRequest = { id: string; requesterId: string; amount: string; purpose: string; dueDate: string; status: 'Pending' | 'Accepted'; lenderId?: string; taskId?: string; calendarEventId?: string }
+type MusicTrack = { id: string; title: string; artist: string; genre: string; audioSrc: string; artwork?: string; youtubeUrl?: string }
+
+const musicLibrary: MusicTrack[] = []
+const musicPlaylists = ['Chilled', 'Hip-Hop', 'R&B', 'Rock', 'Pop', 'Kids / Family']
 type EmergencyPending = { title: string; description: string; tone: string; needsLocation: boolean; message?: string }
 
 const statusOptions: StatusOption[] = ['Home', 'Work', 'Partying', 'Recovering', 'Playing', 'Gaming', 'Toilet 😂', 'Movies', 'Sleeping', 'Gym', 'Travelling', 'Holiday', 'Out & About']
@@ -177,12 +181,48 @@ export default function App() {
   const [moneyForm, setMoneyForm] = useState({ amount: '', purpose: '', dueDate: '' })
   const [sentEmergency, setSentEmergency] = useState<{ title: string; coordinates: { latitude: number; longitude: number } | null } | null>(null)
   const [dailyQuote, setDailyQuote] = useState(dailyFamilyQuote)
+  const musicAudioRef = useRef<HTMLAudioElement | null>(null)
+  const [musicCurrentTrack, setMusicCurrentTrack] = useState<MusicTrack | null>(null)
+  const [musicPlaying, setMusicPlaying] = useState(false)
+  const [musicCurrentTime, setMusicCurrentTime] = useState(0)
+  const [musicDuration, setMusicDuration] = useState(0)
 
   useEffect(() => {
     const refreshQuote = () => setDailyQuote(dailyFamilyQuote())
     const timer = window.setInterval(refreshQuote, 60 * 1000)
     return () => window.clearInterval(timer)
   }, [])
+
+  useEffect(() => {
+    const audio = musicAudioRef.current
+    if (!audio || !musicCurrentTrack?.audioSrc) return
+    audio.src = musicCurrentTrack.audioSrc
+    audio.load()
+    if (musicPlaying) void audio.play().catch(() => setMusicPlaying(false))
+  }, [musicCurrentTrack, musicPlaying])
+
+  function openMusic() {
+    setToolMode('music')
+    setActiveTab('home')
+  }
+
+  function toggleMusicPlayback() {
+    const audio = musicAudioRef.current
+    if (!musicCurrentTrack?.audioSrc || !audio) return
+    if (audio.paused) void audio.play().then(() => setMusicPlaying(true)).catch(() => setMusicPlaying(false))
+    else { audio.pause(); setMusicPlaying(false) }
+  }
+
+  function selectMusicTrack(track: MusicTrack) {
+    setMusicCurrentTrack(track)
+    setMusicCurrentTime(0)
+    setMusicPlaying(Boolean(track.audioSrc))
+  }
+
+  function handleMusicEnded() {
+    setMusicPlaying(false)
+    setMusicCurrentTime(0)
+  }
 
 
   const selectedMember = members.find((member) => member.id === selectedMemberId) ?? members[0]
@@ -496,6 +536,7 @@ export default function App() {
         <button className="fc-feature-card map-card" type="button" onClick={() => openTool('map')}><span className="fc-feature-icon">📍</span><div><small>Family location</small><strong>Where Is Everyone?</strong><span>{sharedMembers.length} family member{sharedMembers.length === 1 ? '' : 's'} sharing location</span></div><b>→</b></button>
         <button className="fc-feature-card members-card" type="button" onClick={() => openTool('family')}><span className="fc-feature-icon">👨‍👩‍👧‍👦</span><div><small>Your family</small><strong>Family Members</strong><span>View the family tree and profiles.</span></div><b>→</b></button>
         <button className="fc-feature-card games-card" type="button" onClick={() => openTool('games')}><span className="fc-feature-icon">🎮</span><div><small>Fun together</small><strong>Challenge a Family Member</strong><span>Games hub coming soon.</span></div><b>→</b></button>
+        <button className="fc-feature-card music-card" type="button" onClick={openMusic}><span className="fc-feature-icon">♫</span><div><small>Family Circle Music</small><strong>Music for the family</strong><span>Original music, playlists and more.</span></div><b>→</b></button>
       </section>
 
       {renderBottomNav()}
@@ -640,7 +681,35 @@ export default function App() {
     </div>
   }
 
+
+  function renderMusic() {
+    const current = musicCurrentTrack
+    const progress = musicDuration > 0 ? Math.min(100, (musicCurrentTime / musicDuration) * 100) : 0
+    return <div className="fc-page">
+      <FeatureHeader title="Family Circle Music" description="Original music, playlists and background listening for the family." onHome={() => goToTab('home')} />
+      <div className="fc-music-layout">
+        <section className="fc-panel fc-music-player">
+          <div className="fc-music-player-top"><div><small>Now Playing</small><h2>{current ? current.title : 'Ready when you are'}</h2></div><span className="fc-pill">Family Circle Music</span></div>
+          <div className="fc-music-artwork">{current?.artwork ? <img src={current.artwork} alt="" /> : <div className="fc-music-artwork-placeholder"><span>♫</span><strong>Family Circle</strong><small>Your music library starts here.</small></div>}</div>
+          <div className="fc-music-track-meta"><strong>{current ? current.title : 'No track loaded yet'}</strong><span>{current ? current.artist + ' · ' + current.genre : 'Add your first original track to begin listening.'}</span></div>
+          <div className="fc-music-progress-wrap"><div className="fc-music-progress"><span style={{ width: String(progress) + '%' }} /></div><div className="fc-music-time"><span>{current ? formatMusicTime(musicCurrentTime) : '0:00'}</span><span>{current ? formatMusicTime(musicDuration) : '0:00'}</span></div></div>
+          <div className="fc-music-controls">
+            <button type="button" disabled={!current} aria-label="Shuffle">↝</button><button type="button" disabled={!current} aria-label="Previous track">◀</button><button className="fc-music-play-button" type="button" disabled={!current?.audioSrc} onClick={toggleMusicPlayback} aria-label={musicPlaying ? 'Pause music' : 'Play music'}>{musicPlaying ? 'Ⅱ' : '▶'}</button><button type="button" disabled={!current} aria-label="Next track">▶</button><button type="button" disabled={!current} aria-label="Repeat">↻</button>
+          </div>
+          <div className="fc-music-actions">{current?.youtubeUrl && <a href={current.youtubeUrl} target="_blank" rel="noreferrer">▶ Watch on YouTube</a>}<button type="button" disabled={!current} onClick={() => { if (!current) return; setChatDraft('🎵 Check out ' + current.title + ' by ' + current.artist + ' on Family Circle Music.'); goToTab('chat') }}>💬 Share to Family Chat</button></div>
+        </section>
+        <section className="fc-panel fc-music-library">
+          <div className="fc-panel-head"><div><small>Your music</small><h2>Playlists</h2></div><span className="fc-pill">{musicLibrary.length} tracks</span></div>
+          <div className="fc-music-playlists">{musicPlaylists.map((playlist) => <button type="button" className="fc-music-playlist" key={playlist} disabled><span>♫</span><strong>{playlist}</strong><small>Ready for tracks</small></button>)}</div>
+          <div className="fc-music-empty"><span>♫</span><strong>Your music library is ready.</strong><p>When your original tracks are added, they will appear here with their artwork, genre, playlists and playback controls.</p></div>
+        </section>
+      </div>
+      {renderBottomNav()}
+    </div>
+  }
+
   function renderTool() {
+    if (toolMode === 'music') return renderMusic()
     if (toolMode === 'profile') return renderProfile()
     if (toolMode === 'family') return renderFamily()
     if (toolMode === 'games') return renderGames()
@@ -667,7 +736,14 @@ export default function App() {
 
   if (screen === 'members') return <main className="fc-app-shell fc-members-screen"><header className="fc-brand-header"><div className="fc-brand-lockup"><img src={logoUrl} alt="Family Circle" /><strong>Family Circle</strong></div><span>● Private family space</span></header><section className="fc-members-intro"><p className="fc-kicker">Welcome</p><h1>Who's using Family Circle?</h1><p className="fc-muted">Choose your family profile to continue.</p></section><section className="fc-member-grid">{members.map((member) => <button className="fc-member-card" key={member.id} type="button" onClick={() => chooseMember(member.id)}><AppAvatar member={member} className="fc-member-avatar" /><strong>{member.label}</strong><span>{member.status}</span><small>Enter PIN →</small></button>)}</section><p className="fc-private-note">▣ Your family information stays private.</p><button className="fc-switch-family-link" type="button" onClick={switchFamily}>Switch family</button>{pinOpen && <div className="fc-modal-backdrop" onMouseDown={() => setPinOpen(false)}><section className="fc-pin-modal" onMouseDown={(event) => event.stopPropagation()}><button className="fc-modal-close" type="button" onClick={() => setPinOpen(false)}>×</button><div className="fc-pin-profile"><AppAvatar member={selectedMember} /><div><p className="fc-kicker">Family profile</p><strong>{selectedMember.label}</strong></div></div><h2>Enter your PIN</h2><p className="fc-muted">Enter your 4-digit PIN to unlock your family space.</p><div className="fc-pin-dots">{[0, 1, 2, 3].map((index) => <span className={index < pin.length ? 'filled' : ''} key={index} />)}</div>{pinError && <p className="fc-error">{pinError}</p>}<div className="fc-keypad">{['1', '2', '3', '4', '5', '6', '7', '8', '9'].map((digit) => <button type="button" key={digit} onClick={() => setPin((current) => current.length < 4 ? current + digit : current)}>{digit}</button>)}<button type="button" onClick={() => { setPin(''); setPinOpen(false) }}>Cancel</button><button type="button" onClick={() => setPin((current) => current.length < 4 ? current + '0' : current)}>0</button><button type="button" onClick={() => setPin((current) => current.slice(0, -1))}>⌫</button></div><button className="fc-primary-button" type="button" onClick={submitPin}>Continue</button></section></div>}</main>
 
-  return <main className="fc-app-shell fc-home-screen"><div className="fc-home-shell">{renderActive()}</div></main>
+  return <main className="fc-app-shell fc-home-screen"><div className="fc-home-shell"><audio ref={musicAudioRef} onTimeUpdate={(event) => setMusicCurrentTime(event.currentTarget.currentTime)} onLoadedMetadata={(event) => setMusicDuration(event.currentTarget.duration)} onPlay={() => setMusicPlaying(true)} onPause={() => setMusicPlaying(false)} onEnded={handleMusicEnded} preload="metadata" />{renderActive()}{musicCurrentTrack && <button className="fc-music-mini-player" type="button" onClick={openMusic}><span className="fc-music-mini-art">{musicCurrentTrack.artwork ? <img src={musicCurrentTrack.artwork} alt="" /> : '♫'}</span><span className="fc-music-mini-copy"><strong>{musicCurrentTrack.title}</strong><small>{musicCurrentTrack.artist}</small></span><span className="fc-music-mini-play">{musicPlaying ? 'Ⅱ' : '▶'}</span><span className="fc-music-mini-chevron">⌃</span></button>}</div></main>
+}
+
+function formatMusicTime(seconds: number) {
+  if (!Number.isFinite(seconds) || seconds < 0) return '0:00'
+  const minutes = Math.floor(seconds / 60)
+  const secs = Math.floor(seconds % 60).toString().padStart(2, '0')
+  return minutes + ':' + secs
 }
 
 function TaskForm({ members, onAdd }: { members: FamilyMember[]; onAdd: (title: string, dueDate: string, assignedTo: string) => void }) {
