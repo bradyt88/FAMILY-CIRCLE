@@ -3,3 +3,19 @@
 .fc-splash-play{position:absolute;z-index:4;left:50%;top:calc(50% + 195px);transform:translate(-50%,-50%);width:82px;height:82px;border:1px solid rgba(255,255,255,.78);border-radius:50%;display:grid;place-items:center;background:rgba(6,10,28,.72);color:#fff;box-shadow:0 0 0 6px rgba(124,92,255,.10),0 0 28px rgba(82,217,255,.42),inset 0 0 22px rgba(255,255,255,.06);backdrop-filter:blur(8px);cursor:pointer;transition:transform 160ms ease,box-shadow 160ms ease,border-color 160ms ease}.fc-splash-play:hover{transform:translate(-50%,-50%) scale(1.06);border-color:#fff;box-shadow:0 0 0 7px rgba(124,92,255,.14),0 0 38px rgba(82,217,255,.58),inset 0 0 24px rgba(255,255,255,.08)}.fc-splash-play:active{transform:translate(-50%,-50%) scale(.97)}.fc-splash-play span{font-size:2rem;line-height:1;margin-left:4px;text-shadow:0 0 14px rgba(255,255,255,.5)}.fc-splash-play.playing{border-color:rgba(82,217,255,.95);box-shadow:0 0 0 7px rgba(82,217,255,.12),0 0 38px rgba(82,217,255,.55),inset 0 0 24px rgba(82,217,255,.08)}
 @media (max-width:640px){.fc-splash-play{top:calc(50% + 165px);width:72px;height:72px}.fc-splash-play span{font-size:1.75rem}}
 @media (prefers-reduced-motion: reduce){.fc-splash-play{transition:none}}
+
+.fc-account-type-card{border-color:rgba(138,114,255,.46);box-shadow:0 0 0 1px rgba(138,114,255,.08),0 0 36px rgba(138,114,255,.16),0 30px 110px rgba(0,0,0,.42)}
+.fc-account-type-card h1{color:#c9c0ff;text-shadow:0 0 18px rgba(138,114,255,.22)}
+.fc-account-type-grid{display:grid;gap:10px;margin-top:24px}
+.fc-account-type-option{width:100%;display:grid;grid-template-columns:auto 1fr auto;align-items:center;gap:13px;padding:15px;border:1px solid rgba(138,114,255,.20);border-radius:17px;background:#0d142c;color:#fff;text-align:left;cursor:pointer;transition:transform .16s ease,border-color .16s ease,box-shadow .16s ease}
+.fc-account-type-option:hover{transform:translateY(-2px);border-color:rgba(138,114,255,.52)}
+.fc-account-type-option.selected{border-color:rgba(82,217,255,.72);box-shadow:0 0 22px rgba(82,217,255,.10),inset 3px 0 0 #52d9ff}
+.fc-account-type-icon{width:48px;height:48px;display:grid;place-items:center;border-radius:14px;background:rgba(124,92,255,.10);font-size:1.45rem}
+.fc-account-type-option span:nth-child(2){display:grid;gap:4px}
+.fc-account-type-option strong{font-size:.9rem}
+.fc-account-type-option small{color:#9ea8c2;line-height:1.42;font-size:.69rem}
+.fc-account-type-option>b{font-size:1.1rem;color:#7f8aa5}
+.fc-account-type-option.selected>b{color:#62f1cf}
+.fc-account-type-continue{width:100%;margin-top:18px}
+.fc-account-type-continue:disabled{opacity:.42;cursor:not-allowed}
+.fc-account-type-note{margin:12px 0 0;text-align:center;color:#7e89a3;font-size:.66rem;line-height:1.4}
