@@ -1214,7 +1214,45 @@
   color:#8f9ab6;
   font-size:.68rem;
 }
-.fc-music-track-list{\n  display:grid;\n  gap:8px;\n  margin-top:14px;\n}\n.fc-music-track-item{\n  display:grid;\n  grid-template-columns:42px minmax(0,1fr);\n  gap:10px;\n  align-items:center;\n  padding:9px 11px;\n  border:1px solid rgba(82,217,255,.18);\n  border-radius:13px;\n  background:rgba(255,255,255,.025);\n  color:#fff;\n  text-align:left;\n}\n.fc-music-track-item:hover{\n  border-color:rgba(255,95,199,.55);\n  background:rgba(255,95,199,.045);\n}\n.fc-music-track-item>span{\n  width:42px;\n  height:42px;\n  display:grid;\n  place-items:center;\n  border-radius:10px;\n  background:linear-gradient(145deg,rgba(255,95,199,.15),rgba(82,217,255,.10));\n  color:#ff8bdd;\n}\n.fc-music-track-item strong,.fc-music-track-item small{\n  min-width:0;\n  overflow:hidden;\n  white-space:nowrap;\n  text-overflow:ellipsis;\n}\n.fc-music-track-item strong{font-size:.76rem}\n.fc-music-track-item small{color:#9da7c1;font-size:.65rem}\n.fc-music-empty{
+.fc-music-track-list{
+  display:grid;
+  gap:8px;
+  margin-top:14px;
+}
+.fc-music-track-item{
+  display:grid;
+  grid-template-columns:42px minmax(0,1fr);
+  gap:10px;
+  align-items:center;
+  padding:9px 11px;
+  border:1px solid rgba(82,217,255,.18);
+  border-radius:13px;
+  background:rgba(255,255,255,.025);
+  color:#fff;
+  text-align:left;
+}
+.fc-music-track-item:hover{
+  border-color:rgba(255,95,199,.55);
+  background:rgba(255,95,199,.045);
+}
+.fc-music-track-item>span{
+  width:42px;
+  height:42px;
+  display:grid;
+  place-items:center;
+  border-radius:10px;
+  background:linear-gradient(145deg,rgba(255,95,199,.15),rgba(82,217,255,.10));
+  color:#ff8bdd;
+}
+.fc-music-track-item strong,.fc-music-track-item small{
+  min-width:0;
+  overflow:hidden;
+  white-space:nowrap;
+  text-overflow:ellipsis;
+}
+.fc-music-track-item strong{font-size:.76rem}
+.fc-music-track-item small{color:#9da7c1;font-size:.65rem}
+.fc-music-empty{
   margin-top:14px;
   padding:18px;
   border:1px dashed rgba(255,95,199,.28);
