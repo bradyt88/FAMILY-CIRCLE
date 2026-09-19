@@ -3,7 +3,7 @@ import logoUrl from '../design/brand/family-circle-logo.png'
 import Onboarding from './Onboarding'
 import './batch15.css'
 
-type ToolMode = 'emergency' | 'profile' | 'family' | 'games' | 'notifications' | 'settings' | 'map'
+type ToolMode = 'emergency' | 'profile' | 'family' | 'games' | 'notifications' | 'settings' | 'map' | 'music'
 type HomeTab = 'home' | 'chat' | 'photos' | 'calendar' | 'tasks' | 'shopping'
 type StatusOption = 'Home' | 'Work' | 'Partying' | 'Recovering' | 'Playing' | 'Gaming' | 'Toilet 😂' | 'Movies' | 'Sleeping' | 'Gym' | 'Travelling' | 'Holiday' | 'Out & About'
 type SocialName = 'Facebook' | 'TikTok' | 'Snapchat' | 'YouTube'
@@ -199,7 +199,7 @@ export default function App() {
     audio.src = musicCurrentTrack.audioSrc
     audio.load()
     if (musicPlaying) void audio.play().catch(() => setMusicPlaying(false))
-  }, [musicCurrentTrack, musicPlaying])
+  }, [musicCurrentTrack])
 
   function openMusic() {
     setToolMode('music')
