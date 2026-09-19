@@ -466,7 +466,7 @@ export default function App() {
 
       <section className="fc-banner">
         <span className="fc-banner-heart">♡</span>
-        <div className="fc-banner-quote"><strong>{dailyQuote}</strong><span>Family Circle · Today</span></div>
+        <div className="fc-banner-quote"><strong className="fc-quote-text">{dailyQuote}</strong><span>Family Circle · Today</span></div>
         <time className="fc-banner-date">{(() => { const date = formatBannerDate(todayKey()); return <><strong>{date.weekday}</strong><span>{date.dayMonth}</span><small>{date.year}</small></> })()}</time>
       </section>
 
