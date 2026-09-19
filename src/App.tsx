@@ -14,10 +14,10 @@ type FamilyPhoto = { id: string; src: string; name: string; time: string }
 type FamilyEvent = { id: string; title: string; date: string; time: string; location: string }
 type FamilyTask = { id: string; title: string; dueDate: string; assignedTo: string; completed: boolean }
 type MoneyRequest = { id: string; requesterId: string; amount: string; purpose: string; dueDate: string; status: 'Pending' | 'Accepted'; lenderId?: string; taskId?: string; calendarEventId?: string }
-type MusicTrack = { id: string; title: string; artist: string; genres: string[]; audioSrc: string; artwork?: string; youtubeUrl?: string }
+type MusicTrack = { id: string; title: string; artist: string; genres: string[]; audioSrc: string; artwork?: string; youtubeUrl?: string; explicit: boolean; kidsAllowed: boolean; visualStyle: 1 | 2 | 3 | 4 | 5 }
 
 const musicLibrary: MusicTrack[] = [
-  { id: 'late-night-ghosts', title: 'Late Night Ghosts', artist: 'Coreykt', genres: ['Chilled', 'R&B', 'Hip-Hop'], audioSrc: `${import.meta.env.BASE_URL}music/audio/Late Night Ghosts.mp3`, youtubeUrl: 'https://youtu.be/t6L480nXQ9M?is=RNp81PJPqzK_f4wm' },
+  { id: 'late-night-ghosts', title: 'Late Night Ghosts', artist: 'Coreykt', genres: ['Chilled', 'R&B', 'Hip-Hop'], audioSrc: `${import.meta.env.BASE_URL}music/audio/Late Night Ghosts.mp3`, youtubeUrl: 'https://youtu.be/t6L480nXQ9M?is=RNp81PJPqzK_f4wm', explicit: true, kidsAllowed: false, visualStyle: 3 },
 ]
 
 const musicPlaylists = ['Chilled', 'Hip-Hop', 'R&B', 'Rock', 'Pop', 'Kids / Family']
@@ -189,6 +189,10 @@ export default function App() {
   const [musicPlaying, setMusicPlaying] = useState(false)
   const [musicCurrentTime, setMusicCurrentTime] = useState(0)
   const [musicDuration, setMusicDuration] = useState(0)
+  const [musicPlaylist, setMusicPlaylist] = useState<string | null>(null)
+  const [musicRecentlyPlayed, setMusicRecentlyPlayed] = useState<string[]>([])
+  const [musicChildMode, setMusicChildMode] = useState(false)
+  const [musicChildYouTubeAllowed, setMusicChildYouTubeAllowed] = useState(false)
 
   useEffect(() => {
     const refreshQuote = () => setDailyQuote(dailyFamilyQuote())
@@ -219,6 +223,24 @@ export default function App() {
   function handleMusicEnded() {
     setMusicPlaying(false)
     setMusicCurrentTime(0)
+    const next = musicLibrary.find((track) => track.id !== musicCurrentTrack?.id && (!musicPlaylist || track.genres.includes(musicPlaylist)) && (!musicChildMode || track.kidsAllowed))
+    if (next) selectMusicTrack(next)
+  }
+
+  function selectMusicTrack(track: MusicTrack) {
+    if (musicChildMode && !track.kidsAllowed) return
+    setMusicCurrentTrack(track)
+    setMusicCurrentTime(0)
+    setMusicPlaying(Boolean(track.audioSrc))
+    setMusicRecentlyPlayed((current) => [track.id, ...current.filter((id) => id !== track.id)].slice(0, 8))
+  }
+
+  function selectMusicPlaylist(playlist: string) {
+    setMusicPlaylist(playlist)
+  }
+
+  function musicVisibleTracks() {
+    return musicLibrary.filter((track) => (!musicPlaylist || track.genres.includes(musicPlaylist)) && (!musicChildMode || track.kidsAllowed))
   }
 
 
@@ -681,24 +703,34 @@ export default function App() {
 
   function renderMusic() {
     const current = musicCurrentTrack
+    const visibleTracks = musicVisibleTracks()
+    const recentlyPlayed = musicRecentlyPlayed.map((id) => musicLibrary.find((track) => track.id === id)).filter((track): track is MusicTrack => Boolean(track) && (!musicChildMode || track.kidsAllowed))
     const progress = musicDuration > 0 ? Math.min(100, (musicCurrentTime / musicDuration) * 100) : 0
+    const youtubeAvailable = Boolean(current?.youtubeUrl) && (!musicChildMode || musicChildYouTubeAllowed)
     return <div className="fc-page">
       <FeatureHeader title="Family Circle Music" description="Original music, playlists and background listening for the family." onHome={() => goToTab('home')} />
       <div className="fc-music-layout">
         <section className="fc-panel fc-music-player">
-          <div className="fc-music-player-top"><div><small>Now Playing</small><h2>{current ? current.title : 'Ready when you are'}</h2></div><span className="fc-pill">Family Circle Music</span></div>
-          <div className="fc-music-artwork">{current?.artwork ? <img src={current.artwork} alt="" /> : <div className="fc-music-artwork-placeholder"><span>♫</span><strong>Family Circle</strong><small>Your music library starts here.</small></div>}</div>
-          <div className="fc-music-track-meta"><strong>{current ? current.title : 'No track loaded yet'}</strong><span>{current ? current.artist + ' · ' + current.genres.join(' · ') : 'Add your first original track to begin listening.'}</span></div>
+          <div className="fc-music-player-top"><div><small>Now Playing</small><h2>{current ? current.title : 'Ready when you are'}</h2></div><span className="fc-pill">{musicChildMode ? 'Kids Music' : 'Family Circle Music'}</span></div>
+          <div className="fc-music-artwork fc-music-visual">{current ? <div className={`fc-music-equalizer style-${current.visualStyle} ${musicPlaying ? 'playing' : ''}`} aria-label="Music visualizer">{Array.from({ length: 16 }, (_, index) => <i key={index} style={{ animationDelay: `${index * -0.09}s` }} />)}</div> : <div className="fc-music-artwork-placeholder"><span>♫</span><strong>Family Circle Music</strong><small>Select a track to start listening.</small></div>}</div>
+          <div className="fc-music-track-meta"><strong>{current ? current.title : 'No track loaded yet'}</strong><span>{current ? current.artist + ' · ' + current.genres.join(' · ') : 'Choose a playlist or track to begin.'}</span></div>
           <div className="fc-music-progress-wrap"><div className="fc-music-progress"><span style={{ width: String(progress) + '%' }} /></div><div className="fc-music-time"><span>{current ? formatMusicTime(musicCurrentTime) : '0:00'}</span><span>{current ? formatMusicTime(musicDuration) : '0:00'}</span></div></div>
           <div className="fc-music-controls">
-            <button type="button" disabled={!current} aria-label="Shuffle">↝</button><button type="button" disabled={!current} aria-label="Previous track">◀</button><button className="fc-music-play-button" type="button" disabled={!current?.audioSrc} onClick={toggleMusicPlayback} aria-label={musicPlaying ? 'Pause music' : 'Play music'}>{musicPlaying ? 'Ⅱ' : '▶'}</button><button type="button" disabled={!current} aria-label="Next track">▶</button><button type="button" disabled={!current} aria-label="Repeat">↻</button>
+            <button type="button" disabled={!current} aria-label="Shuffle">↝</button>
+            <button type="button" disabled={!current} aria-label="Previous track" onClick={() => { const list = visibleTracks; const index = list.findIndex((track) => track.id === current?.id); if (index >= 0 && list.length > 1) selectMusicTrack(list[(index - 1 + list.length) % list.length]) }}>◀</button>
+            <button className="fc-music-play-button" type="button" disabled={!current?.audioSrc} onClick={toggleMusicPlayback} aria-label={musicPlaying ? 'Pause music' : 'Play music'}>{musicPlaying ? 'Ⅱ' : '▶'}</button>
+            <button type="button" disabled={!current} aria-label="Next track" onClick={() => { const list = visibleTracks; const index = list.findIndex((track) => track.id === current?.id); if (index >= 0 && list.length > 1) selectMusicTrack(list[(index + 1) % list.length]) }}>▶</button>
+            <button type="button" disabled={!current} aria-label="Repeat">↻</button>
           </div>
-          <div className="fc-music-actions">{current?.youtubeUrl && <a href={current.youtubeUrl} target="_blank" rel="noreferrer">▶ Watch on YouTube</a>}<button type="button" disabled={!current} onClick={() => { if (!current) return; setChatDraft('🎵 Check out ' + current.title + ' by ' + current.artist + ' on Family Circle Music.'); goToTab('chat') }}>💬 Share to Family Chat</button></div>
+          <div className="fc-music-actions"><button className={youtubeAvailable ? '' : 'disabled'} type="button" disabled={!youtubeAvailable} onClick={() => { if (youtubeAvailable && current?.youtubeUrl) window.open(current.youtubeUrl, '_blank', 'noopener,noreferrer') }}>▶ Watch on YouTube{musicChildMode && !musicChildYouTubeAllowed ? ' 🔒' : ''}</button><button type="button" disabled={!current} onClick={() => { if (!current) return; setChatDraft('🎵 Check out ' + current.title + ' by ' + current.artist + ' on Family Circle Music.'); goToTab('chat') }}>💬 Share to Family Chat</button></div>
         </section>
         <section className="fc-panel fc-music-library">
-          <div className="fc-panel-head"><div><small>Your music</small><h2>Playlists</h2></div><span className="fc-pill">{musicLibrary.length} tracks</span></div>
-          <div className="fc-music-playlists">{musicPlaylists.map((playlist) => <button type="button" className="fc-music-playlist" key={playlist} disabled={!musicLibrary.some((track) => track.genres.includes(playlist))}><span>♫</span><strong>{playlist}</strong><small>Ready for tracks</small></button>)}</div>{musicLibrary.length > 0 && <div className="fc-music-track-list">{musicLibrary.map((track) => <button type="button" className="fc-music-track-item" key={track.id} onClick={() => { setMusicCurrentTrack(track); setMusicCurrentTime(0); setMusicPlaying(Boolean(track.audioSrc)) }}><span>{track.artwork ? <img src={track.artwork} alt="" /> : '♫'}</span><strong>{track.title}</strong><small>{track.artist} · {track.genres.join(' · ')}</small></button>)}</div>}
-          {musicLibrary.length === 0 && <div className="fc-music-empty"><span>♫</span><strong>Your music library is ready.</strong><p>When your original tracks are added, they will appear here with their artwork, genre, playlists and playback controls.</p></div>}
+          <div className="fc-panel-head"><div><small>{musicPlaylist ? `Playlist · ${musicPlaylist}` : 'Your music'}</small><h2>Playlists</h2></div><span className="fc-pill">{visibleTracks.length} tracks</span></div>
+          <div className="fc-music-playlists">{musicPlaylists.map((playlist) => { const available = musicLibrary.some((track) => track.genres.includes(playlist) && (!musicChildMode || track.kidsAllowed)); return <button type="button" className={`fc-music-playlist${musicPlaylist === playlist ? ' selected' : ''}`} key={playlist} disabled={!available} onClick={() => selectMusicPlaylist(playlist)}><span>♫</span><strong>{playlist}</strong><small>{available ? 'Open playlist' : 'No available tracks'}</small></button> })}</div>
+          {musicPlaylist && <button className="fc-music-clear-playlist" type="button" onClick={() => setMusicPlaylist(null)}>← All Music</button>}
+          {visibleTracks.length > 0 ? <div className="fc-music-track-list">{visibleTracks.map((track) => <button type="button" className={`fc-music-track-item${musicCurrentTrack?.id === track.id ? ' active' : ''}`} key={track.id} onClick={() => selectMusicTrack(track)}><span className={`fc-music-track-visual style-${track.visualStyle}`}><i /><i /><i /><i /></span><strong>{track.title}</strong><small>{track.artist} · {track.genres.join(' · ')}{track.explicit ? ' · Explicit' : ''}</small></button>)}</div> : <div className="fc-music-empty"><span>♫</span><strong>No tracks in this view yet.</strong><p>Add music to this playlist or adjust the family music permissions.</p></div>}
+          {recentlyPlayed.length > 0 && <div className="fc-music-recent"><div className="fc-panel-head"><div><small>Listening history</small><h2>Recently Played</h2></div></div><div className="fc-music-track-list">{recentlyPlayed.map((track) => <button type="button" className="fc-music-track-item" key={track.id} onClick={() => selectMusicTrack(track)}><span className={`fc-music-track-visual style-${track.visualStyle}`}><i /><i /><i /><i /></span><strong>{track.title}</strong><small>{track.artist}</small></button>)}</div></div>}
+          <div className="fc-music-permissions"><div><small>Demo permission controls</small><strong>Child music mode</strong><span>Shows how a child account can be restricted to approved kids' music.</span></div><label><input type="checkbox" checked={musicChildMode} onChange={(event) => { setMusicChildMode(event.target.checked); setMusicPlaylist(null); }} /> Child account</label><label><input type="checkbox" checked={musicChildYouTubeAllowed} onChange={(event) => setMusicChildYouTubeAllowed(event.target.checked)} /> Allow YouTube</label></div>
         </section>
       </div>
       {renderBottomNav()}
@@ -733,7 +765,7 @@ export default function App() {
 
   if (screen === 'members') return <main className="fc-app-shell fc-members-screen"><header className="fc-brand-header"><div className="fc-brand-lockup"><img src={logoUrl} alt="Family Circle" /><strong>Family Circle</strong></div><span>● Private family space</span></header><section className="fc-members-intro"><p className="fc-kicker">Welcome</p><h1>Who's using Family Circle?</h1><p className="fc-muted">Choose your family profile to continue.</p></section><section className="fc-member-grid">{members.map((member) => <button className="fc-member-card" key={member.id} type="button" onClick={() => chooseMember(member.id)}><AppAvatar member={member} className="fc-member-avatar" /><strong>{member.label}</strong><span>{member.status}</span><small>Enter PIN →</small></button>)}</section><p className="fc-private-note">▣ Your family information stays private.</p><button className="fc-switch-family-link" type="button" onClick={switchFamily}>Switch family</button>{pinOpen && <div className="fc-modal-backdrop" onMouseDown={() => setPinOpen(false)}><section className="fc-pin-modal" onMouseDown={(event) => event.stopPropagation()}><button className="fc-modal-close" type="button" onClick={() => setPinOpen(false)}>×</button><div className="fc-pin-profile"><AppAvatar member={selectedMember} /><div><p className="fc-kicker">Family profile</p><strong>{selectedMember.label}</strong></div></div><h2>Enter your PIN</h2><p className="fc-muted">Enter your 4-digit PIN to unlock your family space.</p><div className="fc-pin-dots">{[0, 1, 2, 3].map((index) => <span className={index < pin.length ? 'filled' : ''} key={index} />)}</div>{pinError && <p className="fc-error">{pinError}</p>}<div className="fc-keypad">{['1', '2', '3', '4', '5', '6', '7', '8', '9'].map((digit) => <button type="button" key={digit} onClick={() => setPin((current) => current.length < 4 ? current + digit : current)}>{digit}</button>)}<button type="button" onClick={() => { setPin(''); setPinOpen(false) }}>Cancel</button><button type="button" onClick={() => setPin((current) => current.length < 4 ? current + '0' : current)}>0</button><button type="button" onClick={() => setPin((current) => current.slice(0, -1))}>⌫</button></div><button className="fc-primary-button" type="button" onClick={submitPin}>Continue</button></section></div>}</main>
 
-  return <main className="fc-app-shell fc-home-screen"><div className="fc-home-shell"><audio ref={musicAudioRef} onTimeUpdate={(event) => setMusicCurrentTime(event.currentTarget.currentTime)} onLoadedMetadata={(event) => setMusicDuration(event.currentTarget.duration)} onPlay={() => setMusicPlaying(true)} onPause={() => setMusicPlaying(false)} onEnded={handleMusicEnded} preload="metadata" />{renderActive()}{musicCurrentTrack && <button className="fc-music-mini-player" type="button" onClick={openMusic}><span className="fc-music-mini-art">{musicCurrentTrack.artwork ? <img src={musicCurrentTrack.artwork} alt="" /> : '♫'}</span><span className="fc-music-mini-copy"><strong>{musicCurrentTrack.title}</strong><small>{musicCurrentTrack.artist}</small></span><span className="fc-music-mini-play">{musicPlaying ? 'Ⅱ' : '▶'}</span><span className="fc-music-mini-chevron">⌃</span></button>}</div></main>
+  return <main className="fc-app-shell fc-home-screen"><div className="fc-home-shell"><audio ref={musicAudioRef} onTimeUpdate={(event) => setMusicCurrentTime(event.currentTarget.currentTime)} onLoadedMetadata={(event) => setMusicDuration(event.currentTarget.duration)} onPlay={() => setMusicPlaying(true)} onPause={() => setMusicPlaying(false)} onEnded={handleMusicEnded} preload="metadata" />{renderActive()}{musicCurrentTrack && <div className="fc-music-mini-player"><button className={`fc-music-mini-art fc-music-mini-visual style-${musicCurrentTrack.visualStyle}`} type="button" onClick={openMusic} aria-label="Open Music player">{[0,1,2,3,4].map((index) => <i key={index} />)}</button><button className="fc-music-mini-copy" type="button" onClick={openMusic}><strong>{musicCurrentTrack.title}</strong><small>{musicCurrentTrack.artist}</small></button><button className="fc-music-mini-control" type="button" onClick={() => { const list = musicVisibleTracks(); const index = list.findIndex((track) => track.id === musicCurrentTrack.id); if (index >= 0 && list.length > 1) selectMusicTrack(list[(index - 1 + list.length) % list.length]) }} aria-label="Previous track">◀</button><button className="fc-music-mini-control fc-music-mini-play" type="button" onClick={toggleMusicPlayback} aria-label={musicPlaying ? 'Pause music' : 'Play music'}>{musicPlaying ? 'Ⅱ' : '▶'}</button><button className="fc-music-mini-control" type="button" onClick={() => { const list = musicVisibleTracks(); const index = list.findIndex((track) => track.id === musicCurrentTrack.id); if (index >= 0 && list.length > 1) selectMusicTrack(list[(index + 1) % list.length]) }} aria-label="Next track">▶</button><button className="fc-music-mini-chevron" type="button" onClick={openMusic} aria-label="Expand Music player">⌃</button></div>}</div></main>
 }
 
 function formatMusicTime(seconds: number) {
