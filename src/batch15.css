@@ -1364,3 +1364,9 @@
   .fc-music-mini-player{bottom:76px;width:calc(100% - 20px);grid-template-columns:42px minmax(0,1fr) 30px 36px 30px 20px}.fc-music-mini-art{width:42px;height:42px}
   .fc-music-mini-art{width:42px;height:42px}
 }
+
+/* Family Circle Music artwork: use supplied artwork when present, otherwise keep the equalizer fallback. */
+.fc-music-track-art{width:42px;height:42px;display:block;overflow:hidden;border-radius:10px;background:#0a0f22;border:1px solid rgba(255,95,199,.20)}
+.fc-music-track-art img{width:100%;height:100%;display:block;object-fit:cover}
+.fc-music-mini-artwork{padding:0;overflow:hidden}
+.fc-music-mini-artwork img{width:100%;height:100%;display:block;object-fit:cover}
