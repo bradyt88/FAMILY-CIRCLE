@@ -45,16 +45,13 @@ export default function Onboarding({ onComplete, initialView = 'splash' }: { onC
   useEffect(() => {
     if (initialView !== 'splash') return
 
-    const audio = new Audio('/audio/welcome-to-family-circle.mp3')
-    audio.preload = 'auto'
-    audio.volume = 0.88
-    splashAudioRef.current = audio
+    const audio = splashAudioRef.current
+    if (!audio) return
 
-    let audioStarted = false
+    audio.volume = 0.88
+
     const startAudio = () => {
-      if (audioStarted) return
       void audio.play().then(() => {
-        audioStarted = true
         setAudioBlocked(false)
       }).catch(() => {
         setAudioBlocked(true)
@@ -67,15 +64,9 @@ export default function Onboarding({ onComplete, initialView = 'splash' }: { onC
       setView('welcome')
     }, 6800)
 
-    const resumeAfterGesture = () => startAudio()
-    window.addEventListener('pointerdown', resumeAfterGesture)
-    window.addEventListener('keydown', resumeAfterGesture)
-
     return () => {
       window.clearTimeout(audioTimer)
       window.clearTimeout(timer)
-      window.removeEventListener('pointerdown', resumeAfterGesture)
-      window.removeEventListener('keydown', resumeAfterGesture)
       audio.pause()
       audio.currentTime = 0
       splashAudioRef.current = null
@@ -155,7 +146,19 @@ export default function Onboarding({ onComplete, initialView = 'splash' }: { onC
   if (view === 'splash' && !splashDone) {
     return <main className="fc-onboarding-shell fc-splash-screen">
       <div className="fc-splash-logo"><img src={logoUrl} alt="Family Circle" /></div>
-      <button className={audioBlocked ? 'fc-splash-audio-hint visible' : 'fc-splash-audio-hint'} type="button" onClick={() => splashAudioRef.current?.play().then(() => setAudioBlocked(false)).catch(() => setAudioBlocked(true))} aria-label="Play the Family Circle welcome">Tap to hear the Family Circle welcome</button>
+      <div className="fc-splash-audio-player" aria-label="Family Circle welcome audio">
+        <span>Welcome</span>
+        <audio
+          ref={splashAudioRef}
+          src={`${import.meta.env.BASE_URL}audio/welcome-to-family-circle.mp3`}
+          preload="auto"
+          controls
+          playsInline
+          onPlay={() => setAudioBlocked(false)}
+          onError={() => setAudioBlocked(true)}
+        />
+        {audioBlocked && <small>Tap play to hear the welcome</small>}
+      </div>
     </main>
   }
 
