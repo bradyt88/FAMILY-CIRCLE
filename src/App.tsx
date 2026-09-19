@@ -713,7 +713,7 @@ export default function App() {
   function renderMusic() {
     const current = musicCurrentTrack
     const visibleTracks = musicVisibleTracks()
-    const recentlyPlayed = musicRecentlyPlayed.map((id) => musicLibrary.find((track) => track.id === id)).filter((track): track is MusicTrack => Boolean(track) && (!musicChildMode || track.kidsAllowed))
+    const recentlyPlayed = musicRecentlyPlayed.map((id) => musicLibrary.find((track) => track.id === id)).filter((track): track is MusicTrack => Boolean(track)).filter((track) => !musicChildMode || track.kidsAllowed)
     const progress = musicDuration > 0 ? Math.min(100, (musicCurrentTime / musicDuration) * 100) : 0
     const youtubeAvailable = Boolean(current?.youtubeUrl) && (!musicChildMode || musicChildYouTubeAllowed)
     return <div className="fc-page">
