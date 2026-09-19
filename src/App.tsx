@@ -20,6 +20,7 @@ type MusicTrack = { id: string; title: string; artist: string; genres: string[];
 const musicLibrary: MusicTrack[] = [
   { id: 'late-night-ghosts', title: 'Late Night Ghosts', artist: 'Coreykt', genres: ['Chilled', 'R&B', 'Hip-Hop'], audioSrc: `${import.meta.env.BASE_URL}music/audio/Late Night Ghosts.mp3`, youtubeUrl: 'https://youtu.be/t6L480nXQ9M?is=RNp81PJPqzK_f4wm', explicit: true, kidsAllowed: false, visualStyle: 3 },
   { id: 'unread-at-3am', title: 'Unread at 3am', artist: 'bradyxai', genres: ['R&B'], audioSrc: `${import.meta.env.BASE_URL}music/audio/Unread at 3am.mp3`, artwork: `${import.meta.env.BASE_URL}music/artwork/Unread-at-3am-artwork.jpg`, youtubeUrl: 'https://youtu.be/H4r-CAamr_A?si=xD65AIvIZgxhgAPC', explicit: true, kidsAllowed: false, visualStyle: 4 },
+  { id: 'six-seven', title: 'Six seven', artist: 'bradyxai', genres: ['Kids / Family'], audioSrc: `${import.meta.env.BASE_URL}music/audio/Six seven.mp3`, artwork: `${import.meta.env.BASE_URL}music/artwork/ChatGPT Image Sep 19, 2026, 06_25_58 PM.png`, explicit: false, kidsAllowed: true, visualStyle: 5 },
 ]
 
 const musicPlaylists = ['Chilled', 'Hip-Hop', 'R&B', 'Rock', 'Pop', 'Kids / Family']
