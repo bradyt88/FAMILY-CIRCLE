@@ -898,3 +898,82 @@
 .fc-quote-text{display:inline-block;font-family:Georgia,"Times New Roman",serif;font-size:1.08rem;font-weight:700;font-style:italic;letter-spacing:.012em;line-height:1.25;color:transparent;background:linear-gradient(90deg,#ff5fc7 0%,#a778ff 22%,#52d9ff 45%,#ffffff 50%,#52d9ff 55%,#a778ff 78%,#ff5fc7 100%);background-size:260% 100%;background-position:100% 50%;background-clip:text;-webkit-background-clip:text;-webkit-text-fill-color:transparent;text-shadow:0 0 18px rgba(124,92,255,.22);animation:fcQuoteSpectrum 5.5s ease-in-out infinite}
 @keyframes fcQuoteSpectrum{0%{background-position:0% 50%}42%{background-position:100% 50%}100%{background-position:100% 50%}}
 @media (prefers-reduced-motion:reduce){.fc-quote-text{animation:none;background-position:50% 50%}}
+
+
+/* Refined Family Circle typography — brighter spectrum sweep while preserving existing type. */
+.fc-quote-text{
+  font-size:1.16rem;
+  font-weight:800;
+  line-height:1.15;
+  letter-spacing:.015em;
+}
+
+/* Shared animated spectrum for major section headings. Typography and layout remain unchanged. */
+.fc-card-head small,
+.fc-card-head h2,
+.fc-panel-head small,
+.fc-panel-head h2,
+.fc-feature-header h1,
+.fc-shopping-paper-top h2,
+.fc-shopping-dashboard-head h2{
+  color:transparent;
+  background:linear-gradient(90deg,#ff5fc7 0%,#a778ff 22%,#52d9ff 45%,#ffffff 50%,#52d9ff 55%,#a778ff 78%,#ff5fc7 100%);
+  background-size:260% 100%;
+  background-position:100% 50%;
+  background-clip:text;
+  -webkit-background-clip:text;
+  -webkit-text-fill-color:transparent;
+  animation:fcHeadingSpectrum 5.5s ease-in-out infinite;
+  text-shadow:none;
+}
+@keyframes fcHeadingSpectrum{
+  0%{background-position:0% 50%}
+  42%{background-position:100% 50%}
+  100%{background-position:100% 50%}
+}
+
+/* Major section borders: slightly stronger definition without changing inner-card borders. */
+.fc-dashboard-card.cyan{border-color:rgba(82,217,255,.92)}
+.fc-dashboard-card.pink{border-color:rgba(255,95,199,.92)}
+.fc-dashboard-card.purple{border-color:rgba(138,114,255,.92)}
+.fc-dashboard-card.green{border-color:rgba(55,223,191,.92)}
+.fc-quick-tile.cyan{border-color:rgba(82,217,255,.78)}
+.fc-quick-tile.pink{border-color:rgba(255,95,199,.78)}
+.fc-quick-tile.purple{border-color:rgba(138,114,255,.78)}
+.fc-quick-tile.green{border-color:rgba(55,223,191,.78)}
+.fc-quick-tile.shopping{border-color:rgba(255,196,92,.78)}
+.fc-quick-tile.emergency{border-color:rgba(255,61,117,.90)}
+.fc-feature-header.pink ~ .fc-feature-shell .fc-panel,
+.fc-feature-header.pink ~ .fc-two-col .fc-panel,
+.fc-feature-header.pink ~ .fc-panel{border-color:rgba(255,95,199,.92)}
+.fc-feature-header.cyan ~ .fc-feature-shell .fc-panel,
+.fc-feature-header.cyan ~ .fc-two-col .fc-panel,
+.fc-feature-header.cyan ~ .fc-panel{border-color:rgba(82,217,255,.92)}
+.fc-feature-header.green ~ .fc-feature-shell .fc-panel,
+.fc-feature-header.green ~ .fc-two-col .fc-panel,
+.fc-feature-header.green ~ .fc-panel{border-color:rgba(55,223,191,.92)}
+.fc-feature-header.purple ~ .fc-feature-shell .fc-panel,
+.fc-feature-header.purple ~ .fc-two-col .fc-panel,
+.fc-feature-header.purple ~ .fc-profile-layout .fc-panel,
+.fc-feature-header.purple ~ .fc-panel{border-color:rgba(138,114,255,.92)}
+.fc-feature-header.shopping ~ .fc-shopping-layout .fc-panel,
+.fc-feature-header.shopping ~ .fc-panel{border-color:rgba(255,196,92,.92)}
+.fc-feature-header.emergency ~ .fc-feature-shell .fc-panel,
+.fc-feature-header.emergency ~ .fc-two-col .fc-panel,
+.fc-feature-header.emergency ~ .fc-panel{border-color:rgba(255,61,117,.94)}
+
+@media (max-width:760px){
+  .fc-quote-text{font-size:1.06rem}
+}
+@media (prefers-reduced-motion:reduce){
+  .fc-card-head small,
+  .fc-card-head h2,
+  .fc-panel-head small,
+  .fc-panel-head h2,
+  .fc-feature-header h1,
+  .fc-shopping-paper-top h2,
+  .fc-shopping-dashboard-head h2{
+    animation:none;
+    background-position:50% 50%;
+  }
+}
