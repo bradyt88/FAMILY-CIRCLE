@@ -193,6 +193,7 @@ export default function App() {
   ])
   const [locationSharing, setLocationSharing] = useState<Record<string, boolean>>({ 'member-1': true, 'member-2': true, 'member-3': false })
   const [locationPermission, setLocationPermission] = useState<'unknown' | 'granted' | 'denied'>('unknown')
+  const [demoLocation, setDemoLocation] = useState<{ latitude: number; longitude: number } | null>(null)
   const [profileTargetId, setProfileTargetId] = useState<string>(memberSeeds[0].id)
   const [profileBio, setProfileBio] = useState('')
   const [profileStatus, setProfileStatus] = useState<StatusOption>('Home')
@@ -354,6 +355,7 @@ export default function App() {
   function openTool(mode: ToolMode) {
     setToolMode(mode)
     setActiveTab('home')
+    if (mode === 'map') requestBrowserLocation((coordinates) => setDemoLocation(coordinates))
     if (mode === 'profile') openProfile(selectedMember.id)
     if (mode === 'emergency') {
       setEmergencyView('main')
@@ -711,7 +713,36 @@ export default function App() {
   }
 
   function renderMap() {
-    return <div className="fc-page"><FeatureHeader title="Where Is Everyone?" description="Only family members who have chosen to share their location appear here." onHome={() => goToTab('home')} /><div className="fc-map-layout"><div className="fc-map" aria-label="Family location preview">{sharedMembers.map((member) => <button className="fc-map-pin" style={{ left: `${member.mapX}%`, top: `${member.mapY}%` }} key={member.id} type="button" onClick={() => openProfile(member.id)}><AppAvatar member={member} /><span>{member.label}</span></button>)}<div className="fc-map-road road-one" /><div className="fc-map-road road-two" /><div className="fc-map-road road-three" /></div><div className="fc-map-sidebar"><div className="fc-panel-head"><div><small>Live sharing</small><h2>Family on the map</h2></div><span className="fc-pill">{sharedMembers.length} sharing</span></div>{members.map((member) => <label className="fc-location-row" key={member.id}><AppAvatar member={member} /><span><strong>{member.label}</strong><small>{member.status} · {member.lastUpdated}</small></span><input type="checkbox" checked={Boolean(locationSharing[member.id])} onChange={(event) => setLocationSharing((current) => ({ ...current, [member.id]: event.target.checked }))} /></label>)}</div></div>{renderBottomNav()}</div>
+    const mapEmbedUrl = demoLocation
+      ? (() => {
+          const lat = demoLocation.latitude
+          const lon = demoLocation.longitude
+          const latDelta = 0.008
+          const lonDelta = 0.012 / Math.max(Math.cos((lat * Math.PI) / 180), 0.2)
+          const bbox = [lon - lonDelta, lat - latDelta, lon + lonDelta, lat + latDelta].map((value) => value.toFixed(6)).join(',')
+          return `https://www.openstreetmap.org/export/embed.html?bbox=${bbox}&layer=mapnik&marker=${lat.toFixed(6)},${lon.toFixed(6)}`
+        })()
+      : ''
+
+    return <div className="fc-page">
+      <FeatureHeader title="Where Is Everyone?" description="For this demo, the map uses the location of the person currently using the app." onHome={() => goToTab('home')} />
+      <div className="fc-map-layout">
+        <div className="fc-map-shell">
+          {demoLocation ? <iframe className="fc-map-frame" title="Your current location map" src={mapEmbedUrl} loading="lazy" /> : <div className="fc-map-state"><span>{locationPermission === 'denied' ? '📍' : '⌖'}</span><strong>{locationPermission === 'denied' ? 'Location permission is needed' : 'Finding your location…'}</strong><p>{locationPermission === 'denied' ? 'Allow location access in your browser, then try again.' : 'Family Circle is asking your browser for your current location.'}</p>{locationPermission === 'denied' && <button className="fc-primary-button" type="button" onClick={() => requestBrowserLocation((coordinates) => setDemoLocation(coordinates))}>Try Again</button>}</div>}
+          <div className="fc-map-overlay"><span>📍</span><strong>{demoLocation ? 'You are here' : 'Your location'}</strong></div>
+        </div>
+        <div className="fc-map-sidebar">
+          <div className="fc-panel-head"><div><small>Demo location</small><h2>Your location</h2></div><span className={locationPermission === 'granted' ? 'fc-pill' : 'fc-pill danger'}>{locationPermission === 'granted' ? 'Sharing' : locationPermission === 'denied' ? 'Blocked' : 'Checking'}</span></div>
+          <div className="fc-location-row"><AppAvatar member={selectedMember} /><span><strong>{selectedMember.label} · You</strong><small>{demoLocation ? 'Current device location' : 'Waiting for browser permission'}</small></span><span className="fc-location-live">{demoLocation ? '● Live' : '—'}</span></div>
+          <div className="fc-map-actions">
+            <button className="fc-ghost-button" type="button" onClick={() => requestBrowserLocation((coordinates) => setDemoLocation(coordinates))}>Update my location</button>
+            {demoLocation && <a className="fc-ghost-button" href={`https://www.openstreetmap.org/?mlat=${demoLocation.latitude}&mlon=${demoLocation.longitude}#map=16/${demoLocation.latitude}/${demoLocation.longitude}`} target="_blank" rel="noreferrer">Open larger map ↗</a>}
+          </div>
+          <div className="fc-map-demo-note"><strong>Demo behaviour</strong><span>Send the GitHub Pages link to a tester and their own browser location is used after they grant location permission. This demo does not save the location to the family account.</span></div>
+        </div>
+      </div>
+      {renderBottomNav()}
+    </div>
   }
 
   function renderProfile() {
