@@ -977,3 +977,22 @@
     background-position:50% 50%;
   }
 }
+
+.fc-games-hub{padding:24px}
+.fc-games-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px}
+.fc-game-card{min-height:250px;padding:22px 18px;border-radius:18px;border:1px solid rgba(138,114,255,.28);background:linear-gradient(145deg,rgba(13,19,44,.88),rgba(8,11,25,.96));display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;gap:7px;box-sizing:border-box}
+.fc-game-card.active{border-color:rgba(255,95,199,.78);box-shadow:0 0 24px rgba(255,95,199,.10),inset 0 0 22px rgba(82,217,255,.035);color:inherit;text-decoration:none;cursor:pointer;transition:transform .18s ease,border-color .18s ease,box-shadow .18s ease}
+.fc-game-card.active:hover{transform:translateY(-3px);border-color:rgba(82,217,255,.9);box-shadow:0 0 30px rgba(82,217,255,.16),0 0 16px rgba(255,95,199,.10)}
+.fc-game-card.active:focus-visible{outline:2px solid #52d9ff;outline-offset:3px}
+.fc-game-card-logo{height:74px;display:grid;place-items:center;margin-bottom:2px}
+.fc-game-card-logo img{max-height:74px;max-width:120px;width:auto;object-fit:contain}
+.fc-game-card h2{font-size:1.18rem;margin:0}
+.fc-game-card .fc-muted{font-size:.74rem;margin:0}
+.fc-game-card .fc-kicker{margin:0}
+.fc-game-card-action,.fc-game-card-status{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:34px;padding:0 13px;margin-top:8px;border-radius:10px;font-size:.72rem;font-weight:800}
+.fc-game-card-action{border:1px solid rgba(82,217,255,.48);background:rgba(82,217,255,.08);color:#e8fbff}
+.fc-game-card-action b{font-size:1rem}
+.fc-game-card-icon{width:74px;height:74px;display:grid;place-items:center;border-radius:18px;font-size:2.25rem;background:rgba(138,114,255,.08);border:1px solid rgba(138,114,255,.25);margin-bottom:2px}
+.fc-game-card.coming{opacity:.72}
+.fc-game-card-status{border:1px solid rgba(255,255,255,.10);background:rgba(255,255,255,.035);color:#9fa8c4}
+@media (max-width:760px){.fc-games-hub{padding:16px}.fc-games-grid{grid-template-columns:1fr}.fc-game-card{min-height:220px}}
