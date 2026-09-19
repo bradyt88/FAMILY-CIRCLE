@@ -146,19 +146,12 @@ export default function Onboarding({ onComplete, initialView = 'splash' }: { onC
   if (view === 'splash' && !splashDone) {
     return <main className="fc-onboarding-shell fc-splash-screen">
       <div className="fc-splash-logo"><img src={logoUrl} alt="Family Circle" /></div>
-      <div className="fc-splash-audio-player" aria-label="Family Circle welcome audio">
-        <span>Welcome</span>
-        <audio
-          ref={splashAudioRef}
-          src={`${import.meta.env.BASE_URL}audio/welcome-to-family-circle.mp3`}
-          preload="auto"
-          controls
-          playsInline
-          onPlay={() => setAudioBlocked(false)}
-          onError={() => setAudioBlocked(true)}
-        />
-        {audioBlocked && <small>Tap play to hear the welcome</small>}
-      </div>
+      <audio
+        ref={splashAudioRef}
+        src={`${import.meta.env.BASE_URL}audio/welcome-to-family-circle.mp3`}
+        preload="auto"
+        playsInline
+      />
     </main>
   }
 
