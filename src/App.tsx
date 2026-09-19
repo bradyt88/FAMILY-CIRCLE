@@ -14,7 +14,14 @@ type FamilyPhoto = { id: string; src: string; name: string; time: string }
 type FamilyEvent = { id: string; title: string; date: string; time: string; location: string }
 type FamilyTask = { id: string; title: string; dueDate: string; assignedTo: string; completed: boolean }
 type MoneyRequest = { id: string; requesterId: string; amount: string; purpose: string; dueDate: string; status: 'Pending' | 'Accepted'; lenderId?: string; taskId?: string; calendarEventId?: string }
-type MusicTrack = { id: string; title: string; artist: string; genres: string[]; audioSrc: string; artwork?: string; youtubeUrl?: string }\n\nconst musicLibrary: MusicTrack[] = [\n  { id: 'late-night-ghosts', title: 'Late Night Ghosts', artist: 'Coreykt', genres: ['Chilled', 'R&B', 'Hip-Hop'], audioSrc: `${import.meta.env.BASE_URL}music/audio/Late-Night-Ghosts.mp3`, youtubeUrl: 'https://youtu.be/t6L480nXQ9M?is=RNp81PJPqzK_f4wm' },\n]\n\nconst musicPlaylists = ['Chilled', 'Hip-Hop', 'R&B', 'Rock', 'Pop', 'Kids / Family']\ntype EmergencyPending = { title: string; description: string; tone: string; needsLocation: boolean; message?: string }
+type MusicTrack = { id: string; title: string; artist: string; genres: string[]; audioSrc: string; artwork?: string; youtubeUrl?: string }
+
+const musicLibrary: MusicTrack[] = [
+  { id: 'late-night-ghosts', title: 'Late Night Ghosts', artist: 'Coreykt', genres: ['Chilled', 'R&B', 'Hip-Hop'], audioSrc: `${import.meta.env.BASE_URL}music/audio/Late Night Ghosts.mp3`, youtubeUrl: 'https://youtu.be/t6L480nXQ9M?is=RNp81PJPqzK_f4wm' },
+]
+
+const musicPlaylists = ['Chilled', 'Hip-Hop', 'R&B', 'Rock', 'Pop', 'Kids / Family']
+type EmergencyPending = { title: string; description: string; tone: string; needsLocation: boolean; message?: string }
 
 const statusOptions: StatusOption[] = ['Home', 'Work', 'Partying', 'Recovering', 'Playing', 'Gaming', 'Toilet 😂', 'Movies', 'Sleeping', 'Gym', 'Travelling', 'Holiday', 'Out & About']
 const socialNames: SocialName[] = ['Facebook', 'TikTok', 'Snapchat', 'YouTube']
