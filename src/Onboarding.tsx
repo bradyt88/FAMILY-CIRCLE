@@ -39,6 +39,7 @@ export default function Onboarding({ onComplete, initialView = 'splash' }: { onC
   const [confirmPassword, setConfirmPassword] = useState('')
   const [error, setError] = useState('')
   const [splashDone, setSplashDone] = useState(initialView !== 'splash')
+  const [audioPlaying, setAudioPlaying] = useState(false)
   const [audioBlocked, setAudioBlocked] = useState(false)
   const splashAudioRef = useRef<HTMLAudioElement | null>(null)
 
@@ -50,28 +51,36 @@ export default function Onboarding({ onComplete, initialView = 'splash' }: { onC
 
     audio.volume = 0.88
 
-    const startAudio = () => {
-      void audio.play().then(() => {
-        setAudioBlocked(false)
-      }).catch(() => {
-        setAudioBlocked(true)
-      })
-    }
-
-    const audioTimer = window.setTimeout(startAudio, 1350)
     const timer = window.setTimeout(() => {
       setSplashDone(true)
       setView('welcome')
     }, 6800)
 
+    const handleEnded = () => setAudioPlaying(false)
+    audio.addEventListener('ended', handleEnded)
+
     return () => {
-      window.clearTimeout(audioTimer)
       window.clearTimeout(timer)
+      audio.removeEventListener('ended', handleEnded)
       audio.pause()
       audio.currentTime = 0
       splashAudioRef.current = null
     }
   }, [initialView])
+
+  function playSplashAudio() {
+    const audio = splashAudioRef.current
+    if (!audio) return
+
+    audio.volume = 0.88
+    void audio.play().then(() => {
+      setAudioPlaying(true)
+      setAudioBlocked(false)
+    }).catch(() => {
+      setAudioPlaying(false)
+      setAudioBlocked(true)
+    })
+  }
 
   const selectedFamily = useMemo(() => families.find((family) => family.id === selectedFamilyId) ?? families[0] ?? null, [families, selectedFamilyId])
 
@@ -146,6 +155,15 @@ export default function Onboarding({ onComplete, initialView = 'splash' }: { onC
   if (view === 'splash' && !splashDone) {
     return <main className="fc-onboarding-shell fc-splash-screen">
       <div className="fc-splash-logo"><img src={logoUrl} alt="Family Circle" /></div>
+      <button
+        className={`fc-splash-play${audioPlaying ? ' playing' : ''}`}
+        type="button"
+        onClick={playSplashAudio}
+        aria-label={audioPlaying ? 'Splash audio playing' : 'Play splash audio'}
+        aria-pressed={audioPlaying}
+      >
+        <span aria-hidden="true">{audioPlaying ? '▶' : '▶'}</span>
+      </button>
       <audio
         ref={splashAudioRef}
         src={`${import.meta.env.BASE_URL}audio/welcome-to-family-circle.mp3`}
