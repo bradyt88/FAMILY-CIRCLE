@@ -896,5 +896,5 @@
 }
 
 .fc-quote-text{display:inline-block;color:transparent;background:linear-gradient(90deg,#ff5fc7 0%,#a778ff 22%,#52d9ff 45%,#ffffff 50%,#52d9ff 55%,#a778ff 78%,#ff5fc7 100%);background-size:260% 100%;background-position:100% 50%;background-clip:text;-webkit-background-clip:text;-webkit-text-fill-color:transparent;text-shadow:0 0 18px rgba(124,92,255,.22);animation:fcQuoteSpectrum 5.5s ease-in-out infinite}
-@keyframes fcQuoteSpectrum{0%{background-position:100% 50%}42%{background-position:0% 50%}100%{background-position:0% 50%}}
+@keyframes fcQuoteSpectrum{0%{background-position:0% 50%}42%{background-position:100% 50%}100%{background-position:100% 50%}}
 @media (prefers-reduced-motion:reduce){.fc-quote-text{animation:none;background-position:50% 50%}}
