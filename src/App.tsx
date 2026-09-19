@@ -10,6 +10,7 @@ type SocialName = 'Facebook' | 'TikTok' | 'Snapchat' | 'YouTube'
 type FamilyMember = { id: string; label: string; initials: string; accent: string; phone: string; bio: string; status: StatusOption; locationLabel: string; lastUpdated: string; mapX: number; mapY: number; photo?: string | null; socials: Record<SocialName, string> }
 type ChatMessage = { id: string; memberId: string; name: string; initials: string; accent: string; time: string; text: string; image?: string; moneyRequestId?: string }
 type Notification = { id: string; kind: 'Chat' | 'Task' | 'Calendar' | 'Emergency' | 'Profile' | 'Money'; title: string; detail: string; time: string }
+type NotificationPreferences = { Chat: boolean; Task: boolean; Calendar: boolean; Profile: boolean; Money: boolean; Emergency: true }
 type FamilyPhoto = { id: string; src: string; name: string; time: string }
 type FamilyEvent = { id: string; title: string; date: string; time: string; location: string }
 type FamilyTask = { id: string; title: string; dueDate: string; assignedTo: string; completed: boolean }
@@ -44,6 +45,27 @@ const initialNotifications: Notification[] = [
   { id: 'notification-2', kind: 'Task', title: 'Task update', detail: 'Take bins out is due today.', time: '1 hr ago' },
   { id: 'notification-3', kind: 'Calendar', title: 'Upcoming family event', detail: 'Family Dinner is today at 19:00.', time: 'Today' },
 ]
+
+function loadNotificationPreferences(): NotificationPreferences {
+  try {
+    const saved = localStorage.getItem('family-circle-notification-preferences')
+    const parsed = saved ? JSON.parse(saved) as Partial<NotificationPreferences> : {}
+    return {
+      Chat: parsed.Chat ?? true,
+      Task: parsed.Task ?? true,
+      Calendar: parsed.Calendar ?? true,
+      Profile: parsed.Profile ?? true,
+      Money: parsed.Money ?? true,
+      Emergency: true,
+    }
+  } catch {
+    return { Chat: true, Task: true, Calendar: true, Profile: true, Money: true, Emergency: true }
+  }
+}
+
+function persistNotificationPreferences(value: NotificationPreferences) {
+  localStorage.setItem('family-circle-notification-preferences', JSON.stringify(value))
+}
 
 function loadMembers() {
   return memberSeeds.map((member) => {
@@ -156,6 +178,7 @@ export default function App() {
   const [pendingChatPhoto, setPendingChatPhoto] = useState<string | null>(null)
   const [chatDraft, setChatDraft] = useState('')
   const [notifications, setNotifications] = useState<Notification[]>(initialNotifications)
+  const [notificationPreferences, setNotificationPreferences] = useState<NotificationPreferences>(() => loadNotificationPreferences())
   const [events, setEvents] = useState<FamilyEvent[]>([
     { id: 'event-1', title: 'Family Dinner', date: todayKey(), time: '19:00', location: 'At Home' },
     { id: 'event-2', title: 'Football Training', date: todayKey(), time: '17:00', location: 'Leisure Centre' },
@@ -685,10 +708,24 @@ export default function App() {
     return <div className="fc-page"><FeatureHeader title="Notifications" description="Keep up with family chat, tasks, calendar and emergency requests." onHome={() => goToTab('home')} /><div className="fc-panel"><div className="fc-panel-head"><div><small>Family updates</small><h2>Notifications</h2></div><button className="fc-ghost-button" type="button" onClick={() => setNotifications([])}>Clear all</button></div>{notifications.length === 0 ? <div className="fc-empty"><span>✓</span><strong>You're all caught up.</strong><p>No new family notifications.</p></div> : <div className="fc-notification-list">{notifications.map((item) => <article key={item.id}><span className="fc-notification-icon">{item.kind === 'Emergency' ? '🚨' : item.kind === 'Money' ? '💷' : '•'}</span><div><strong>{item.title}</strong><p>{item.detail}</p><small>{item.time}</small></div></article>)}</div>}</div>{renderBottomNav()}</div>
   }
 
+  function updateNotificationPreference(kind: keyof Omit<NotificationPreferences, 'Emergency'>, enabled: boolean) {
+    const next = { ...notificationPreferences, [kind]: enabled, Emergency: true } as NotificationPreferences
+    setNotificationPreferences(next)
+    persistNotificationPreferences(next)
+  }
+
   function renderSettings() {
     return <div className="fc-page">
       <FeatureHeader title="Settings" description="Family Circle preferences, permissions and family controls." onHome={() => goToTab('home')} />
       <div className="fc-panel fc-settings-list">
+        <div className="fc-settings-section"><p className="fc-kicker">Notifications</p><h2>Family updates</h2><p className="fc-muted">Choose which family activity can send phone notifications. Emergency alerts are always on.</p></div>
+        <div className="fc-setting-row"><span><strong>🚨 Emergency alerts</strong><small>Always on. Family safety alerts cannot be switched off.</small></span><span className="fc-setting-lock">🔒 Always On</span></div>
+        <label className="fc-setting-row"><span><strong>💬 Chat messages</strong><small>Notify me when a family member sends a new message or shares a photo in Family Chat.</small></span><input type="checkbox" checked={notificationPreferences.Chat} onChange={(event) => updateNotificationPreference('Chat', event.target.checked)} /></label>
+        <label className="fc-setting-row"><span><strong>✓ Task updates</strong><small>Notify me when family tasks are added, changed or completed.</small></span><input type="checkbox" checked={notificationPreferences.Task} onChange={(event) => updateNotificationPreference('Task', event.target.checked)} /></label>
+        <label className="fc-setting-row"><span><strong>▦ Calendar updates</strong><small>Notify me when family events are added or changed.</small></span><input type="checkbox" checked={notificationPreferences.Calendar} onChange={(event) => updateNotificationPreference('Calendar', event.target.checked)} /></label>
+        <label className="fc-setting-row"><span><strong>👤 Family/profile updates</strong><small>Notify me when a family member updates their status or profile.</small></span><input type="checkbox" checked={notificationPreferences.Profile} onChange={(event) => updateNotificationPreference('Profile', event.target.checked)} /></label>
+        <label className="fc-setting-row"><span><strong>💷 Money updates</strong><small>Notify me about family money requests and accepted requests.</small></span><input type="checkbox" checked={notificationPreferences.Money} onChange={(event) => updateNotificationPreference('Money', event.target.checked)} /></label>
+        <div className="fc-setting-note"><strong>Phone notifications foundation</strong><span>These preferences are now stored per device. The production push service will use the same rules when real accounts and device registration are connected.</span></div>
         <div className="fc-settings-section"><p className="fc-kicker">Location & safety</p></div>
         <div className="fc-setting-row"><span><strong>Share my location with family</strong><small>Shows you on Where Is Everyone?</small></span><input type="checkbox" checked={Boolean(locationSharing[selectedMember.id])} onChange={(event) => setLocationSharing((current) => ({ ...current, [selectedMember.id]: event.target.checked }))} /></div>
         <div className="fc-setting-row"><span><strong>Location permission</strong><small>{locationPermission === 'granted' ? 'Granted' : locationPermission === 'denied' ? 'Denied' : 'Not checked'}</small></span><button className="fc-ghost-button" type="button" onClick={() => requestBrowserLocation(() => undefined)}>Check permission</button></div>
