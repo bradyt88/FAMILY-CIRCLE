@@ -1361,6 +1361,6 @@
   .fc-music-player-top{display:grid}
   .fc-music-playlists{grid-template-columns:1fr 1fr}
   .fc-music-controls{gap:10px}
-  .fc-music-mini-player{bottom:76px;width:calc(100% - 20px);grid-template-columns:42px minmax(0,1fr) 38px 22px}
+  .fc-music-mini-player{bottom:76px;width:calc(100% - 20px);grid-template-columns:42px minmax(0,1fr) 30px 36px 30px 20px}.fc-music-mini-art{width:42px;height:42px}
   .fc-music-mini-art{width:42px;height:42px}
 }
