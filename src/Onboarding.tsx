@@ -171,7 +171,7 @@ export default function Onboarding({ onComplete, initialView = 'splash' }: { onC
   }
 
   if (view === 'welcome') {
-    return <main className="fc-onboarding-shell"><section className="fc-onboarding-card fc-welcome-card"><img className="fc-onboarding-logo" src={logoUrl} alt="Family Circle" /><p className="fc-kicker">Welcome to</p><h1>Family Circle</h1><p className="fc-onboarding-copy">One private space for the people who matter.</p><div className="fc-entry-actions"><button className="fc-primary-button" type="button" onClick={() => go('signin')}>Sign In</button><button className="fc-secondary-button" type="button" onClick={() => go('signup')}>Create Account</button></div></section><p className="fc-onboarding-footnote">Private family space · built with privacy in mind</p></main>
+    return <main className="fc-onboarding-shell"><section className="fc-onboarding-card fc-welcome-card"><img className="fc-onboarding-logo" src={logoUrl} alt="Family Circle" /><p className="fc-kicker">Welcome to</p><h1>Family Circle</h1><p className="fc-onboarding-copy">A private place for your family.</p><div className="fc-entry-actions fc-welcome-actions"><button className="fc-primary-button" type="button" onClick={() => go('signup')}>Create Account</button><button className="fc-secondary-button" type="button" onClick={() => go('signin')}>Log In</button><button className="fc-text-button fc-explore-button" type="button" onClick={() => go('families')}>Explore Family Circle <span>↗</span></button></div><p className="fc-welcome-pricing">Free to join · Plus £2.49/month · Premium £4.99/month</p></section><p className="fc-onboarding-footnote">Private family space · built with privacy in mind</p></main>
   }
 
   if (view === 'signin' || view === 'signup') {
