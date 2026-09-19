@@ -40,7 +40,6 @@ export default function Onboarding({ onComplete, initialView = 'splash' }: { onC
   const [error, setError] = useState('')
   const [splashDone, setSplashDone] = useState(initialView !== 'splash')
   const [audioPlaying, setAudioPlaying] = useState(false)
-  const [audioBlocked, setAudioBlocked] = useState(false)
   const splashAudioRef = useRef<HTMLAudioElement | null>(null)
 
   useEffect(() => {
@@ -75,10 +74,8 @@ export default function Onboarding({ onComplete, initialView = 'splash' }: { onC
     audio.volume = 0.88
     void audio.play().then(() => {
       setAudioPlaying(true)
-      setAudioBlocked(false)
     }).catch(() => {
       setAudioPlaying(false)
-      setAudioBlocked(true)
     })
   }
 
