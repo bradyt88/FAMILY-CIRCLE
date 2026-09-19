@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import logoUrl from '../design/brand/family-circle-logo.png'
 import './onboarding.css'
 
-type EntryView = 'splash' | 'welcome' | 'signin' | 'signup' | 'family-choice' | 'create-family' | 'join-family' | 'families'
+type EntryView = 'splash' | 'welcome' | 'signin' | 'signup' | 'account-type' | 'family-choice' | 'create-family' | 'join-family' | 'families'
 type FamilyConnection = { id: string; name: string }
 
 const familyStorageKey = 'family-circle-families'
@@ -41,6 +41,7 @@ export default function Onboarding({ onComplete, initialView = 'splash' }: { onC
   const [confirmPassword, setConfirmPassword] = useState('')
   const [termsAccepted, setTermsAccepted] = useState(false)
   const [marketingOptIn, setMarketingOptIn] = useState(false)
+  const [accountType, setAccountType] = useState<'adult' | 'child' | null>(null)
   const [error, setError] = useState('')
   const [splashDone, setSplashDone] = useState(initialView !== 'splash')
   const [audioPlaying, setAudioPlaying] = useState(false)
@@ -111,7 +112,7 @@ export default function Onboarding({ onComplete, initialView = 'splash' }: { onC
       setError('Accept the Terms and Privacy Policy to create your account.')
       return
     }
-    go('family-choice')
+    go('account-type')
   }
 
   function createFamily() {
@@ -185,6 +186,10 @@ export default function Onboarding({ onComplete, initialView = 'splash' }: { onC
   if (view === 'signin' || view === 'signup') {
     const signUp = view === 'signup'
     return <main className="fc-onboarding-shell"><section className="fc-onboarding-card fc-auth-card"><button className="fc-back-link" type="button" onClick={() => go('welcome')}>← Back</button><img className="fc-auth-logo" src={logoUrl} alt="Family Circle" /><p className="fc-kicker">{signUp ? 'New account' : 'Welcome back'}</p><h1>{signUp ? 'Create your Family Circle account' : 'Sign in to Family Circle'}</h1><p className="fc-onboarding-copy">{signUp ? 'Create your personal account first. You’ll choose your family and plan next.' : 'Sign in once, then choose which family space you want to enter.'}</p><div className="fc-onboarding-form">{signUp && <div className="fc-name-grid"><label><span>First name</span><input value={firstName} onChange={(event) => setFirstName(event.target.value)} placeholder="First name" autoComplete="given-name" /></label><label><span>Last name</span><input value={lastName} onChange={(event) => setLastName(event.target.value)} placeholder="Last name" autoComplete="family-name" /></label></div>}<label><span>Email address</span><input type="email" value={email} onChange={(event) => setEmail(event.target.value)} placeholder="you@example.com" autoComplete="email" /></label><label><span>Password</span><input type="password" value={password} onChange={(event) => setPassword(event.target.value)} placeholder="Your password" autoComplete={signUp ? 'new-password' : 'current-password'} /></label>{signUp && <label><span>Confirm password</span><input type="password" value={confirmPassword} onChange={(event) => setConfirmPassword(event.target.value)} placeholder="Repeat your password" autoComplete="new-password" /></label>}{signUp && <div className="fc-consent-stack"><label className="fc-check-row"><input type="checkbox" checked={termsAccepted} onChange={(event) => setTermsAccepted(event.target.checked)} /><span>I agree to the Terms and Privacy Policy.</span></label><label className="fc-check-row"><input type="checkbox" checked={marketingOptIn} onChange={(event) => setMarketingOptIn(event.target.checked)} /><span>Send me Family Circle news, feature updates and offers by email. <small>Optional</small></span></label></div>}{error && <p className="fc-entry-error">{error}</p>}<button className="fc-primary-button" type="button" onClick={signUp ? submitSignUp : submitSignIn}>{signUp ? 'Create Account' : 'Continue'}</button></div>{!signUp && <button className="fc-text-button" type="button" onClick={() => setError('Password reset will be connected to your account in the backend stage.')}>Forgot password?</button>}</section></main>
+  }
+
+  if (view === 'account-type') {
+    return <main className="fc-onboarding-shell"><section className="fc-onboarding-card fc-account-type-card"><button className="fc-back-link" type="button" onClick={() => go('signup')}>← Back</button><p className="fc-kicker">Account setup · Step 2</p><h1>Who is this account for?</h1><p className="fc-onboarding-copy">Choose the type of account you're setting up. Your family and plan come next.</p><div className="fc-account-type-grid"><button className={accountType === 'adult' ? 'fc-account-type-option selected' : 'fc-account-type-option'} type="button" onClick={() => setAccountType('adult')} aria-pressed={accountType === 'adult'}><span className="fc-account-type-icon">👤</span><span><strong>Adult</strong><small>Full family controls, account management and safety settings.</small></span><b>{accountType === 'adult' ? '✓' : '→'}</b></button><button className={accountType === 'child' ? 'fc-account-type-option selected' : 'fc-account-type-option'} type="button" onClick={() => setAccountType('child')} aria-pressed={accountType === 'child'}><span className="fc-account-type-icon">🧒</span><span><strong>Child</strong><small>Age-appropriate access with family safety controls.</small></span><b>{accountType === 'child' ? '✓' : '→'}</b></button></div>{error && <p className="fc-entry-error">{error}</p>}<button className="fc-primary-button fc-account-type-continue" type="button" disabled={!accountType} onClick={() => setError('Plan selection is the next step.')}>Continue</button><p className="fc-account-type-note">Your account type does not determine your Family Circle plan.</p></section></main>
   }
 
   if (view === 'family-choice') {
