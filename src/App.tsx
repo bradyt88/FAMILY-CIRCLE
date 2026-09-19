@@ -555,7 +555,29 @@ export default function App() {
   }
 
   function renderGames() {
-    return <div className="fc-page"><FeatureHeader title="Family Games" description="The family games hub is ready for the next build." onHome={() => goToTab('home')} /><div className="fc-panel fc-coming-soon"><div className="fc-coming-icon">🎮</div><p className="fc-kicker">Coming Soon</p><h2>Challenge a Family Member</h2><p className="fc-muted">Snap, Go Fish and other simple family games will live here. The button is now in place so the experience can be built around it later.</p><div className="fc-game-pills"><span>🃏 Card games</span><span>⚡ Quick matches</span><span>👨‍👩‍👧‍👦 Family-only play</span></div></div>{renderBottomNav()}</div>
+    return <div className="fc-page"><FeatureHeader title="Family Games" description="Play, challenge and have fun together." onHome={() => goToTab('home')} /><div className="fc-panel fc-games-hub"><div className="fc-games-grid">
+      <a className="fc-game-card active" href="https://bradyt88.github.io/FCcardgame/" target="_blank" rel="noopener noreferrer" aria-label="Open Family Circle Card Game">
+        <div className="fc-game-card-logo"><img src={logoUrl} alt="Family Circle" /></div>
+        <p className="fc-kicker">Family Circle</p>
+        <h2>Card Game</h2>
+        <p className="fc-muted">Challenge a family member.</p>
+        <span className="fc-game-card-action">Play Game <b>→</b></span>
+      </a>
+      <div className="fc-game-card coming">
+        <div className="fc-game-card-icon">❓</div>
+        <p className="fc-kicker">Coming Soon</p>
+        <h2>Family Quiz</h2>
+        <p className="fc-muted">Test your family knowledge.</p>
+        <span className="fc-game-card-status">Coming Soon</span>
+      </div>
+      <div className="fc-game-card coming">
+        <div className="fc-game-card-icon">🎮</div>
+        <p className="fc-kicker">Coming Soon</p>
+        <h2>More Games</h2>
+        <p className="fc-muted">More family games to follow.</p>
+        <span className="fc-game-card-status">Coming Soon</span>
+      </div>
+    </div></div>{renderBottomNav()}</div>
   }
 
   function renderShoppingList() {
