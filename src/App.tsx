@@ -694,7 +694,7 @@ export default function App() {
         </section>
         <section className="fc-panel fc-music-library">
           <div className="fc-panel-head"><div><small>Your music</small><h2>Playlists</h2></div><span className="fc-pill">{musicLibrary.length} tracks</span></div>
-          <div className="fc-music-playlists">{musicPlaylists.map((playlist) => <button type="button" className="fc-music-playlist" key={playlist} disabled><span>♫</span><strong>{playlist}</strong><small>Ready for tracks</small></button>)}</div>
+          <div className="fc-music-playlists">{musicPlaylists.map((playlist) => <button type="button" className="fc-music-playlist" key={playlist} disabled><span>♫</span><strong>{playlist}</strong><small>Ready for tracks</small></button>)}</div>{musicLibrary.length > 0 && <div className="fc-music-track-list">{musicLibrary.map((track) => <button type="button" className="fc-music-track-item" key={track.id} onClick={() => { setMusicCurrentTrack(track); setMusicCurrentTime(0); setMusicPlaying(Boolean(track.audioSrc)) }}><span>{track.artwork ? <img src={track.artwork} alt="" /> : '♫'}</span><strong>{track.title}</strong><small>{track.artist} · {track.genre}</small></button>)}</div>}
           <div className="fc-music-empty"><span>♫</span><strong>Your music library is ready.</strong><p>When your original tracks are added, they will appear here with their artwork, genre, playlists and playback controls.</p></div>
         </section>
       </div>
