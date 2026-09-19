@@ -1375,3 +1375,121 @@
 .fc-music-track-art img{width:100%;height:100%;display:block;object-fit:cover}
 .fc-music-mini-artwork{padding:0;overflow:hidden}
 .fc-music-mini-artwork img{width:100%;height:100%;display:block;object-fit:cover}
+
+
+/* Conversation layout: incoming messages left, current user's messages right. */
+.fc-chat-list{gap:10px}
+.fc-chat-row{
+  display:flex;
+  align-items:flex-end;
+  gap:9px;
+  width:100%;
+}
+.fc-chat-row-incoming{justify-content:flex-start}
+.fc-chat-row-outgoing{justify-content:flex-end}
+.fc-chat-row-outgoing .fc-chat-avatar{order:2}
+.fc-chat-row-outgoing .fc-chat-bubble{
+  order:1;
+  border-color:rgba(255,95,199,.30);
+  background:linear-gradient(145deg,rgba(44,20,58,.84),rgba(13,14,34,.94));
+  border-bottom-right-radius:6px;
+}
+.fc-chat-row-incoming .fc-chat-bubble{
+  border-color:rgba(82,217,255,.20);
+  background:linear-gradient(145deg,rgba(10,21,42,.88),rgba(8,11,25,.96));
+  border-bottom-left-radius:6px;
+}
+.fc-chat-bubble{
+  flex:0 1 min(76%,560px);
+  padding:11px 13px;
+  border-radius:16px;
+  box-shadow:0 5px 18px rgba(0,0,0,.12);
+}
+.fc-chat-meta{
+  display:flex!important;
+  align-items:center;
+  justify-content:flex-start!important;
+  gap:8px;
+  min-height:17px;
+}
+.fc-chat-meta time{margin-left:auto}
+.fc-chat-avatar-grouped{visibility:hidden}
+.fc-chat-row-outgoing .fc-chat-avatar-grouped,
+.fc-chat-row-incoming .fc-chat-avatar-grouped{visibility:hidden}
+.fc-chat-row-outgoing .fc-chat-bubble{margin-left:auto}
+.fc-chat-row-incoming .fc-chat-bubble{margin-right:auto}
+.fc-chat-row-outgoing .fc-chat-bubble p{text-align:left}
+.fc-chat-row-outgoing .fc-chat-bubble img{margin-left:auto}
+@media (max-width:640px){
+  .fc-chat-bubble{flex-basis:min(82%,520px)}
+}
+
+/* Music progress bar: the existing timeline is now a touch-friendly seek control. */
+.fc-music-progress{
+  position:relative;
+  height:16px;
+  overflow:visible;
+  background:transparent;
+}
+.fc-music-progress span{
+  position:absolute;
+  left:0;
+  top:5px;
+  width:0;
+  height:5px;
+  z-index:1;
+  pointer-events:none;
+}
+.fc-music-seek{
+  position:absolute!important;
+  inset:0;
+  z-index:2;
+  width:100%!important;
+  min-height:16px!important;
+  height:16px!important;
+  margin:0!important;
+  padding:0!important;
+  border:0!important;
+  border-radius:999px!important;
+  background:transparent!important;
+  box-shadow:none!important;
+  appearance:none;
+  -webkit-appearance:none;
+  cursor:pointer;
+}
+.fc-music-seek::-webkit-slider-runnable-track{
+  height:5px;
+  border-radius:999px;
+  background:transparent;
+}
+.fc-music-seek::-webkit-slider-thumb{
+  width:14px;
+  height:14px;
+  margin-top:-4.5px;
+  border:2px solid #fff;
+  border-radius:50%;
+  background:#ff5fc7;
+  box-shadow:0 0 12px rgba(255,95,199,.42);
+  -webkit-appearance:none;
+}
+.fc-music-seek::-moz-range-track{
+  height:5px;
+  border-radius:999px;
+  background:transparent;
+}
+.fc-music-seek::-moz-range-progress{
+  height:5px;
+  border-radius:999px;
+  background:transparent;
+}
+.fc-music-seek::-moz-range-thumb{
+  width:10px;
+  height:10px;
+  border:2px solid #fff;
+  border-radius:50%;
+  background:#ff5fc7;
+  box-shadow:0 0 12px rgba(255,95,199,.42);
+  cursor:pointer;
+}
+.fc-music-seek:disabled{cursor:default;opacity:.5}
+.fc-music-seek:focus-visible{outline:2px solid rgba(82,217,255,.72);outline-offset:4px}
