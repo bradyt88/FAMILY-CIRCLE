@@ -2158,3 +2158,93 @@
     flex-basis: 30px;
   }
 }
+
+
+/* Temporary Music Community demo creator catalogue — isolated for easy removal. */
+.fc-music-community-demo-creators{
+  margin-top:18px;
+  padding:20px;
+  border:1px solid rgba(82,217,255,.22);
+  border-radius:24px;
+  background:linear-gradient(145deg,rgba(17,20,48,.88),rgba(8,11,28,.96));
+}
+.fc-music-community-demo-grid{
+  display:grid;
+  grid-template-columns:repeat(2,minmax(0,1fr));
+  gap:12px;
+}
+.fc-music-community-demo-card{
+  min-width:0;
+  display:grid;
+  grid-template-columns:64px minmax(0,1fr);
+  gap:12px;
+  align-items:center;
+  padding:12px;
+  text-align:left;
+  border:1px solid rgba(138,114,255,.24);
+  border-radius:19px;
+  background:
+    radial-gradient(circle at 12% 50%,rgba(255,95,199,.11),transparent 35%),
+    linear-gradient(145deg,rgba(25,22,57,.92),rgba(9,12,29,.98));
+  color:inherit;
+  cursor:pointer;
+  transition:transform .18s ease,border-color .18s ease,box-shadow .18s ease;
+}
+.fc-music-community-demo-card:hover,
+.fc-music-community-demo-card:focus-visible{
+  transform:translateY(-2px);
+  border-color:rgba(255,95,199,.65);
+  box-shadow:0 12px 34px rgba(126,70,220,.16);
+  outline:none;
+}
+.fc-music-community-demo-avatar{
+  width:64px;
+  height:64px;
+  display:grid;
+  place-items:center;
+  border-radius:18px;
+  color:#fff;
+  font-size:30px;
+  background:linear-gradient(135deg,#ff5fc7,#7d62ff 62%,#4edcff);
+  box-shadow:0 0 24px rgba(214,70,255,.2);
+}
+.fc-music-community-demo-copy{
+  min-width:0;
+  display:grid;
+  gap:3px;
+}
+.fc-music-community-demo-copy small{
+  color:#72e8ff;
+  font-size:.58rem;
+  font-weight:850;
+  letter-spacing:.11em;
+  text-transform:uppercase;
+}
+.fc-music-community-demo-copy strong{
+  font-size:.98rem;
+}
+.fc-music-community-demo-copy em{
+  color:#9ea6c2;
+  font-size:.68rem;
+  font-style:normal;
+}
+.fc-music-community-demo-copy > span{
+  color:#aeb2cc;
+  font-size:.67rem;
+  line-height:1.35;
+  display:-webkit-box;
+  -webkit-line-clamp:2;
+  -webkit-box-orient:vertical;
+  overflow:hidden;
+}
+.fc-music-community-demo-copy b{
+  margin-top:3px;
+  color:#ff83df;
+  font-size:.68rem;
+}
+@media (max-width:700px){
+  .fc-music-community-demo-grid{grid-template-columns:1fr}
+}
+@media (max-width:640px){
+  .fc-music-community-demo-creators{padding:15px}
+}
