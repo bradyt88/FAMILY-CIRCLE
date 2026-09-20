@@ -779,6 +779,15 @@ export default function App() {
     setProfileSavedView(true)
   }
 
+  function saveProfileSettings() {
+    const latest = members.find((member) => member.id === selectedMember.id) ?? selectedMember
+    const updated = { ...latest, socials: { ...profileSocials } }
+    persistMember(updated)
+    setProfileTargetId(updated.id)
+    setProfileSocials(updated.socials)
+    setProfileMessage('Profile links saved.')
+  }
+
   function uploadProfileCover(file: File) {
     if (!file.type.startsWith('image/') || profileTarget.id !== selectedMember.id) return
     const reader = new FileReader()
