@@ -1548,3 +1548,12 @@
   .fc-map-shell,.fc-map-frame,.fc-map-state{min-height:420px;height:420px}
   .fc-map-actions{grid-template-columns:1fr}
 }
+
+
+/* Child account access locks. Features remain visible but cannot be entered when restricted. */
+.fc-feature-card-locked,.fc-quick-tile-locked{opacity:.72;filter:saturate(.72)}
+.fc-feature-card-locked::after,.fc-quick-tile-locked::after{content:'🔒 Restricted';position:absolute;top:10px;right:10px;padding:5px 8px;border:1px solid rgba(255,95,199,.28);border-radius:999px;background:rgba(8,11,25,.82);color:#dce2fa;font-size:.58rem;font-weight:800;backdrop-filter:blur(8px)}
+.fc-access-modal{position:relative;width:min(92vw,420px);padding:28px 24px;border:1px solid rgba(138,114,255,.55);border-radius:22px;background:linear-gradient(145deg,rgba(20,23,52,.98),rgba(8,11,25,.99));box-shadow:0 0 45px rgba(138,114,255,.16),0 24px 70px rgba(0,0,0,.45);text-align:center}
+.fc-access-modal-icon{font-size:2.5rem;margin-bottom:8px}.fc-access-modal h2{margin:0 0 9px;font-size:1.25rem}.fc-access-modal p{margin:0}.fc-access-modal-note{margin:12px 0 18px!important;color:#aeb7d1;font-size:.74rem;line-height:1.45}.fc-access-modal .fc-primary-button{min-width:130px}
+.fc-child-access-row{position:relative}.fc-child-access-row.locked{opacity:.66}
+@media (max-width:640px){.fc-access-modal{padding:24px 18px}}
