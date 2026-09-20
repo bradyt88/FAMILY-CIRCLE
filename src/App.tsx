@@ -627,20 +627,21 @@ export default function App() {
         <article className="fc-dashboard-card green"><div className="fc-card-head"><div><small>Family Tasks · {openTasks.length} open</small><h2>Your responsibilities</h2></div><button type="button" onClick={() => goToTab('tasks')}>→</button></div>{firstThreeTasks.map((task) => { const assigned = members.find((m) => m.id === task.assignedTo) ?? selectedMember; return <button className="fc-task-row" type="button" key={task.id} onClick={() => toggleTask(task.id)}><span className={task.completed ? 'fc-check done' : 'fc-check'}>{task.completed ? '✓' : ''}</span><span><strong>{task.title}</strong><small>{task.completed ? 'Completed' : `Due ${formatShortDate(task.dueDate)} · ${assigned.label}`}</small></span></button> })}<button className="fc-outline-button green" type="button" onClick={() => goToTab('tasks')}>View All Tasks →</button></article>
       </section>
 
-      <section className="fc-shopping-dashboard-card">
-        <div className="fc-shopping-dashboard-head"><div><small>Family organisation</small><h2>Weekly Shopping List</h2></div><button type="button" onClick={() => goToTab('shopping')}>Open →</button></div>
-        <div className="fc-shopping-dashboard-paper">{shoppingItems.length ? shoppingItems.slice(0, 5).map((item, index) => <div className="fc-shopping-dashboard-item" key={`${item}-${index}`}><span>□</span><strong>{item}</strong></div>) : <div className="fc-shopping-dashboard-empty">The list is empty — add something the family needs. 🛒</div>}</div>
-        <button className="fc-outline-button shopping" type="button" onClick={() => goToTab('shopping')}>Add to Weekly Shopping List →</button>
+      <section className="fc-home-emergency-feature">
+        <button className="fc-home-emergency-card" type="button" onClick={() => openTool('emergency')}>
+          <span className="fc-home-emergency-icon">🚨</span>
+          <span className="fc-home-emergency-copy"><strong>Family Emergency</strong><small>Get family help quickly</small></span>
+          <b>→</b>
+        </button>
       </section>
 
       <section className="fc-quick-grid" aria-label="Family shortcuts">{[
         { label: 'Chat', desc: 'Message the family', icon: '◌', tone: 'cyan', action: () => goToTab('chat') },
         { label: 'Photos', desc: 'Our memories together', icon: '▧', tone: 'purple', action: () => goToTab('photos') },
-        { label: 'Family Emergency', desc: 'Get family help quickly', icon: '!', tone: 'emergency', action: () => openTool('emergency') },
         { label: 'Weekly Shop', desc: 'Add items to the family shop', icon: '🛒', tone: 'shopping', action: () => goToTab('shopping') },
         { label: 'Tasks', desc: 'Jobs & responsibilities', icon: '✓', tone: 'green', action: () => goToTab('tasks') },
         { label: 'Calendar', desc: 'Events & plans', icon: '▦', tone: 'magenta', action: () => goToTab('calendar') },
-      ].map((item) => <button className={`fc-quick-tile ${item.tone}${(item.label === 'Chat' && !hasChildAccess('chat')) || (item.label === 'Photos' && !hasChildAccess('photos')) || (item.label === 'Tasks' && !hasChildAccess('tasks')) || (item.label === 'Calendar' && !hasChildAccess('tasks')) ? ' fc-quick-tile-locked' : ''}`} type="button" key={item.label} onClick={item.action}><span>{item.icon}</span><strong>{item.label}</strong><small>{item.desc}</small></button>)}</section>
+      ].map((item) => <button className={`fc-quick-tile ${item.tone}${(item.label === 'Chat' && !hasChildAccess('chat')) || (item.label === 'Photos' && !hasChildAccess('photos')) || (item.label === 'Tasks' && !hasChildAccess('tasks')) || (item.label === 'Calendar' && !hasChildAccess('tasks')) ? ' fc-quick-tile-locked' : ''`} type="button" key={item.label} onClick={item.action}><span>{item.icon}</span><strong>{item.label}</strong><small>{item.desc}</small></button>)}</section>
 
       <section className="fc-feature-grid">
         <button className={`fc-feature-card map-card${!hasChildAccess('location') ? ' fc-feature-card-locked' : ''}`} type="button" onClick={() => openTool('map')}><span className="fc-feature-icon">📍</span><div><small>Family location</small><strong>Where Is Everyone?</strong><span>{sharedMembers.length} family member{sharedMembers.length === 1 ? '' : 's'} sharing location</span></div><b>→</b></button>
