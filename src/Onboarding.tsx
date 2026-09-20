@@ -44,6 +44,7 @@ export default function Onboarding({ onComplete, initialView = 'splash' }: { onC
   const [marketingOptIn, setMarketingOptIn] = useState(false)
   const [accountType, setAccountType] = useState<'adult' | 'child' | null>(null)
   const [selectedPlan, setSelectedPlan] = useState<Plan | null>(null)
+  const [testCardFilled, setTestCardFilled] = useState(false)
   const [error, setError] = useState('')
   const [splashDone, setSplashDone] = useState(initialView !== 'splash')
 
@@ -166,7 +167,6 @@ export default function Onboarding({ onComplete, initialView = 'splash' }: { onC
   if (view === 'payment') {
     const planName = selectedPlan === 'premium' ? 'Premium' : 'Plus'
     const planPrice = selectedPlan === 'premium' ? '£4.99/month' : '£2.49/month'
-    const [testCardFilled, setTestCardFilled] = useState(false)
     return <main className="fc-onboarding-shell"><section className="fc-onboarding-card fc-payment-card"><button className="fc-back-link" type="button" onClick={() => go('plan')}>← Back</button><p className="fc-kicker">Account setup · Payment</p><h1>Complete your subscription</h1><p className="fc-onboarding-copy">You’ve selected {planName} at {planPrice}. This is a demo checkout. No real payment is taken or card information is stored.</p><div className="fc-payment-summary"><div><span>Selected plan</span><strong>{planName}</strong></div><div><span>Price</span><strong>{planPrice}</strong></div></div><div className="fc-payment-demo-head"><div><small>Demo checkout</small><strong>Test payment details</strong></div><button className="fc-secondary-button fc-test-card-button" type="button" onClick={() => setTestCardFilled(true)}>Use test card</button></div><div className="fc-payment-fields"><label><span>Cardholder name</span><input value={testCardFilled ? 'Family Circle Test' : ''} readOnly placeholder="Cardholder name" /></label><label><span>Card number</span><input value={testCardFilled ? '4242 4242 4242 4242' : ''} readOnly placeholder="1234 5678 9012 3456" inputMode="numeric" /></label><div className="fc-payment-field-row"><label><span>Expiry</span><input value={testCardFilled ? '12/30' : ''} readOnly placeholder="MM/YY" inputMode="numeric" /></label><label><span>CVC</span><input value={testCardFilled ? '123' : ''} readOnly placeholder="123" inputMode="numeric" /></label></div></div><p className="fc-payment-demo-note">🔒 Test mode only · These details are fictional and are not sent anywhere.</p><button className="fc-primary-button fc-payment-continue" type="button" disabled={!testCardFilled} onClick={() => go(accountType === 'child' ? 'child-access' : 'family-choice')}>Confirm subscription — {planPrice}</button></section></main>
   }
 
