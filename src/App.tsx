@@ -285,31 +285,6 @@ export default function App() {
     }
   }, [musicChildMode, musicCurrentTrack])
 
-  function hasPlan(required: Plan) {
-    const rank: Record<Plan, number> = { free: 0, plus: 1, premium: 2 }
-    return rank[subscription.plan] >= rank[required]
-  }
-
-  function requirePlan(required: Plan, featureName: string) {
-    if (hasPlan(required)) return true
-    setAccessNotice({
-      title: `${featureName} requires ${required === 'premium' ? 'Premium' : 'Plus'}`,
-      message: `Your current plan is ${subscription.plan === 'free' ? 'Free' : subscription.plan}. Upgrade your plan to access this feature.`,
-      action: 'upgrade',
-    })
-    return false
-  }
-
-  function canPublishMusicTrack(trackCount = 1) {
-    if (!requirePlan('premium', 'Music publishing')) return false
-    return subscription.monthlyPublishedTracks + trackCount <= subscription.monthlyPublishAllowance
-  }
-
-  function recordPublishedMusicTracks(trackCount: number) {
-    if (trackCount < 1) return
-    setSubscription((current) => ({ ...current, monthlyPublishedTracks: current.monthlyPublishedTracks + trackCount }))
-  }
-
   function openMusic() {
     if (!requireAccess('music', 'Family Circle Music')) return
     setToolMode('music')
