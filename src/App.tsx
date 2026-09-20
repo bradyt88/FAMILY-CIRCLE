@@ -271,6 +271,7 @@ export default function App() {
   const [profileStatus, setProfileStatus] = useState<StatusOption>('Home')
   const [profileSocials, setProfileSocials] = useState<Record<SocialName, string>>({ Facebook: '', TikTok: '', Snapchat: '', YouTube: '' })
   const [profileMessage, setProfileMessage] = useState('')
+  const [profileSavedView, setProfileSavedView] = useState(false)
   const [moneyRequests, setMoneyRequests] = useState<MoneyRequest[]>([])
   const [shoppingItems, setShoppingItems] = useState<string[]>([])
   const [shoppingInput, setShoppingInput] = useState('')
@@ -549,6 +550,7 @@ export default function App() {
     setProfileStatus(target.status)
     setProfileSocials(target.socials)
     setProfileMessage('')
+    setProfileSavedView(false)
     setToolMode('profile')
     setActiveTab('home')
   }
@@ -568,6 +570,7 @@ export default function App() {
     const updated = { ...profileTarget, bio, socials: profileSocials }
     persistMember(updated)
     setProfileMessage('Profile details saved.')
+    setProfileSavedView(true)
   }
 
   function uploadProfilePhoto(file: File) {
@@ -936,9 +939,48 @@ export default function App() {
 
   function renderProfile() {
     const isOwn = profileTarget.id === selectedMember.id
-    return <div className="fc-page"><FeatureHeader title={isOwn ? 'My Profile' : profileTarget.label} description={isOwn ? 'Control your photo, bio, status and social links.' : 'Family profile details.'} onHome={() => goToTab('home')} /><div className="fc-profile-layout"><div className="fc-panel fc-profile-hero"><div className="fc-profile-photo-wrap">{isOwn ? <label className="fc-profile-photo-button"><AppAvatar member={{ ...profileTarget, photo: profileTarget.photo }} className="fc-profile-photo" /><span>Change photo</span><input className="fc-hidden" type="file" accept="image/*" onChange={(event) => { const file = event.target.files?.[0]; if (file) uploadProfilePhoto(file); event.currentTarget.value = '' }} /></label> : <AppAvatar member={profileTarget} className="fc-profile-photo" />} {isOwn && profileTarget.photo && <button className="fc-remove-photo" type="button" onClick={removeProfilePhoto}>Remove photo</button>}</div><h2>{profileTarget.label}</h2><p className="fc-status-chip">My Status · {profileTarget.status}</p><p className="fc-muted">{profileTarget.bio || 'No bio yet.'}</p><a className="fc-phone-link" href={`tel:${profileTarget.phone}`}>☎ {profileTarget.phone}</a></div><div className="fc-panel"><div className="fc-panel-head"><div><small>Profile details</small><h2>{isOwn ? 'Edit your details' : 'About this family member'}</h2></div></div>{isOwn ? <><label className="fc-textarea-label"><span>Short bio · {profileBio.length}/100</span><textarea maxLength={100} rows={4} value={profileBio} onChange={(event) => setProfileBio(event.target.value)} placeholder="A short line about you…" /></label><label className="fc-form-field"><span>My Status</span><select value={profileStatus} onChange={(event) => { setProfileStatus(event.target.value as StatusOption); changeStatus(event.target.value as StatusOption) }}>{statusOptions.map((status) => <option value={status} key={status}>{status}</option>)}</select></label><div className="fc-social-block"><strong>Social links</strong><p>Paste a real profile link. Active links show green.</p>{socialNames.map((name) => <label key={name}><span>{socialIcons[name]} {name}</span><input value={profileSocials[name]} onChange={(event) => setProfileSocials((current) => ({ ...current, [name]: event.target.value }))} placeholder={`https://${name.toLowerCase()}.com/...`} /><b className={profileSocials[name] ? 'active' : ''}>{profileSocials[name] ? 'Active' : 'Blank'}</b></label>)}</div>{profileMessage && <p className="fc-save-note">{profileMessage}</p>}<button className="fc-primary-button" type="button" onClick={saveProfile}>Save Profile</button></> : <div className="fc-read-profile"><div><strong>My Status</strong><span>{profileTarget.status}</span></div><div><strong>Bio</strong><span>{profileTarget.bio || 'No bio yet.'}</span></div><div><strong>Phone</strong><a href={`tel:${profileTarget.phone}`}>{profileTarget.phone}</a></div><div><strong>Location sharing</strong><span>{locationSharing[profileTarget.id] ? 'On' : 'Off'}</span></div><div><strong>Social links</strong><span>{socialNames.some((name) => profileTarget.socials[name]) ? socialNames.filter((name) => profileTarget.socials[name]).map((name) => <a key={name} href={profileTarget.socials[name]} target="_blank" rel="noreferrer">{socialIcons[name]} {name}</a>) : 'None added yet.'}</span></div></div>}</div></div>{renderBottomNav()}</div>
+    return <div className="fc-page">
+      <FeatureHeader title={isOwn ? 'My Profile' : profileTarget.label} description={isOwn ? 'Your Family Circle identity, ready to share with the people who matter.' : 'Family profile details.'} onHome={() => goToTab('home')} />
+      {isOwn && profileSavedView ? <section className="fc-profile-saved-shell">
+        <div className="fc-profile-saved-hero">
+          <div className="fc-profile-saved-photo-wrap">
+            <AppAvatar member={profileTarget} className="fc-profile-saved-photo" />
+            <span className="fc-profile-saved-status">● {profileTarget.status}</span>
+          </div>
+          <div className="fc-profile-saved-copy">
+            <p className="fc-kicker">Family Circle profile</p>
+            <h2>{profileTarget.label}</h2>
+            <p className="fc-profile-saved-bio">{profileTarget.bio || 'No bio yet.'}</p>
+            <div className="fc-profile-saved-links">
+              <a className="fc-phone-link" href={`tel:${profileTarget.phone}`}>☎ {profileTarget.phone}</a>
+              {socialNames.filter((name) => profileTarget.socials[name]).map((name) => <a key={name} href={profileTarget.socials[name]} target="_blank" rel="noreferrer">{socialIcons[name]} {name}</a>)}
+            </div>
+            <div className="fc-profile-saved-actions">
+              <button className="fc-primary-button" type="button" onClick={() => setProfileSavedView(false)}>✎ Edit Profile</button>
+              <button className="fc-ghost-button" type="button" onClick={() => goToTab('home')}>← Back Home</button>
+            </div>
+          </div>
+        </div>
+        <div className="fc-profile-saved-strip">
+          <span>✓ Profile saved</span>
+          <small>Your profile is now shown as a full profile view.</small>
+        </div>
+      </section> : <div className="fc-profile-layout">
+        <div className="fc-panel fc-profile-hero">
+          <div className="fc-profile-photo-wrap">{isOwn ? <label className="fc-profile-photo-button"><AppAvatar member={{ ...profileTarget, photo: profileTarget.photo }} className="fc-profile-photo" /><span>Change photo</span><input className="fc-hidden" type="file" accept="image/*" onChange={(event) => { const file = event.target.files?.[0]; if (file) uploadProfilePhoto(file); event.currentTarget.value = '' }} /></label> : <AppAvatar member={profileTarget} className="fc-profile-photo" />} {isOwn && profileTarget.photo && <button className="fc-remove-photo" type="button" onClick={removeProfilePhoto}>Remove photo</button>}</div>
+          <h2>{profileTarget.label}</h2>
+          <p className="fc-status-chip">My Status · {profileTarget.status}</p>
+          <p className="fc-muted">{profileTarget.bio || 'No bio yet.'}</p>
+          <a className="fc-phone-link" href={`tel:${profileTarget.phone}`}>☎ {profileTarget.phone}</a>
+        </div>
+        <div className="fc-panel">
+          <div className="fc-panel-head"><div><small>Profile details</small><h2>{isOwn ? 'Edit your details' : 'About this family member'}</h2></div></div>
+          {isOwn ? <><label className="fc-textarea-label"><span>Short bio · {profileBio.length}/100</span><textarea maxLength={100} rows={4} value={profileBio} onChange={(event) => setProfileBio(event.target.value)} placeholder="A short line about you…" /></label><label className="fc-form-field"><span>My Status</span><select value={profileStatus} onChange={(event) => { setProfileStatus(event.target.value as StatusOption); changeStatus(event.target.value as StatusOption) }}>{statusOptions.map((status) => <option value={status} key={status}>{status}</option>)}</select></label><div className="fc-social-block"><strong>Social links</strong><p>Paste a real profile link. Active links show green.</p>{socialNames.map((name) => <label key={name}><span>{socialIcons[name]} {name}</span><input value={profileSocials[name]} onChange={(event) => setProfileSocials((current) => ({ ...current, [name]: event.target.value }))} placeholder={`https://${name.toLowerCase()}.com/...`} /><b className={profileSocials[name] ? 'active' : ''}>{profileSocials[name] ? 'Active' : 'Blank'}</b></label>)}</div>{profileMessage && <p className="fc-save-note">{profileMessage}</p>}<button className="fc-primary-button fc-profile-save-button" type="button" onClick={saveProfile}>Save Profile</button></> : <div className="fc-read-profile"><div><strong>My Status</strong><span>{profileTarget.status}</span></div><div><strong>Bio</strong><span>{profileTarget.bio || 'No bio yet.'}</span></div><div><strong>Phone</strong><a href={`tel:${profileTarget.phone}`}>{profileTarget.phone}</a></div><div><strong>Location sharing</strong><span>{locationSharing[profileTarget.id] ? 'On' : 'Off'}</span></div><div><strong>Social links</strong><span>{socialNames.some((name) => profileTarget.socials[name]) ? socialNames.filter((name) => profileTarget.socials[name]).map((name) => <a key={name} href={profileTarget.socials[name]} target="_blank" rel="noreferrer">{socialIcons[name]} {name}</a>) : 'None added yet.'}</span></div></div>}
+        </div>
+      </div>}
+      {renderBottomNav()}
+    </div>
   }
-
   function renderNotifications() {
     return <div className="fc-page"><FeatureHeader title="Notifications" description="Keep up with family chat, tasks, calendar and emergency requests." onHome={() => goToTab('home')} /><div className="fc-panel"><div className="fc-panel-head"><div><small>Family updates</small><h2>Notifications</h2></div><button className="fc-ghost-button" type="button" onClick={() => setNotifications([])}>Clear all</button></div>{notifications.length === 0 ? <div className="fc-empty"><span>✓</span><strong>You're all caught up.</strong><p>No new family notifications.</p></div> : <div className="fc-notification-list">{notifications.map((item) => <article key={item.id}><span className="fc-notification-icon">{item.kind === 'Emergency' ? '🚨' : item.kind === 'Money' ? '💷' : '•'}</span><div><strong>{item.title}</strong><p>{item.detail}</p><small>{item.time}</small></div></article>)}</div>}</div>{renderBottomNav()}</div>
   }
