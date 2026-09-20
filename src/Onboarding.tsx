@@ -62,6 +62,7 @@ export default function Onboarding({ onComplete, initialView = 'splash' }: { onC
   }, [initialView])
 
   const selectedFamily = useMemo(() => families.find((family) => family.id === selectedFamilyId) ?? families[0] ?? null, [families, selectedFamilyId])
+  const canCreateFamily = accountType === 'adult' && selectedPlan !== 'free'
 
   function go(next: EntryView) {
     setError('')
@@ -93,6 +94,11 @@ export default function Onboarding({ onComplete, initialView = 'splash' }: { onC
   }
 
   function createFamily() {
+    if (!canCreateFamily) {
+      setError('This account can join a Family but cannot create one.')
+      go('family-choice')
+      return
+    }
     if (!familyName.trim()) {
       setError('Enter a family name.')
       return
@@ -178,7 +184,7 @@ export default function Onboarding({ onComplete, initialView = 'splash' }: { onC
       { name: 'Games', description: 'Play Family Circle games available on this plan.', locked: false, defaultOn: true },
       { name: 'Family Music', description: 'Listen to Family Circle music.', locked: false, defaultOn: true },
       { name: 'YouTube', description: 'External video content.', locked: false, defaultOn: false },
-      { name: 'Global Multiplayer', description: 'Play with people outside your Family Circle.', locked: false, defaultOn: false },
+      { name: 'Global Multiplayer', description: 'Play with people outside their Family Circle.', locked: false, defaultOn: false },
       { name: 'Music Community', description: 'Community music and interaction with other users.', locked: true, defaultOn: false },
     ]
 
@@ -186,7 +192,7 @@ export default function Onboarding({ onComplete, initialView = 'splash' }: { onC
   }
 
   if (view === 'family-choice') {
-    return <main className="fc-onboarding-shell"><section className="fc-onboarding-card"><button className="fc-back-link" type="button" onClick={() => go('plan')}>← Back</button><p className="fc-kicker">Your families</p><h1>What would you like to do?</h1><p className="fc-onboarding-copy">You can create a new family or join a family you've been invited to.</p><div className="fc-family-choice-grid"><button className="fc-choice-panel" type="button" onClick={() => go('create-family')}><span>＋</span><strong>Create a Family</strong><small>Start a new family space and receive a Family ID.</small></button><button className="fc-choice-panel" type="button" onClick={() => go('join-family')}><span>↗</span><strong>Join a Family</strong><small>Enter a Family ID you've been given.</small></button></div></section></main>
+    return <main className="fc-onboarding-shell"><section className="fc-onboarding-card"><button className="fc-back-link" type="button" onClick={() => go('plan')}>← Back</button><p className="fc-kicker">Your families</p><h1>What would you like to do?</h1><p className="fc-onboarding-copy">{canCreateFamily ? 'You can create a new family or join a family you’ve been invited to.' : 'This account can join a Family but cannot create one.'}</p><div className={canCreateFamily ? 'fc-family-choice-grid' : 'fc-family-choice-grid fc-family-choice-single'}>{canCreateFamily && <button className="fc-choice-panel" type="button" onClick={() => go('create-family')}><span>＋</span><strong>Create a Family</strong><small>Start a new family space and receive a Family ID.</small></button>}<button className="fc-choice-panel" type="button" onClick={() => go('join-family')}><span>↗</span><strong>Join a Family</strong><small>Enter a Family ID you’ve been given.</small></button></div></section></main>
   }
 
   if (view === 'create-family') {
@@ -197,5 +203,5 @@ export default function Onboarding({ onComplete, initialView = 'splash' }: { onC
     return <main className="fc-onboarding-shell"><section className="fc-onboarding-card"><button className="fc-back-link" type="button" onClick={() => go('family-choice')}>← Back</button><p className="fc-kicker">Join family</p><h1>Enter your Family ID</h1><p className="fc-onboarding-copy">You only need to enter this once to connect your account to that family.</p><div className="fc-onboarding-form"><label><span>Family ID</span><input value={familyId} onChange={(event) => setFamilyId(event.target.value.toUpperCase())} placeholder="FC-7K4P9" autoCapitalize="characters" /></label>{error && <p className="fc-entry-error">{error}</p>}<button className="fc-primary-button" type="button" onClick={findFamily}>Find Family</button></div>{foundFamily && <div className="fc-found-family"><div><span>Family found</span><strong>{foundFamily.name}</strong><small>{foundFamily.id}</small></div><button className="fc-primary-button" type="button" onClick={joinFamily}>Join Family</button></div>}</section></main>
   }
 
-  return <main className="fc-onboarding-shell"><section className="fc-onboarding-card fc-family-list-card"><div className="fc-family-list-head"><div><p className="fc-kicker">Connected families</p><h1>Choose a Family</h1><p className="fc-onboarding-copy">Select the family space you want to enter. Your account can belong to more than one.</p></div><img className="fc-family-list-logo" src={logoUrl} alt="Family Circle" /></div>{families.map((family) => <button className={selectedFamily?.id === family.id ? 'fc-family-list-item selected' : 'fc-family-list-item'} type="button" key={family.id} onClick={() => chooseFamily(family)}><span className="fc-family-list-icon">👨‍👩‍👧‍👦</span><span><strong>{family.name}</strong><small>Family ID · {family.id}</small></span><b>→</b></button>)}<div className="fc-family-list-actions"><button className="fc-secondary-button" type="button" onClick={() => go('join-family')}>+ Join Another Family</button><button className="fc-secondary-button" type="button" onClick={() => go('create-family')}>+ Create a Family</button></div><p className="fc-onboarding-footnote">Family ID connects the family. Member PIN protects the member profile.</p></section></main>
+  return <main className="fc-onboarding-shell"><section className="fc-onboarding-card fc-family-list-card"><div className="fc-family-list-head"><div><p className="fc-kicker">Connected families</p><h1>Choose a Family</h1><p className="fc-onboarding-copy">Select the family space you want to enter. Your account can belong to more than one.</p></div><img className="fc-family-list-logo" src={logoUrl} alt="Family Circle" /></div>{families.map((family) => <button className={selectedFamily?.id === family.id ? 'fc-family-list-item selected' : 'fc-family-list-item'} type="button" key={family.id} onClick={() => chooseFamily(family)}><span className="fc-family-list-icon">👨‍👩‍👧‍👦</span><span><strong>{family.name}</strong><small>Family ID · {family.id}</small></span><b>→</b></button>)}<div className="fc-family-list-actions"><button className="fc-secondary-button" type="button" onClick={() => go('join-family')}>+ Join Another Family</button>{canCreateFamily && <button className="fc-secondary-button" type="button" onClick={() => go('create-family')}>+ Create a Family</button>}</div><p className="fc-onboarding-footnote">Family ID connects the family. Member PIN protects the member profile.</p></section></main>
 }
