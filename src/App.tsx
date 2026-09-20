@@ -337,15 +337,6 @@ export default function App() {
     return false
   }
 
-  function requirePlan(featureName: string, minimum: 'plus' | 'premium') {
-    if (accountPlan === 'premium' || (minimum === 'plus' && accountPlan === 'plus')) return true
-    setAccessNotice({
-      title: featureName + ' needs an upgrade',
-      message: 'This feature is available on a higher Family Circle plan.',
-      action: 'upgrade',
-    })
-    return false
-  }
 
   function switchFamily() {
     setOnboardingView('families')
