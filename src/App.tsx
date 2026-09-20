@@ -3,7 +3,7 @@ import logoUrl from '../design/brand/family-circle-logo.png'
 import Onboarding from './Onboarding'
 import './batch15.css'
 
-type ToolMode = 'emergency' | 'profile' | 'family' | 'games' | 'notifications' | 'settings' | 'map' | 'music'
+type ToolMode = 'emergency' | 'profile' | 'family' | 'games' | 'notifications' | 'settings' | 'map' | 'music' | 'musicCommunity'
 type HomeTab = 'home' | 'chat' | 'photos' | 'calendar' | 'tasks' | 'shopping'
 type AccountType = 'adult' | 'child'
 type Plan = 'free' | 'plus' | 'premium'
@@ -42,7 +42,7 @@ type FamilyPhoto = { id: string; src: string; name: string; time: string }
 type FamilyEvent = { id: string; title: string; date: string; time: string; location: string }
 type FamilyTask = { id: string; title: string; dueDate: string; assignedTo: string; completed: boolean }
 type MoneyRequest = { id: string; requesterId: string; amount: string; purpose: string; dueDate: string; status: 'Pending' | 'Accepted'; lenderId?: string; taskId?: string; calendarEventId?: string }
-type MusicTrack = { id: string; title: string; artist: string; genres: string[]; audioSrc: string; artwork?: string; youtubeUrl?: string; explicit: boolean; kidsAllowed: boolean; visualStyle: 1 | 2 | 3 | 4 | 5 }
+type MusicTrack = { id: string; title: string; artist: string; genres: string[]; audioSrc: string; artwork?: string; youtubeUrl?: string; explicit: boolean; kidsAllowed: boolean; visualStyle: 1 | 2 | 3 | 4 | 5 }\ntype MusicCommunityProfile = { displayName: string; handle: string; bio: string }
 
 const musicLibrary: MusicTrack[] = [
   { id: 'late-night-ghosts', title: 'Late Night Ghosts', artist: 'Coreykt', genres: ['Chilled', 'R&B', 'Hip-Hop'], audioSrc: `${import.meta.env.BASE_URL}music/audio/Late Night Ghosts.mp3`, youtubeUrl: 'https://youtu.be/t6L480nXQ9M?is=RNp81PJPqzK_f4wm', explicit: true, kidsAllowed: false, visualStyle: 3 },
@@ -50,7 +50,7 @@ const musicLibrary: MusicTrack[] = [
   { id: 'six-seven', title: 'Six seven', artist: 'bradyxai', genres: ['Kids / Family'], audioSrc: `${import.meta.env.BASE_URL}music/audio/Six seven.mp3`, artwork: `${import.meta.env.BASE_URL}music/artwork/ChatGPT Image Sep 19, 2026, 06_25_58 PM.png`, explicit: false, kidsAllowed: true, visualStyle: 5 },
 ]
 
-const musicPlaylists = ['Chilled', 'Hip-Hop', 'R&B', 'Rock', 'Pop', 'Kids / Family']
+const musicPlaylists = ['Chilled', 'Hip-Hop', 'R&B', 'Rock', 'Pop', 'Kids / Family']\n\nfunction loadMusicCommunityProfile(): MusicCommunityProfile | null {\n  try {\n    const saved = localStorage.getItem('family-circle-music-community-profile')\n    if (!saved) return null\n    const parsed = JSON.parse(saved) as Partial<MusicCommunityProfile>\n    if (typeof parsed.displayName !== 'string' || typeof parsed.handle !== 'string') return null\n    return { displayName: parsed.displayName, handle: parsed.handle, bio: typeof parsed.bio === 'string' ? parsed.bio : '' }\n  } catch {\n    return null\n  }\n}
 type EmergencyPending = { title: string; description: string; tone: string; needsLocation: boolean; message?: string }
 
 const statusOptions: StatusOption[] = ['Home', 'Work', 'Partying', 'Recovering', 'Playing', 'Gaming', 'Toilet 😂', 'Movies', 'Sleeping', 'Gym', 'Travelling', 'Holiday', 'Out & About']
@@ -251,7 +251,7 @@ export default function App() {
   const [musicRecentlyPlayed, setMusicRecentlyPlayed] = useState<string[]>([])
   const [musicChildMode, setMusicChildMode] = useState(false)
   const [musicChildYouTubeAllowed, setMusicChildYouTubeAllowed] = useState(false)
-  const [musicVolume, setMusicVolume] = useState(() => { const saved = Number(localStorage.getItem('family-circle-music-volume')); return Number.isFinite(saved) ? Math.min(1, Math.max(0, saved)) : 0.7 })
+  const [musicVolume, setMusicVolume] = useState(() => { const saved = Number(localStorage.getItem('family-circle-music-volume')); return Number.isFinite(saved) ? Math.min(1, Math.max(0, saved)) : 0.7 })\n  const [musicCommunityProfile, setMusicCommunityProfile] = useState<MusicCommunityProfile | null>(() => loadMusicCommunityProfile())\n  const [musicCommunityDisplayName, setMusicCommunityDisplayName] = useState('')\n  const [musicCommunityHandle, setMusicCommunityHandle] = useState('')\n  const [musicCommunityBio, setMusicCommunityBio] = useState('')\n  const [musicCommunityProfileError, setMusicCommunityProfileError] = useState('')
 
   useEffect(() => {
     localStorage.setItem('family-circle-subscription', JSON.stringify(subscription))
@@ -289,6 +289,32 @@ export default function App() {
     if (!requireAccess('music', 'Family Circle Music')) return
     setToolMode('music')
     setActiveTab('home')
+  }
+
+  function openMusicCommunity() {
+    if (!requireAccess('music', 'Music Community')) return
+    setMusicCommunityProfileError('')
+    if (musicCommunityProfile) {
+      setMusicCommunityDisplayName(musicCommunityProfile.displayName)
+      setMusicCommunityHandle(musicCommunityProfile.handle)
+      setMusicCommunityBio(musicCommunityProfile.bio)
+    }
+    setToolMode('musicCommunity')
+    setActiveTab('home')
+  }
+
+  function createMusicCommunityProfile() {
+    const displayName = musicCommunityDisplayName.trim().slice(0, 40)
+    const handle = musicCommunityHandle.trim().replace(/^@+/, '').replace(/\s+/g, '').slice(0, 24)
+    const bio = musicCommunityBio.trim().slice(0, 160)
+    if (!displayName || !handle) {
+      setMusicCommunityProfileError('Add a public display name and @handle to continue.')
+      return
+    }
+    const profile = { displayName, handle, bio }
+    localStorage.setItem('family-circle-music-community-profile', JSON.stringify(profile))
+    setMusicCommunityProfile(profile)
+    setMusicCommunityProfileError('')
   }
 
   function setMusicVolumeLevel(value: number) {
@@ -656,6 +682,24 @@ export default function App() {
         </button>
       </section>
 
+      <section className="fc-home-music-community">
+        <button className="fc-home-music-community-card" type="button" onClick={openMusicCommunity}>
+          <div className="fc-home-music-community-art" aria-hidden="true">
+            {musicCurrentTrack?.artwork ? <img src={musicCurrentTrack.artwork} alt="" /> : <div className="fc-home-music-equalizer">{Array.from({ length: 13 }, (_, index) => <i key={index} style={{ animationDelay: `${index * -0.08}s` }} />)}</div>}
+          </div>
+          <div className="fc-home-music-community-copy">
+            <span className="fc-home-music-community-kicker">🎵 Family Circle Music</span>
+            <strong>Music Community</strong>
+            <p>Discover music created by Family Circle members around the world.</p>
+            <span className="fc-home-music-community-action">Enter Music Community →</span>
+          </div>
+          <div className="fc-home-music-community-status">
+            <span>{musicCurrentTrack ? 'Now playing' : 'Discover'}</span>
+            <strong>{musicCurrentTrack ? musicCurrentTrack.title : 'New music'}</strong>
+          </div>
+        </button>
+      </section>
+
       <section className="fc-dashboard-grid">
         <article className="fc-dashboard-card cyan"><div className="fc-card-head"><div><small>Family Chat</small><h2>Latest conversation</h2></div><div className="fc-card-head-actions">{unreadMessageCount > 0 && <span className="fc-unread-count">{unreadMessageCount} new</span>}<button type="button" onClick={() => goToTab('chat')}>→</button></div></div>{firstThreeMessages.map((message) => <div className={isMessageUnread(message.id) ? "fc-mini-row fc-unread-row" : "fc-mini-row"} key={message.id}><AppAvatar member={members.find((m) => m.id === message.memberId) ?? selectedMember} /><div><strong>{message.name}</strong><span>{message.text}</span></div><time>{message.time}</time></div>)}<button className="fc-outline-button" type="button" onClick={() => goToTab('chat')}>View All Messages →</button></article>
         <article className="fc-dashboard-card pink"><div className="fc-card-head"><div><small>Today's Events</small><h2>Family plans</h2></div><button type="button" onClick={() => goToTab('calendar')}>→</button></div>{todaysEvents.length ? todaysEvents.slice(0, 3).map((event) => <div className="fc-mini-row" key={event.id}><span className="fc-event-icon">📅</span><div><strong>{event.title}</strong><span>{event.time} · {event.location}</span></div></div>) : <p className="fc-muted">No more events today.</p>}<button className="fc-outline-button pink" type="button" onClick={() => goToTab('calendar')}>View Calendar →</button></article>
@@ -857,6 +901,56 @@ export default function App() {
   }
 
 
+  function renderMusicCommunity() {
+    const setupComplete = Boolean(musicCommunityProfile)
+    const communityTracks = musicLibrary
+    const current = musicCurrentTrack
+    return <div className="fc-page">
+      <header className="fc-music-community-header">
+        <div><p className="fc-kicker">Family Circle Music</p><h1>Music Community</h1><p className="fc-muted">A public music space inside the Family Circle universe.</p></div>
+        <button className="fc-ghost-button" type="button" onClick={() => goToTab('home')}>← Home</button>
+      </header>
+      {!setupComplete ? <section className="fc-music-community-setup">
+        <div className="fc-music-community-setup-icon">🎵</div>
+        <span className="fc-music-community-badge">Separate public music identity</span>
+        <h2>Create your Music Profile</h2>
+        <p>Choose how you want to appear in the Music Community. This profile is separate from your private Family Circle identity and family information.</p>
+        <div className="fc-music-community-form">
+          <label><span>Public display name *</span><input value={musicCommunityDisplayName} onChange={(event) => setMusicCommunityDisplayName(event.target.value)} placeholder="e.g. BradyXAi" maxLength={40} /></label>
+          <label><span>@Handle *</span><input value={musicCommunityHandle} onChange={(event) => setMusicCommunityHandle(event.target.value.replace(/\s/g, ''))} placeholder="e.g. bradyxai" maxLength={24} /></label>
+          <label><span>Short bio</span><textarea value={musicCommunityBio} onChange={(event) => setMusicCommunityBio(event.target.value)} placeholder="Tell listeners what you make." maxLength={160} rows={3} /></label>
+        </div>
+        {musicCommunityProfileError && <p className="fc-error">{musicCommunityProfileError}</p>}
+        <button className="fc-primary-button fc-music-community-create" type="button" onClick={createMusicCommunityProfile}>Create Music Profile →</button>
+        <small className="fc-music-community-privacy">Your Family Circle name, family members, location and private family details are not shown here.</small>
+      </section> : <>
+        <section className="fc-music-community-profile-strip">
+          <div className="fc-music-community-avatar">♫</div>
+          <div><small>Music Creator</small><strong>{musicCommunityProfile.displayName}</strong><span>@{musicCommunityProfile.handle}{musicCommunityProfile.bio ? ' · ' + musicCommunityProfile.bio : ''}</span></div>
+          <button className="fc-ghost-button" type="button" onClick={() => { setMusicCommunityProfile(null); localStorage.removeItem('family-circle-music-community-profile'); setMusicCommunityProfileError('') }}>Edit Profile</button>
+        </section>
+        <nav className="fc-music-community-tabs" aria-label="Music Community sections">
+          <button className="active" type="button">✨ Discover</button><button type="button">🆕 New Releases</button><button type="button">♡ Following</button><button type="button">🎹 Instrumentals</button>
+        </nav>
+        <section className="fc-music-community-filters">{['All', 'R&B', 'Hip-Hop', 'Pop', 'Rock', 'Electronic', 'AI Music', 'Instrumental', 'Other'].map((genre) => <button type="button" key={genre} className={genre === 'All' ? 'active' : ''}>{genre}</button>)}</section>
+        <section className="fc-music-community-featured">
+          <div className="fc-music-community-section-head"><div><small>Discover New Music</small><h2>Made inside the Family Circle universe</h2></div><span>{communityTracks.length} demo tracks</span></div>
+          <div className="fc-music-community-track-grid">{communityTracks.map((track) => <article className={`fc-community-track-card${current?.id === track.id ? ' active' : ''}`} key={track.id}>
+            <button className="fc-community-track-art" type="button" onClick={() => selectMusicTrack(track)} aria-label={`Play ${track.title}`}>{track.artwork ? <img src={track.artwork} alt="" /> : <div className={`fc-home-music-equalizer style-${track.visualStyle}`}>{Array.from({ length: 9 }, (_, index) => <i key={index} />)}</div>}<span>{current?.id === track.id && musicPlaying ? 'Ⅱ' : '▶'}</span></button>
+            <div className="fc-community-track-copy"><small>{track.genres.join(' · ')}</small><strong>{track.title}</strong><span>{track.artist}</span></div>
+            <div className="fc-community-track-actions"><button type="button" aria-label="Like">♡</button><button type="button" aria-label="Comments">💬</button><button type="button" aria-label="Save">＋</button><button type="button" aria-label="Share">↗</button></div>
+          </article>)}</div>
+        </section>
+        <section className="fc-music-community-premium">
+          <div><span>⭐ Premium Creator</span><h2>Publish your own music</h2><p>Premium creators will be able to publish up to {subscription.monthlyPublishAllowance || 10} tracks per monthly allowance, including singles, EPs and albums.</p></div>
+          <button className="fc-primary-button" type="button" disabled>Upload Music · Phase 4</button>
+        </section>
+        {current && <section className="fc-music-community-now-playing"><span>Now playing</span><strong>{current.title}</strong><small>{current.artist}</small><button className="fc-music-mini-control fc-music-mini-play" type="button" onClick={toggleMusicPlayback}>{musicPlaying ? 'Ⅱ' : '▶'}</button><button className="fc-ghost-button" type="button" onClick={openMusic}>Open full player</button></section>}
+      </>}
+      {renderBottomNav()}
+    </div>
+  }
+
   function renderMusic() {
     const current = musicCurrentTrack
     const visibleTracks = musicVisibleTracks()
@@ -895,6 +989,7 @@ export default function App() {
   }
 
   function renderTool() {
+    if (toolMode === 'musicCommunity') return renderMusicCommunity()
     if (toolMode === 'music') return renderMusic()
     if (toolMode === 'profile') return renderProfile()
     if (toolMode === 'family') return renderFamily()
