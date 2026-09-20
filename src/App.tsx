@@ -211,6 +211,7 @@ export default function App() {
   const [sentEmergency, setSentEmergency] = useState<{ title: string; coordinates: { latitude: number; longitude: number } | null } | null>(null)
   const [dailyQuote, setDailyQuote] = useState(dailyFamilyQuote)
   const musicAudioRef = useRef<HTMLAudioElement | null>(null)
+  const homeEntryAudioRef = useRef<HTMLAudioElement | null>(null)
   const [musicCurrentTrack, setMusicCurrentTrack] = useState<MusicTrack | null>(null)
   const [musicPlaying, setMusicPlaying] = useState(false)
   const [musicCurrentTime, setMusicCurrentTime] = useState(0)
@@ -329,6 +330,12 @@ export default function App() {
       setPinError('Enter all 4 digits to continue.')
       return
     }
+    if (!homeEntryAudioRef.current) {
+      homeEntryAudioRef.current = new Audio(`${import.meta.env.BASE_URL}audio/welcome-to-family-circle.mp3`)
+      homeEntryAudioRef.current.preload = 'auto'
+    }
+    homeEntryAudioRef.current.volume = 0.88
+    void homeEntryAudioRef.current.play().catch(() => {})
     setScreen('home')
     setActiveTab('home')
     setToolMode(null)
