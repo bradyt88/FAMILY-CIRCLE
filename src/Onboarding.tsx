@@ -46,45 +46,19 @@ export default function Onboarding({ onComplete, initialView = 'splash' }: { onC
   const [selectedPlan, setSelectedPlan] = useState<Plan | null>(null)
   const [error, setError] = useState('')
   const [splashDone, setSplashDone] = useState(initialView !== 'splash')
-  const [audioPlaying, setAudioPlaying] = useState(false)
-  const splashAudioRef = useRef<HTMLAudioElement | null>(null)
 
   useEffect(() => {
     if (initialView !== 'splash') return
-
-    const audio = splashAudioRef.current
-    if (!audio) return
-
-    audio.volume = 0.88
 
     const timer = window.setTimeout(() => {
       setSplashDone(true)
       setView('welcome')
     }, 6800)
 
-    const handleEnded = () => setAudioPlaying(false)
-    audio.addEventListener('ended', handleEnded)
-
     return () => {
       window.clearTimeout(timer)
-      audio.removeEventListener('ended', handleEnded)
-      audio.pause()
-      audio.currentTime = 0
-      splashAudioRef.current = null
     }
   }, [initialView])
-
-  function playSplashAudio() {
-    const audio = splashAudioRef.current
-    if (!audio) return
-
-    audio.volume = 0.88
-    void audio.play().then(() => {
-      setAudioPlaying(true)
-    }).catch(() => {
-      setAudioPlaying(false)
-    })
-  }
 
   const selectedFamily = useMemo(() => families.find((family) => family.id === selectedFamilyId) ?? families[0] ?? null, [families, selectedFamilyId])
 
@@ -163,21 +137,6 @@ export default function Onboarding({ onComplete, initialView = 'splash' }: { onC
   if (view === 'splash' && !splashDone) {
     return <main className="fc-onboarding-shell fc-splash-screen">
       <div className="fc-splash-logo"><img src={logoUrl} alt="Family Circle" /></div>
-      <button
-        className={`fc-splash-play${audioPlaying ? ' playing' : ''}`}
-        type="button"
-        onClick={playSplashAudio}
-        aria-label={audioPlaying ? 'Splash audio playing' : 'Play splash audio'}
-        aria-pressed={audioPlaying}
-      >
-        <span aria-hidden="true">{audioPlaying ? '▶' : '▶'}</span>
-      </button>
-      <audio
-        ref={splashAudioRef}
-        src={`${import.meta.env.BASE_URL}audio/welcome-to-family-circle.mp3`}
-        preload="auto"
-        playsInline
-      />
     </main>
   }
 
