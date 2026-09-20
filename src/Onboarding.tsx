@@ -2,7 +2,8 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import logoUrl from '../design/brand/family-circle-logo.png'
 import './onboarding.css'
 
-type EntryView = 'splash' | 'welcome' | 'signin' | 'signup' | 'account-type' | 'family-choice' | 'create-family' | 'join-family' | 'families'
+type EntryView = 'splash' | 'welcome' | 'signin' | 'signup' | 'account-type' | 'plan' | 'family-choice' | 'create-family' | 'join-family' | 'families'
+type Plan = 'free' | 'plus' | 'premium'
 type FamilyConnection = { id: string; name: string }
 
 const familyStorageKey = 'family-circle-families'
@@ -42,6 +43,7 @@ export default function Onboarding({ onComplete, initialView = 'splash' }: { onC
   const [termsAccepted, setTermsAccepted] = useState(false)
   const [marketingOptIn, setMarketingOptIn] = useState(false)
   const [accountType, setAccountType] = useState<'adult' | 'child' | null>(null)
+  const [selectedPlan, setSelectedPlan] = useState<Plan | null>(null)
   const [error, setError] = useState('')
   const [splashDone, setSplashDone] = useState(initialView !== 'splash')
   const [audioPlaying, setAudioPlaying] = useState(false)
@@ -189,11 +191,21 @@ export default function Onboarding({ onComplete, initialView = 'splash' }: { onC
   }
 
   if (view === 'account-type') {
-    return <main className="fc-onboarding-shell"><section className="fc-onboarding-card fc-account-type-card"><button className="fc-back-link" type="button" onClick={() => go('signup')}>← Back</button><p className="fc-kicker">Account setup · Step 2</p><h1>Who are you setting this account up for?</h1><p className="fc-onboarding-copy">Choose whether this account is for you or for your child. Family and plan settings come next.</p><div className="fc-account-type-grid"><button className={accountType === 'adult' ? 'fc-account-type-option selected' : 'fc-account-type-option'} type="button" onClick={() => setAccountType('adult')} aria-pressed={accountType === 'adult'}><span className="fc-account-type-icon">👤</span><span><strong>Myself</strong><small>Set up your own Family Circle account.</small></span><b>{accountType === 'adult' ? '✓' : '→'}</b></button><button className={accountType === 'child' ? 'fc-account-type-option selected' : 'fc-account-type-option'} type="button" onClick={() => setAccountType('child')} aria-pressed={accountType === 'child'}><span className="fc-account-type-icon">🧒</span><span><strong>My Child</strong><small>Set up an account for your child with family safety controls.</small></span><b>{accountType === 'child' ? '✓' : '→'}</b></button></div>{error && <p className="fc-entry-error">{error}</p>}<button className="fc-primary-button fc-account-type-continue" type="button" disabled={!accountType} onClick={() => setError('Plan selection is the next step.')}>Continue</button><p className="fc-account-type-note">Free, Plus and Premium are available for both. Child accounts have additional family safety controls.</p></section></main>
+    return <main className="fc-onboarding-shell"><section className="fc-onboarding-card fc-account-type-card"><button className="fc-back-link" type="button" onClick={() => go('signup')}>← Back</button><p className="fc-kicker">Account setup · Step 2</p><h1>Who are you setting this account up for?</h1><p className="fc-onboarding-copy">Choose whether this account is for you or for your child. Family and plan settings come next.</p><div className="fc-account-type-grid"><button className={accountType === 'adult' ? 'fc-account-type-option selected' : 'fc-account-type-option'} type="button" onClick={() => setAccountType('adult')} aria-pressed={accountType === 'adult'}><span className="fc-account-type-icon">👤</span><span><strong>Myself</strong><small>Set up your own Family Circle account.</small></span><b>{accountType === 'adult' ? '✓' : '→'}</b></button><button className={accountType === 'child' ? 'fc-account-type-option selected' : 'fc-account-type-option'} type="button" onClick={() => setAccountType('child')} aria-pressed={accountType === 'child'}><span className="fc-account-type-icon">🧒</span><span><strong>My Child</strong><small>Set up an account for your child with family safety controls.</small></span><b>{accountType === 'child' ? '✓' : '→'}</b></button></div>{error && <p className="fc-entry-error">{error}</p>}<button className="fc-primary-button fc-account-type-continue" type="button" disabled={!accountType} onClick={() => go('plan')}>Continue</button><p className="fc-account-type-note">Free, Plus and Premium are available for both. Child accounts have additional family safety controls.</p></section></main>
+  }
+
+  if (view === 'plan') {
+    const plans: Array<{ id: Plan; name: string; price: string; features: string[] }> = [
+      { id: 'free', name: 'Free', price: '£0', features: ['Join 1 Family Circle', 'Core Family Circle experience', 'Core family safety and privacy'] },
+      { id: 'plus', name: 'Plus', price: '£2.49/month', features: ['Everything in Free', 'Join up to 3 Family Circles', 'Selected games and family multiplayer'] },
+      { id: 'premium', name: 'Premium', price: '£4.99/month', features: ['Everything in Plus', 'Join more Family Circles', 'All games, future games and expanded features'] },
+    ]
+
+    return <main className="fc-onboarding-shell"><section className="fc-onboarding-card fc-plan-card"><button className="fc-back-link" type="button" onClick={() => go('account-type')}>← Back</button><p className="fc-kicker">Account setup · Step 3</p><h1>Choose your Family Circle plan</h1><p className="fc-onboarding-copy">{accountType === 'child' ? 'Choose the plan for your child’s account. Child accounts include family safety controls.' : 'Choose the plan for this account. You can change your plan later.'}</p><div className="fc-plan-grid">{plans.map((plan) => <button key={plan.id} className={selectedPlan === plan.id ? 'fc-plan-option selected' : 'fc-plan-option'} type="button" onClick={() => setSelectedPlan(plan.id)} aria-pressed={selectedPlan === plan.id}><div className="fc-plan-option-head"><span><strong>{plan.name}</strong><small>{plan.price}</small></span><b>{selectedPlan === plan.id ? '✓' : '→'}</b></div><ul>{plan.features.map((feature) => <li key={feature}>{feature}</li>)}</ul></button>)}</div>{error && <p className="fc-entry-error">{error}</p>}<button className="fc-primary-button fc-plan-continue" type="button" disabled={!selectedPlan} onClick={() => go('family-choice')}>Continue</button><p className="fc-plan-note">{selectedPlan === 'free' ? 'Free has no payment step.' : selectedPlan ? 'Payment will be connected in the next stage.' : 'Select a plan to continue.'}</p></section></main>
   }
 
   if (view === 'family-choice') {
-    return <main className="fc-onboarding-shell"><section className="fc-onboarding-card"><button className="fc-back-link" type="button" onClick={() => go('signup')}>← Back</button><p className="fc-kicker">Your families</p><h1>What would you like to do?</h1><p className="fc-onboarding-copy">You can create a new family or join a family you've been invited to.</p><div className="fc-family-choice-grid"><button className="fc-choice-panel" type="button" onClick={() => go('create-family')}><span>＋</span><strong>Create a Family</strong><small>Start a new family space and receive a Family ID.</small></button><button className="fc-choice-panel" type="button" onClick={() => go('join-family')}><span>↗</span><strong>Join a Family</strong><small>Enter a Family ID you've been given.</small></button></div></section></main>
+    return <main className="fc-onboarding-shell"><section className="fc-onboarding-card"><button className="fc-back-link" type="button" onClick={() => go('plan')}>← Back</button><p className="fc-kicker">Your families</p><h1>What would you like to do?</h1><p className="fc-onboarding-copy">You can create a new family or join a family you've been invited to.</p><div className="fc-family-choice-grid"><button className="fc-choice-panel" type="button" onClick={() => go('create-family')}><span>＋</span><strong>Create a Family</strong><small>Start a new family space and receive a Family ID.</small></button><button className="fc-choice-panel" type="button" onClick={() => go('join-family')}><span>↗</span><strong>Join a Family</strong><small>Enter a Family ID you've been given.</small></button></div></section></main>
   }
 
   if (view === 'create-family') {
