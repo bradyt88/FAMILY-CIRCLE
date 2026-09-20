@@ -944,7 +944,7 @@ export default function App() {
       </section> : <>
         <section className="fc-music-community-profile-strip">
           <div className="fc-music-community-avatar">♫</div>
-          <div><small>Music Creator</small><strong>{musicCommunityProfile.displayName}</strong><span>@{musicCommunityProfile.handle}{musicCommunityProfile.bio ? ' · ' + musicCommunityProfile.bio : ''}</span></div>
+          <div><small>Music Creator</small><strong>{musicCommunityProfile?.displayName}</strong><span>@{musicCommunityProfile?.handle}{musicCommunityProfile?.bio ? ' · ' + musicCommunityProfile.bio : ''}</span></div>
           <button className="fc-ghost-button" type="button" onClick={() => { setMusicCommunityProfile(null); localStorage.removeItem('family-circle-music-community-profile'); setMusicCommunityProfileError('') }}>Edit Profile</button>
         </section>
         <nav className="fc-music-community-tabs" aria-label="Music Community sections">
