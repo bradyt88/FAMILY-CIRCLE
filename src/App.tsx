@@ -37,7 +37,7 @@ type SocialName = 'Facebook' | 'TikTok' | 'Snapchat' | 'YouTube'
 type MemberRecognition = { famOfWeekWins: number; clownOfWeekWins: number; weeklyAwards: Array<{ weekKey: string; type: 'fam' | 'clown' }> }
 type RecognitionTie = { candidates: string[]; votes: Record<string, string>; statements: Record<string, string> }
 type WeeklyRecognition = { weekKey: string; famVotes: Record<string, string>; clownVotes: Record<string, string>; famWinner: string | null; clownWinner: string | null; famTie: RecognitionTie | null; clownTie: RecognitionTie | null; famAnnounced: boolean; clownAnnounced: boolean }
-type FamilyMember = { id: string; label: string; initials: string; accent: string; phone: string; bio: string; status: StatusOption; locationLabel: string; lastUpdated: string; mapX: number; mapY: number; photo?: string | null; socials: Record<SocialName, string>; recognition?: MemberRecognition }
+type FamilyMember = { id: string; label: string; initials: string; accent: string; phone: string; bio: string; status: StatusOption; locationLabel: string; lastUpdated: string; mapX: number; mapY: number; photo?: string | null; socials: Record<SocialName, string>; recognition?: MemberRecognition; coverPhoto?: string | null }
 type ChatMessage = { id: string; memberId: string; name: string; initials: string; accent: string; time: string; text: string; image?: string; moneyRequestId?: string }
 type Notification = { id: string; kind: 'Chat' | 'Task' | 'Calendar' | 'Emergency' | 'Profile' | 'Money'; title: string; detail: string; time: string }
 type NotificationPreferences = { Chat: boolean; Task: boolean; Calendar: boolean; Profile: boolean; Money: boolean; Emergency: true }
@@ -315,6 +315,7 @@ export default function App() {
   const [profileMessage, setProfileMessage] = useState('')
   const [profileSavedView, setProfileSavedView] = useState(false)
   const [profilePhotoViewer, setProfilePhotoViewer] = useState<string | null>(null)
+  const [profileCoverViewer, setProfileCoverViewer] = useState<string | null>(null)
   const [moneyRequests, setMoneyRequests] = useState<MoneyRequest[]>([])
   const [shoppingItems, setShoppingItems] = useState<string[]>([])
   const [shoppingInput, setShoppingInput] = useState('')
@@ -695,8 +696,25 @@ export default function App() {
     setProfileSavedView(true)
   }
 
-  function uploadProfilePhoto(file: File) {
+  function uploadProfileCover(file: File) {
     if (!file.type.startsWith('image/') || profileTarget.id !== selectedMember.id) return
+    const reader = new FileReader()
+    reader.onload = () => {
+      const coverPhoto = typeof reader.result === 'string' ? reader.result : ''
+      if (!coverPhoto) return
+      persistMember({ ...selectedMember, coverPhoto })
+      setProfileMessage('Cover photo updated.')
+    }
+    reader.readAsDataURL(file)
+  }
+
+  function removeProfileCover() {
+    if (profileTarget.id !== selectedMember.id) return
+    persistMember({ ...selectedMember, coverPhoto: null })
+    setProfileMessage('Cover photo removed.')
+  }
+
+  function uploadProfilePhoto(file: File):
     const reader = new FileReader()
     reader.onload = () => {
       const photo = typeof reader.result === 'string' ? reader.result : ''
@@ -866,9 +884,9 @@ export default function App() {
     const firstThreeTasks = tasks.slice(0, 3)
     return <div className="fc-page">
       <header className="fc-home-topbar">
-        <button className="fc-home-profile fc-home-profile-hero" type="button" onClick={() => openProfile(selectedMember.id)}>
+        <button className="fc-home-profile fc-home-profile-hero" type="button" onClick={() => openProfile(selectedMember.id)} style={selectedMember.coverPhoto ? { backgroundImage: `linear-gradient(90deg,rgba(7,10,27,.95) 0%,rgba(7,10,27,.78) 42%,rgba(7,10,27,.45) 100%),url("${selectedMember.coverPhoto}")` } : undefined}>
           <AppAvatar member={selectedMember} className="fc-home-avatar" />
-          <span className="fc-home-profile-copy"><small>{timeGreeting()}</small><strong>{selectedMember.label}</strong><em>{selectedMember.bio || 'No bio yet.'}</em><span>My Status · {selectedMember.status}</span></span>
+          <span className="fc-home-profile-copy"><small>{timeGreeting()}</small><strong>{selectedMember.label}</strong><em>{selectedMember.bio || 'Keeping the family moving.'}</em><span>● My Status · {selectedMember.status}</span></span>
           <b className="fc-home-profile-arrow">→</b>
         </button>
         <div className="fc-home-brand-row">
@@ -880,7 +898,7 @@ export default function App() {
       <section className="fc-banner">
         <span className="fc-banner-heart">♡</span>
         <div className="fc-banner-quote"><strong className="fc-quote-text">{dailyQuote}</strong><span>Family Circle · Today</span></div>
-        <time className="fc-banner-date">{(() => { const date = formatBannerDate(todayKey()); return <><strong>{date.weekday}</strong><span>{date.dayMonth}</span><small>{date.year}</small></> })()}</time>
+        <time className="fc-banner-date">{(() => { const date = formatBannerDate(todayKey()); return <><strong>{date.weekday}</strong><span>{date.dayMonth}</span><small>{date.year}</small><b>{formatTime()}</b></> })()}</time>
       </section>
 
       <section className="fc-home-emergency-feature">
@@ -1093,7 +1111,11 @@ export default function App() {
     return <div className="fc-page">
       <FeatureHeader title={isOwn ? 'My Profile' : profileTarget.label} description={isOwn ? 'Your Family Circle identity, ready to share with the people who matter.' : 'Family profile details.'} onHome={() => goToTab('home')} />
       {isOwn && profileSavedView ? <section className="fc-profile-saved-shell">
-        <div className="fc-profile-saved-hero">
+        <div className="fc-profile-saved-hero" style={profileTarget.coverPhoto ? { backgroundImage: `linear-gradient(115deg,rgba(8,11,28,.94),rgba(12,15,36,.76) 48%,rgba(12,9,30,.58)),url("${profileTarget.coverPhoto}")` } : undefined}>
+          <div className="fc-profile-cover-tools">
+            <label className="fc-profile-cover-upload"><span>▧ Cover photo</span><input className="fc-hidden" type="file" accept="image/*" onChange={(event) => { const file=event.target.files?.[0]; if(file) uploadProfileCover(file); event.currentTarget.value='' }} /></label>
+            {profileTarget.coverPhoto && <button type="button" onClick={removeProfileCover}>Remove cover</button>}
+          </div>
           <div className="fc-profile-saved-photo-wrap">
             <button className="fc-profile-photo-view-button" type="button" onClick={() => profileTarget.photo && setProfilePhotoViewer(profileTarget.photo)} aria-label="View profile photo"><AppAvatar member={profileTarget} className="fc-profile-saved-photo" />{profileTarget.photo && <span>View photo</span>}</button>
             <span className="fc-profile-saved-status">● {profileTarget.status}</span>
@@ -1118,7 +1140,8 @@ export default function App() {
         </div>
                 <RecognitionProfile member={profileTarget} members={members} />
       </section> : <div className="fc-profile-layout">
-        <div className="fc-panel fc-profile-hero">
+        <div className="fc-panel fc-profile-hero" style={profileTarget.coverPhoto ? { backgroundImage: `linear-gradient(135deg,rgba(10,13,32,.96),rgba(10,13,32,.78)),url("${profileTarget.coverPhoto}")` } : undefined}>
+          <div className="fc-profile-cover-edit-row"><label className="fc-profile-cover-upload"><span>▧ Add cover photo</span><input className="fc-hidden" type="file" accept="image/*" onChange={(event) => { const file=event.target.files?.[0]; if(file) uploadProfileCover(file); event.currentTarget.value='' }} /></label>{profileTarget.coverPhoto && <button type="button" onClick={removeProfileCover}>Remove cover</button>}</div>
           <div className="fc-profile-photo-wrap">{isOwn ? <label className="fc-profile-photo-button"><AppAvatar member={{ ...profileTarget, photo: profileTarget.photo }} className="fc-profile-photo" /><span>Change photo</span><input className="fc-hidden" type="file" accept="image/*" onChange={(event) => { const file = event.target.files?.[0]; if (file) uploadProfilePhoto(file); event.currentTarget.value = '' }} /></label> : <AppAvatar member={profileTarget} className="fc-profile-photo" />} {isOwn && profileTarget.photo && <div className="fc-profile-photo-actions"><button className="fc-profile-photo-view-link" type="button" onClick={() => setProfilePhotoViewer(profileTarget.photo!)}>View photo</button><button className="fc-remove-photo" type="button" onClick={removeProfilePhoto}>Remove photo</button></div>}</div>
           <h2>{profileTarget.label}</h2>
           <p className="fc-status-chip">My Status · {profileTarget.status}</p>
