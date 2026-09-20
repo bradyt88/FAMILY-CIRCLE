@@ -272,6 +272,7 @@ export default function App() {
   const [profileSocials, setProfileSocials] = useState<Record<SocialName, string>>({ Facebook: '', TikTok: '', Snapchat: '', YouTube: '' })
   const [profileMessage, setProfileMessage] = useState('')
   const [profileSavedView, setProfileSavedView] = useState(false)
+  const [profilePhotoViewer, setProfilePhotoViewer] = useState<string | null>(null)
   const [moneyRequests, setMoneyRequests] = useState<MoneyRequest[]>([])
   const [shoppingItems, setShoppingItems] = useState<string[]>([])
   const [shoppingInput, setShoppingInput] = useState('')
@@ -944,7 +945,7 @@ export default function App() {
       {isOwn && profileSavedView ? <section className="fc-profile-saved-shell">
         <div className="fc-profile-saved-hero">
           <div className="fc-profile-saved-photo-wrap">
-            <AppAvatar member={profileTarget} className="fc-profile-saved-photo" />
+            <button className="fc-profile-photo-view-button" type="button" onClick={() => profileTarget.photo && setProfilePhotoViewer(profileTarget.photo)} aria-label="View profile photo"><AppAvatar member={profileTarget} className="fc-profile-saved-photo" />{profileTarget.photo && <span>View photo</span>}</button>
             <span className="fc-profile-saved-status">● {profileTarget.status}</span>
           </div>
           <div className="fc-profile-saved-copy">
@@ -967,7 +968,7 @@ export default function App() {
         </div>
       </section> : <div className="fc-profile-layout">
         <div className="fc-panel fc-profile-hero">
-          <div className="fc-profile-photo-wrap">{isOwn ? <label className="fc-profile-photo-button"><AppAvatar member={{ ...profileTarget, photo: profileTarget.photo }} className="fc-profile-photo" /><span>Change photo</span><input className="fc-hidden" type="file" accept="image/*" onChange={(event) => { const file = event.target.files?.[0]; if (file) uploadProfilePhoto(file); event.currentTarget.value = '' }} /></label> : <AppAvatar member={profileTarget} className="fc-profile-photo" />} {isOwn && profileTarget.photo && <button className="fc-remove-photo" type="button" onClick={removeProfilePhoto}>Remove photo</button>}</div>
+          <div className="fc-profile-photo-wrap">{isOwn ? <label className="fc-profile-photo-button"><AppAvatar member={{ ...profileTarget, photo: profileTarget.photo }} className="fc-profile-photo" /><span>Change photo</span><input className="fc-hidden" type="file" accept="image/*" onChange={(event) => { const file = event.target.files?.[0]; if (file) uploadProfilePhoto(file); event.currentTarget.value = '' }} /></label> : <AppAvatar member={profileTarget} className="fc-profile-photo" />} {isOwn && profileTarget.photo && <div className="fc-profile-photo-actions"><button className="fc-profile-photo-view-link" type="button" onClick={() => setProfilePhotoViewer(profileTarget.photo!)}>View photo</button><button className="fc-remove-photo" type="button" onClick={removeProfilePhoto}>Remove photo</button></div>}</div>
           <h2>{profileTarget.label}</h2>
           <p className="fc-status-chip">My Status · {profileTarget.status}</p>
           <p className="fc-muted">{profileTarget.bio || 'No bio yet.'}</p>
@@ -1198,7 +1199,15 @@ export default function App() {
         <button className="fc-music-mini-control fc-music-mini-play" type="button" onClick={toggleMusicPlayback} aria-label={musicPlaying ? "Pause music" : "Play music"}>{musicPlaying ? "Ⅱ" : "▶"}</button>
         <button className="fc-music-mini-control" type="button" onClick={() => { const list = toolMode === 'musicCommunity' ? musicCommunityDemoTracks : musicVisibleTracks(); const index = list.findIndex((track) => track.id === musicCurrentTrack.id); if (index >= 0 && list.length > 1) selectMusicTrack(list[(index + 1) % list.length]) }} aria-label="Next track">▶</button>
         <button className="fc-music-mini-close" type="button" onClick={() => setMusicMiniPlayerVisible(false)} aria-label="Dismiss music player">×</button>
-      </div>}</div></main>
+      </div>}
+      {profilePhotoViewer && <div className="fc-photo-viewer" role="dialog" aria-modal="true" aria-label="Profile photo viewer" onMouseDown={() => setProfilePhotoViewer(null)}>
+        <section className="fc-photo-viewer-panel" onMouseDown={(event) => event.stopPropagation()}>
+          <button className="fc-photo-viewer-close" type="button" onClick={() => setProfilePhotoViewer(null)} aria-label="Close photo viewer">×</button>
+          <div className="fc-photo-viewer-image-wrap"><img src={profilePhotoViewer} alt="Profile photo enlarged" /></div>
+          <span>Profile photo</span>
+        </section>
+      </div>}
+    </div></main>
 }
 
 function formatMusicTime(seconds: number) {
