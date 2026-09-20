@@ -3,7 +3,7 @@ import logoUrl from '../design/brand/family-circle-logo.png'
 import Onboarding from './Onboarding'
 import './batch15.css'
 
-type ToolMode = 'emergency' | 'profile' | 'family' | 'games' | 'familyCourt' | 'notifications' | 'settings' | 'map' | 'music' | 'musicCommunity'
+type ToolMode = 'emergency' | 'profile' | 'family' | 'games' | 'notifications' | 'settings' | 'map' | 'music' | 'musicCommunity'
 type HomeTab = 'home' | 'chat' | 'photos' | 'calendar' | 'tasks' | 'shopping'
 type AccountType = 'adult' | 'child'
 type Plan = 'free' | 'plus' | 'premium'
@@ -928,13 +928,6 @@ export default function App() {
         </button>
       </section>
 
-      <section className="fc-home-court-feature">
-        <button className="fc-home-court-card" type="button" onClick={() => openTool('familyCourt')}>
-          <span className="fc-home-court-icon">⚖️</span>
-          <span className="fc-home-court-copy"><small>Settle it in the circle</small><strong>Family Court</strong><em>Bring your family case before the jury.</em></span>
-          <b>→</b>
-        </button>
-      </section>
 
       <section className="fc-dashboard-grid">
         <article className="fc-dashboard-card cyan"><div className="fc-card-head"><div><small>Family Chat</small><h2>Latest conversation</h2></div><div className="fc-card-head-actions">{unreadMessageCount > 0 && <span className="fc-unread-count">{unreadMessageCount} new</span>}<button type="button" onClick={() => goToTab('chat')}>→</button></div></div>{firstThreeMessages.map((message) => <div className={isMessageUnread(message.id) ? "fc-mini-row fc-unread-row" : "fc-mini-row"} key={message.id}><AppAvatar member={members.find((m) => m.id === message.memberId) ?? selectedMember} /><div><strong>{message.name}</strong><span>{message.text}</span></div><time>{message.time}</time></div>)}<button className="fc-outline-button" type="button" onClick={() => goToTab('chat')}>View All Messages →</button></article>
@@ -949,7 +942,6 @@ export default function App() {
         <button className={`fc-feature-card games-card${!hasChildAccess('games') ? ' fc-feature-card-locked' : ''}`} type="button" onClick={() => openTool('games')}><span className="fc-feature-icon">🎮</span><div><small>Fun together</small><strong>Challenge a Family Member</strong><span>Games hub coming soon.</span></div><b>→</b></button>
         <button className={`fc-feature-card music-card${!hasChildAccess('music') ? ' fc-feature-card-locked' : ''}`} type="button" onClick={openMusic}><span className="fc-feature-icon">♫</span><div><small>Family Circle Music</small><strong>Music for the family</strong><span>Original music, playlists and more.</span></div><b>→</b></button>
         <button className="fc-feature-card shopping-feature-card" type="button" onClick={() => goToTab('shopping')}><span className="fc-feature-icon">🛒</span><div><small>Family shopping</small><strong>Weekly Shop</strong><span>Keep the family shopping list together.</span></div><b>→</b></button>
-        <button className="fc-feature-card court-feature-card" type="button" onClick={() => openTool('familyCourt')}><span className="fc-feature-icon">⚖️</span><div><small>Family jury</small><strong>Family Court</strong><span>Bring a family dispute before the circle.</span></div><b>→</b></button>
       </section>
 
       {renderBottomNav()}
@@ -1047,9 +1039,6 @@ export default function App() {
     </div></div>{renderBottomNav()}</div>
   }
 
-  function renderFamilyCourt() {
-    return <div className="fc-page"><FeatureHeader title="Family Court" description="A playful family jury space for settling the little things." onHome={() => goToTab('home')} /><section className="fc-family-court-landing"><div className="fc-family-court-hero"><span>⚖️</span><p className="fc-kicker">Family Circle jury room</p><h2>Bring your case before the family.</h2><p>Family Court will let family members present their side, share evidence, and let the family jury decide. The case system and consequences will be built into this space next.</p><button className="fc-primary-button" type="button" onClick={() => goToTab('chat')}>Discuss it in Family Chat →</button></div><div className="fc-family-court-rules"><div><span>📋</span><strong>Make your case</strong><small>Explain what happened.</small></div><div><span>👨‍⚖️</span><strong>Family jury</strong><small>The circle gets a say.</small></div><div><span>🏆</span><strong>Verdict</strong><small>Rewards and consequences can follow.</small></div></div></section>{renderBottomNav()}</div>
-  }
 
   function renderShoppingList() {
     const canComplete = familyShopperIds.includes(selectedMember.id)
@@ -1342,7 +1331,6 @@ export default function App() {
     if (toolMode === 'profile') return renderProfile()
     if (toolMode === 'family') return renderFamily()
     if (toolMode === 'games') return renderGames()
-    if (toolMode === 'familyCourt') return renderFamilyCourt()
     if (toolMode === 'notifications') return renderNotifications()
     if (toolMode === 'settings') return renderSettings()
     if (toolMode === 'map') return renderMap()
