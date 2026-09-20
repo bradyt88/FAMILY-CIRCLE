@@ -866,12 +866,15 @@ export default function App() {
     const firstThreeTasks = tasks.slice(0, 3)
     return <div className="fc-page">
       <header className="fc-home-topbar">
-        <button className="fc-home-profile" type="button" onClick={() => openProfile(selectedMember.id)}>
+        <button className="fc-home-profile fc-home-profile-hero" type="button" onClick={() => openProfile(selectedMember.id)}>
           <AppAvatar member={selectedMember} className="fc-home-avatar" />
           <span className="fc-home-profile-copy"><small>{timeGreeting()}</small><strong>{selectedMember.label}</strong><em>{selectedMember.bio || 'No bio yet.'}</em><span>My Status · {selectedMember.status}</span></span>
+          <b className="fc-home-profile-arrow">→</b>
         </button>
-        <div className="fc-home-logo"><img src={logoUrl} alt="Family Circle" /></div>
-        <div className="fc-home-actions"><button className="fc-round-button" type="button" onClick={() => openTool('notifications')} aria-label="Notifications">🔔{notifications.length > 0 && <b>{notifications.length}</b>}</button><button className="fc-round-button" type="button" onClick={() => openTool('settings')} aria-label="Settings">⚙️</button></div>
+        <div className="fc-home-brand-row">
+          <div className="fc-home-logo"><img src={logoUrl} alt="Family Circle" /></div>
+          <div className="fc-home-actions"><button className="fc-round-button" type="button" onClick={() => openTool('notifications')} aria-label="Notifications">🔔{notifications.length > 0 && <b>{notifications.length}</b>}</button><button className="fc-round-button" type="button" onClick={() => openTool('settings')} aria-label="Settings">⚙️</button></div>
+        </div>
       </header>
 
       <section className="fc-banner">
