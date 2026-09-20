@@ -341,6 +341,7 @@ export default function App() {
 
   function completeOnboarding(_family: { id: string; name: string }, setup: { accountType: AccountType; plan: Plan; childPermissions: ChildPermissions }) {
     setAccountType(setup.accountType)
+    setSubscription({ plan: setup.plan, monthlyPublishAllowance: SUBSCRIPTION_CONFIG[setup.plan].monthlyPublishAllowance, monthlyPublishedTracks: 0 })
     setChildPermissions(setup.childPermissions)
     setShowOnboarding(false)
     setOnboardingView('families')
