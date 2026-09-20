@@ -19,3 +19,16 @@
 .fc-plan-continue:disabled{opacity:.42;cursor:not-allowed}
 .fc-plan-note{margin:12px 0 0;text-align:center;color:#7e89a3;font-size:.66rem;line-height:1.4}
 @media (max-width:760px){.fc-plan-grid{grid-template-columns:1fr}.fc-plan-option{min-height:auto}}
+
+.fc-payment-card{border-color:rgba(55,223,191,.42);box-shadow:0 0 0 1px rgba(55,223,191,.07),0 0 38px rgba(55,223,191,.14),0 30px 110px rgba(0,0,0,.42)}
+.fc-payment-card h1{color:#b6ffe9;text-shadow:0 0 18px rgba(55,223,191,.20)}
+.fc-payment-summary{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:24px}
+.fc-payment-summary>div{display:grid;gap:5px;padding:15px;border:1px solid rgba(55,223,191,.18);border-radius:15px;background:rgba(55,223,191,.045)}
+.fc-payment-summary span{color:#7f8aa5;font-size:.65rem;text-transform:uppercase;letter-spacing:.08em;font-weight:800}
+.fc-payment-summary strong{font-size:.95rem}
+.fc-payment-placeholder{display:grid;justify-items:center;gap:7px;margin-top:14px;padding:25px 18px;border:1px dashed rgba(82,217,255,.28);border-radius:17px;background:rgba(82,217,255,.035);text-align:center}
+.fc-payment-placeholder>span{font-size:2rem}
+.fc-payment-placeholder strong{font-size:.9rem}
+.fc-payment-placeholder p{max-width:390px;margin:0;color:#8f9ab6;font-size:.7rem;line-height:1.45}
+.fc-payment-continue{width:100%;margin-top:18px}
+@media (max-width:640px){.fc-payment-summary{grid-template-columns:1fr}}
