@@ -43,7 +43,14 @@ type FamilyEvent = { id: string; title: string; date: string; time: string; loca
 type FamilyTask = { id: string; title: string; dueDate: string; assignedTo: string; completed: boolean }
 type MoneyRequest = { id: string; requesterId: string; amount: string; purpose: string; dueDate: string; status: 'Pending' | 'Accepted'; lenderId?: string; taskId?: string; calendarEventId?: string }
 type MusicTrack = { id: string; title: string; artist: string; genres: string[]; audioSrc: string; artwork?: string; youtubeUrl?: string; explicit: boolean; kidsAllowed: boolean; visualStyle: 1 | 2 | 3 | 4 | 5 }
-type MusicCommunityProfile = { displayName: string; handle: string; bio: string }
+type MusicCommunityProfile = {
+  displayName: string
+  handle: string
+  bio: string
+  photo?: string | null
+  profileSongId?: string | null
+  visibility: { bio: boolean; likedMusic: boolean; savedMusic: boolean; followers: boolean; allowFollowers: boolean }
+}
 
 const musicLibrary: MusicTrack[] = [
   { id: 'late-night-ghosts', title: 'Late Night Ghosts', artist: 'Coreykt', genres: ['Chilled', 'R&B', 'Hip-Hop'], audioSrc: `${import.meta.env.BASE_URL}music/audio/Late Night Ghosts.mp3`, youtubeUrl: 'https://youtu.be/t6L480nXQ9M?is=RNp81PJPqzK_f4wm', explicit: true, kidsAllowed: false, visualStyle: 3 },
@@ -53,16 +60,22 @@ const musicLibrary: MusicTrack[] = [
 
 const musicPlaylists = ['Chilled', 'Hip-Hop', 'R&B', 'Rock', 'Pop', 'Kids / Family']
 
-function loadMusicCommunityProfile(): MusicCommunityProfile | null {
+function normaliseMusicCommunityProfile(value: Partial<MusicCommunityProfile>): MusicCommunityProfile | null {
+  if (typeof value.displayName !== 'string' || typeof value.handle !== 'string') return null
+  return { displayName: value.displayName.slice(0,40), handle: value.handle.replace(/^@+/,'').replace(/\s+/g,'').slice(0,24), bio: typeof value.bio === 'string' ? value.bio.slice(0,160) : '', photo: typeof value.photo === 'string' ? value.photo : null, profileSongId: typeof value.profileSongId === 'string' ? value.profileSongId : null, visibility: { bio: value.visibility?.bio ?? true, likedMusic: value.visibility?.likedMusic ?? true, savedMusic: value.visibility?.savedMusic ?? false, followers: value.visibility?.followers ?? true, allowFollowers: value.visibility?.allowFollowers ?? true } }
+}
+function loadMusicCommunityProfiles(): Record<string, MusicCommunityProfile> {
   try {
-    const saved = localStorage.getItem('family-circle-music-community-profile')
-    if (!saved) return null
-    const parsed = JSON.parse(saved) as Partial<MusicCommunityProfile>
-    if (typeof parsed.displayName !== 'string' || typeof parsed.handle !== 'string') return null
-    return { displayName: parsed.displayName, handle: parsed.handle, bio: typeof parsed.bio === 'string' ? parsed.bio : '' }
-  } catch {
-    return null
-  }
+    const saved = localStorage.getItem('family-circle-music-community-profiles')
+    if (saved) {
+      const parsed = JSON.parse(saved) as Record<string, Partial<MusicCommunityProfile>>
+      return Object.fromEntries(Object.entries(parsed).flatMap(([id,value]) => { const profile=normaliseMusicCommunityProfile(value); return profile ? [[id,profile]] : [] }))
+    }
+    const legacy=localStorage.getItem('family-circle-music-community-profile')
+    if (!legacy) return {}
+    const profile=normaliseMusicCommunityProfile(JSON.parse(legacy) as Partial<MusicCommunityProfile>)
+    return profile ? { 'member-1': profile } : {}
+  } catch { return {} }
 }
 type EmergencyPending = { title: string; description: string; tone: string; needsLocation: boolean; message?: string }
 
@@ -265,11 +278,20 @@ export default function App() {
   const [musicChildMode, setMusicChildMode] = useState(false)
   const [musicChildYouTubeAllowed, setMusicChildYouTubeAllowed] = useState(false)
   const [musicVolume, setMusicVolume] = useState(() => { const saved = Number(localStorage.getItem('family-circle-music-volume')); return Number.isFinite(saved) ? Math.min(1, Math.max(0, saved)) : 0.7 })
-  const [musicCommunityProfile, setMusicCommunityProfile] = useState<MusicCommunityProfile | null>(() => loadMusicCommunityProfile())
+  const [musicCommunityProfiles, setMusicCommunityProfiles] = useState<Record<string, MusicCommunityProfile>>(() => loadMusicCommunityProfiles())
   const [musicCommunityDisplayName, setMusicCommunityDisplayName] = useState('')
   const [musicCommunityHandle, setMusicCommunityHandle] = useState('')
   const [musicCommunityBio, setMusicCommunityBio] = useState('')
+  const [musicCommunityPhoto, setMusicCommunityPhoto] = useState<string | null>(null)
+  const [musicCommunityProfileSongId, setMusicCommunityProfileSongId] = useState<string | null>(null)
+  const [musicCommunityVisibility, setMusicCommunityVisibility] = useState({ bio:true, likedMusic:true, savedMusic:false, followers:true, allowFollowers:true })
   const [musicCommunityProfileError, setMusicCommunityProfileError] = useState('')
+  const [musicCommunityEditing, setMusicCommunityEditing] = useState(false)
+  const [musicCommunitySettingsOpen, setMusicCommunitySettingsOpen] = useState(false)
+  const [musicCommunitySafetyMode, setMusicCommunitySafetyMode] = useState<'block' | 'block-report' | null>(null)
+  const [musicCommunitySafetyHandle, setMusicCommunitySafetyHandle] = useState('')
+  const [musicCommunitySafetyReason, setMusicCommunitySafetyReason] = useState('Spam or unwanted contact')
+  const [musicCommunitySafetyMessage, setMusicCommunitySafetyMessage] = useState('')
 
   useEffect(() => {
     localStorage.setItem('family-circle-subscription', JSON.stringify(subscription))
@@ -311,30 +333,33 @@ export default function App() {
 
   function openMusicCommunity() {
     if (!requireAccess('music', 'Music Community')) return
-    setMusicCommunityProfileError('')
-    if (musicCommunityProfile) {
-      setMusicCommunityDisplayName(musicCommunityProfile?.displayName)
-      setMusicCommunityHandle(musicCommunityProfile?.handle)
-      setMusicCommunityBio(musicCommunityProfile?.bio)
-    }
-    setToolMode('musicCommunity')
-    setActiveTab('home')
+    setMusicCommunityProfileError(''); setMusicCommunityEditing(false); setMusicCommunitySettingsOpen(false); setMusicCommunitySafetyMode(null); setMusicCommunitySafetyMessage('')
+    const profile=musicCommunityProfiles[selectedMemberId]
+    setMusicCommunityDisplayName(profile?.displayName ?? ''); setMusicCommunityHandle(profile?.handle ?? ''); setMusicCommunityBio(profile?.bio ?? ''); setMusicCommunityPhoto(profile?.photo ?? null); setMusicCommunityProfileSongId(profile?.profileSongId ?? null); setMusicCommunityVisibility(profile?.visibility ?? { bio:true, likedMusic:true, savedMusic:false, followers:true, allowFollowers:true })
+    setToolMode('musicCommunity'); setActiveTab('home')
   }
-
+  function persistMusicCommunityProfiles(next: Record<string, MusicCommunityProfile>) {
+    setMusicCommunityProfiles(next); localStorage.setItem('family-circle-music-community-profiles',JSON.stringify(next)); localStorage.removeItem('family-circle-music-community-profile')
+  }
   function createMusicCommunityProfile() {
-    const displayName = musicCommunityDisplayName.trim().slice(0, 40)
-    const handle = musicCommunityHandle.trim().replace(/^@+/, '').replace(/\s+/g, '').slice(0, 24)
-    const bio = musicCommunityBio.trim().slice(0, 160)
-    if (!displayName || !handle) {
-      setMusicCommunityProfileError('Add a public display name and @handle to continue.')
-      return
-    }
-    const profile = { displayName, handle, bio }
-    localStorage.setItem('family-circle-music-community-profile', JSON.stringify(profile))
-    setMusicCommunityProfile(profile)
-    setMusicCommunityProfileError('')
+    const displayName=musicCommunityDisplayName.trim().slice(0,40), handle=musicCommunityHandle.trim().replace(/^@+/,'').replace(/\s+/g,'').slice(0,24), bio=musicCommunityBio.trim().slice(0,160)
+    if (!displayName || !handle) { setMusicCommunityProfileError('Add a public display name and @handle to continue.'); return }
+    persistMusicCommunityProfiles({ ...musicCommunityProfiles, [selectedMemberId]: { displayName,handle,bio,photo:musicCommunityPhoto,profileSongId:musicCommunityProfileSongId,visibility:musicCommunityVisibility } }); setMusicCommunityProfileError('')
   }
-
+  function saveMusicCommunityProfile() {
+    const displayName=musicCommunityDisplayName.trim().slice(0,40), handle=musicCommunityHandle.trim().replace(/^@+/,'').replace(/\s+/g,'').slice(0,24), bio=musicCommunityBio.trim().slice(0,160)
+    if (!displayName || !handle) { setMusicCommunityProfileError('Add a public display name and @handle to continue.'); return }
+    persistMusicCommunityProfiles({ ...musicCommunityProfiles, [selectedMemberId]: { displayName,handle,bio,photo:musicCommunityPhoto,profileSongId:musicCommunityProfileSongId,visibility:musicCommunityVisibility } }); setMusicCommunityEditing(false); setMusicCommunitySettingsOpen(false); setMusicCommunityProfileError('')
+  }
+  function handleMusicCommunityPhoto(file: File) {
+    if (!file.type.startsWith('image/')) return
+    const reader=new FileReader(); reader.onload=()=>{ const photo=typeof reader.result==='string'?reader.result:null; if(photo) setMusicCommunityPhoto(photo) }; reader.readAsDataURL(file)
+  }
+  function submitMusicCommunitySafety() {
+    const handle=musicCommunitySafetyHandle.trim().replace(/^@+/,'').replace(/\s+/g,''); if(!handle) return
+    const key='family-circle-music-community-blocked', existing=JSON.parse(localStorage.getItem(key)||'[]') as string[]
+    localStorage.setItem(key,JSON.stringify(Array.from(new Set([...existing,handle])))); setMusicCommunitySafetyMessage(musicCommunitySafetyMode==='block-report'?'Creator blocked and report recorded for this demo.':'Creator blocked for this demo.'); setMusicCommunitySafetyHandle(''); setMusicCommunitySafetyMode(null)
+  }
   function setMusicVolumeLevel(value: number) {
     const next = Math.min(1, Math.max(0, value))
     setMusicVolume(next)
@@ -920,55 +945,36 @@ export default function App() {
 
 
   function renderMusicCommunity() {
-    const setupComplete = Boolean(musicCommunityProfile)
-    const communityTracks = musicLibrary
-    const current = musicCurrentTrack
+    const musicCommunityProfile=musicCommunityProfiles[selectedMemberId] ?? null
+    const setupComplete=Boolean(musicCommunityProfile), communityTracks=musicLibrary, current=musicCurrentTrack
+    const profileSong=musicCommunityProfile?.profileSongId ? musicLibrary.find((track)=>track.id===musicCommunityProfile.profileSongId) ?? null : null
+    const uploadsRemaining=Math.max(0,subscription.monthlyPublishAllowance-subscription.monthlyPublishedTracks)
+    const toggleProfileSong=()=>{if(!profileSong)return;if(current?.id===profileSong.id){toggleMusicPlayback();return}selectMusicTrack(profileSong)}
     return <div className="fc-page">
-      <header className="fc-music-community-header">
-        <div><p className="fc-kicker">Family Circle Music</p><h1>Music Community</h1><p className="fc-muted">A public music space inside the Family Circle universe.</p></div>
-        <button className="fc-ghost-button" type="button" onClick={() => goToTab('home')}>← Home</button>
-      </header>
-      {!setupComplete ? <section className="fc-music-community-setup">
-        <div className="fc-music-community-setup-icon">🎵</div>
-        <span className="fc-music-community-badge">Separate public music identity</span>
-        <h2>Create your Music Profile</h2>
-        <p>Choose how you want to appear in the Music Community. This profile is separate from your private Family Circle identity and family information.</p>
-        <div className="fc-music-community-form">
-          <label><span>Public display name *</span><input value={musicCommunityDisplayName} onChange={(event) => setMusicCommunityDisplayName(event.target.value)} placeholder="e.g. BradyXAi" maxLength={40} /></label>
-          <label><span>@Handle *</span><input value={musicCommunityHandle} onChange={(event) => setMusicCommunityHandle(event.target.value.replace(/\s/g, ''))} placeholder="e.g. bradyxai" maxLength={24} /></label>
-          <label><span>Short bio</span><textarea value={musicCommunityBio} onChange={(event) => setMusicCommunityBio(event.target.value)} placeholder="Tell listeners what you make." maxLength={160} rows={3} /></label>
-        </div>
-        {musicCommunityProfileError && <p className="fc-error">{musicCommunityProfileError}</p>}
-        <button className="fc-primary-button fc-music-community-create" type="button" onClick={createMusicCommunityProfile}>Create Music Profile →</button>
-        <small className="fc-music-community-privacy">Your Family Circle name, family members, location and private family details are not shown here.</small>
-      </section> : <>
-        <section className="fc-music-community-profile-strip">
-          <div className="fc-music-community-avatar">♫</div>
-          <div><small>Music Creator</small><strong>{musicCommunityProfile?.displayName}</strong><span>@{musicCommunityProfile?.handle}{musicCommunityProfile?.bio ? ' · ' + (musicCommunityProfile?.bio ?? '') : ''}</span></div>
-          <button className="fc-ghost-button" type="button" onClick={() => { setMusicCommunityProfile(null); localStorage.removeItem('family-circle-music-community-profile'); setMusicCommunityProfileError('') }}>Edit Profile</button>
+      <header className="fc-music-community-header"><div><p className="fc-kicker">Family Circle Music</p><h1>Music Community</h1><p className="fc-muted">A public music space inside the Family Circle universe.</p></div><button className="fc-ghost-button" type="button" onClick={()=>goToTab('home')}>← Home</button></header>
+      {!setupComplete ? <section className="fc-music-community-setup"><div className="fc-music-community-setup-icon">🎵</div><span className="fc-music-community-badge">Separate public music identity</span><h2>Create your Music Profile</h2><p>Choose how you want to appear in the Music Community. This profile is separate from your private Family Circle identity and family information.</p><div className="fc-music-community-form">
+        <label><span>Profile picture</span><input className="fc-music-community-file" type="file" accept="image/*" onChange={(event)=>{const file=event.target.files?.[0];if(file)handleMusicCommunityPhoto(file)}}/></label>
+        {musicCommunityPhoto&&<div className="fc-music-community-photo-preview"><img src={musicCommunityPhoto} alt="Music profile preview"/><button className="fc-ghost-button" type="button" onClick={()=>setMusicCommunityPhoto(null)}>Remove picture</button></div>}
+        <label><span>Public display name *</span><input value={musicCommunityDisplayName} onChange={(event)=>setMusicCommunityDisplayName(event.target.value)} placeholder="e.g. BradyXAi" maxLength={40}/></label><label><span>@Handle *</span><input value={musicCommunityHandle} onChange={(event)=>setMusicCommunityHandle(event.target.value.replace(/\s/g,''))} placeholder="e.g. bradyxai" maxLength={24}/></label><label><span>Short bio</span><textarea value={musicCommunityBio} onChange={(event)=>setMusicCommunityBio(event.target.value)} placeholder="Tell listeners what you make." maxLength={160} rows={3}/></label>
+      </div>{musicCommunityProfileError&&<p className="fc-error">{musicCommunityProfileError}</p>}<button className="fc-primary-button fc-music-community-create" type="button" onClick={createMusicCommunityProfile}>Create Music Profile →</button><small className="fc-music-community-privacy">Your Family Circle name, family members, location and private family details are not shown here.</small></section> : <>
+        <section className="fc-music-community-profile-shell">
+          <div className="fc-music-community-profile-strip"><div className="fc-music-community-avatar">{musicCommunityProfile?.photo?<img src={musicCommunityProfile.photo} alt=""/>:'♫'}</div><div><small>Music Creator</small><strong>{musicCommunityProfile?.displayName}</strong><span>@{musicCommunityProfile?.handle}{musicCommunityProfile?.visibility.bio&&musicCommunityProfile?.bio?' · '+musicCommunityProfile.bio:''}</span></div><div className="fc-music-community-profile-actions"><button className="fc-ghost-button" type="button" onClick={()=>{setMusicCommunityEditing(true);setMusicCommunitySettingsOpen(false)}}>Edit Profile</button><button className="fc-ghost-button" type="button" onClick={()=>{setMusicCommunitySettingsOpen(true);setMusicCommunityEditing(false)}}>⚙ Profile Settings</button></div></div>
+          {musicCommunityEditing&&<section className="fc-music-community-editor"><div className="fc-music-community-subhead"><div><small>Music Profile</small><h2>Edit Profile</h2></div><button className="fc-ghost-button" type="button" onClick={()=>setMusicCommunityEditing(false)}>← Back to profile</button></div><div className="fc-music-community-form"><label><span>Profile picture</span><input className="fc-music-community-file" type="file" accept="image/*" onChange={(event)=>{const file=event.target.files?.[0];if(file)handleMusicCommunityPhoto(file)}}/></label>{musicCommunityPhoto&&<div className="fc-music-community-photo-preview"><img src={musicCommunityPhoto} alt="Music profile preview"/><button className="fc-ghost-button" type="button" onClick={()=>setMusicCommunityPhoto(null)}>Remove picture</button></div>}<label><span>Public display name *</span><input value={musicCommunityDisplayName} onChange={(event)=>setMusicCommunityDisplayName(event.target.value)} maxLength={40}/></label><label><span>@Handle *</span><input value={musicCommunityHandle} onChange={(event)=>setMusicCommunityHandle(event.target.value.replace(/\s/g,''))} maxLength={24}/></label><label><span>Short bio</span><textarea value={musicCommunityBio} onChange={(event)=>setMusicCommunityBio(event.target.value)} maxLength={160} rows={3}/></label></div>{musicCommunityProfileError&&<p className="fc-error">{musicCommunityProfileError}</p>}<button className="fc-primary-button" type="button" onClick={saveMusicCommunityProfile}>Save Profile</button></section>}
+          {musicCommunitySettingsOpen&&<section className="fc-music-community-settings"><div className="fc-music-community-subhead"><div><small>Music Profile</small><h2>Profile Settings</h2></div><button className="fc-ghost-button" type="button" onClick={()=>setMusicCommunitySettingsOpen(false)}>← Back to profile</button></div><div className="fc-music-community-settings-grid">
+            <div className="fc-music-community-setting-card"><div><span>🎵 Profile Song</span><strong>Choose the song shown on your profile</strong><small>It never autoplays. Tap the record on your profile whenever you want to listen.</small></div><select value={musicCommunityProfileSongId??''} onChange={(event)=>setMusicCommunityProfileSongId(event.target.value||null)}><option value="">No profile song</option>{musicLibrary.map((track)=><option value={track.id} key={track.id}>{track.title} · {track.artist}</option>)}</select></div>
+            <div className="fc-music-community-setting-card"><div><span>👁 Visibility</span><strong>Choose what other people can see</strong></div>{(['bio','likedMusic','savedMusic','followers','allowFollowers'] as const).map((key)=><label className="fc-music-community-toggle" key={key}><input type="checkbox" checked={musicCommunityVisibility[key]} onChange={(event)=>setMusicCommunityVisibility((value)=>({...value,[key]:event.target.checked}))}/><span>{key==='bio'?'Show my bio':key==='likedMusic'?'Show liked music':key==='savedMusic'?'Show saved music':key==='followers'?'Show followers/following':'Allow people to follow me'}</span></label>)}</div>
+            <div className="fc-music-community-setting-card fc-music-community-safety"><div><span>🔒 Safety</span><strong>Block or report creators</strong><small>Use these controls if someone is unwanted or breaks the Community rules.</small></div><div className="fc-music-community-safety-actions"><button className="fc-ghost-button" type="button" onClick={()=>setMusicCommunitySafetyMode('block')}>Block Creator</button><button className="fc-ghost-button danger-outline" type="button" onClick={()=>setMusicCommunitySafetyMode('block-report')}>Block &amp; Report</button></div>{musicCommunitySafetyMode&&<div className="fc-music-community-safety-form"><input value={musicCommunitySafetyHandle} onChange={(event)=>setMusicCommunitySafetyHandle(event.target.value)} placeholder="@creator handle" maxLength={24}/>{musicCommunitySafetyMode==='block-report'&&<select value={musicCommunitySafetyReason} onChange={(event)=>setMusicCommunitySafetyReason(event.target.value)}><option>Spam or unwanted contact</option><option>Inappropriate content</option><option>Harassment</option><option>Other</option></select>}<div><button className="fc-primary-button" type="button" onClick={submitMusicCommunitySafety}>{musicCommunitySafetyMode==='block-report'?'Block &amp; Report':'Block Creator'}</button><button className="fc-ghost-button" type="button" onClick={()=>setMusicCommunitySafetyMode(null)}>Cancel</button></div></div>}{musicCommunitySafetyMessage&&<small className="fc-music-community-safety-message">{musicCommunitySafetyMessage}</small>}</div>
+          </div><button className="fc-primary-button" type="button" onClick={saveMusicCommunityProfile}>Save Settings</button></section>}
+          {!musicCommunityEditing&&!musicCommunitySettingsOpen&&<>{profileSong&&<section className="fc-music-community-profile-song"><button className={'fc-music-community-record'+(current?.id===profileSong.id&&musicPlaying?' playing':'')} type="button" onClick={toggleProfileSong} aria-label={current?.id===profileSong.id&&musicPlaying?'Stop profile song':'Play profile song'}><span className="fc-music-community-record-label">{profileSong.artwork?<img src={profileSong.artwork} alt=""/>:<span>♫</span>}</span></button><div><small>🎵 Profile Song</small><strong>{profileSong.title}</strong><span>{profileSong.artist} · Tap the record to play</span></div></section>}<section className="fc-music-community-publish"><div><span>⭐ Your Music</span><strong>{subscription.plan==='premium'?uploadsRemaining+' uploads remaining':'Publish your music'}</strong><small>{subscription.plan==='premium'?'Publish a new track when you are ready.':'Premium is required to publish music to the Music Community.'}</small></div><button className="fc-primary-button" type="button" onClick={()=>{if(subscription.plan!=='premium')setAccessNotice({title:'Premium required',message:'Upgrade to Premium to publish music to the Music Community.',action:'upgrade'})}} disabled={subscription.plan==='premium'}>{subscription.plan==='premium'?'Publish New Track':'Upgrade to Premium'}</button></section></>}
         </section>
-        <nav className="fc-music-community-tabs" aria-label="Music Community sections">
-          <button className="active" type="button">✨ Discover</button><button type="button">🆕 New Releases</button><button type="button">♡ Following</button><button type="button">🎹 Instrumentals</button>
-        </nav>
-        <section className="fc-music-community-filters">{['All', 'R&B', 'Hip-Hop', 'Pop', 'Rock', 'Electronic', 'AI Music', 'Instrumental', 'Other'].map((genre) => <button type="button" key={genre} className={genre === 'All' ? 'active' : ''}>{genre}</button>)}</section>
-        <section className="fc-music-community-featured">
-          <div className="fc-music-community-section-head"><div><small>Discover New Music</small><h2>Made inside the Family Circle universe</h2></div><span>{communityTracks.length} demo tracks</span></div>
-          <div className="fc-music-community-track-grid">{communityTracks.map((track) => <article className={`fc-community-track-card${current?.id === track.id ? ' active' : ''}`} key={track.id}>
-            <button className="fc-community-track-art" type="button" onClick={() => selectMusicTrack(track)} aria-label={`Play ${track.title}`}>{track.artwork ? <img src={track.artwork} alt="" /> : <div className={`fc-home-music-equalizer style-${track.visualStyle}`}>{Array.from({ length: 9 }, (_, index) => <i key={index} />)}</div>}<span>{current?.id === track.id && musicPlaying ? 'Ⅱ' : '▶'}</span></button>
-            <div className="fc-community-track-copy"><small>{track.genres.join(' · ')}</small><strong>{track.title}</strong><span>{track.artist}</span></div>
-            <div className="fc-community-track-actions"><button type="button" aria-label="Like">♡</button><button type="button" aria-label="Comments">💬</button><button type="button" aria-label="Save">＋</button><button type="button" aria-label="Share">↗</button></div>
-          </article>)}</div>
-        </section>
-        <section className="fc-music-community-premium">
-          <div><span>⭐ Premium Creator</span><h2>Publish your own music</h2><p>Premium creators will be able to publish up to {subscription.monthlyPublishAllowance || 10} tracks per monthly allowance, including singles, EPs and albums.</p></div>
-          <button className="fc-primary-button" type="button" disabled>Upload Music · Phase 4</button>
-        </section>
-        {current && <section className="fc-music-community-now-playing"><span>Now playing</span><strong>{current.title}</strong><small>{current.artist}</small><button className="fc-music-mini-control fc-music-mini-play" type="button" onClick={toggleMusicPlayback}>{musicPlaying ? 'Ⅱ' : '▶'}</button><button className="fc-ghost-button" type="button" onClick={openMusic}>Open full player</button></section>}
+        <nav className="fc-music-community-tabs" aria-label="Music Community sections"><button className="active" type="button">✨ Discover</button><button type="button">🆕 New Releases</button><button type="button">♡ Following</button><button type="button">🎹 Instrumentals</button></nav>
+        <section className="fc-music-community-filters">{['All','R&B','Hip-Hop','Pop','Rock','Electronic','AI Music','Instrumental','Other'].map((genre)=><button type="button" key={genre} className={genre==='All'?'active':''}>{genre}</button>)}</section>
+        <section className="fc-music-community-featured"><div className="fc-music-community-section-head"><div><small>Discover New Music</small><h2>Made inside the Family Circle universe</h2></div><span>{communityTracks.length} demo tracks</span></div><div className="fc-music-community-track-grid">{communityTracks.map((track)=><article className={'fc-community-track-card'+(current?.id===track.id?' active':'')} key={track.id}><button className="fc-community-track-art" type="button" onClick={()=>selectMusicTrack(track)} aria-label={'Play '+track.title}>{track.artwork?<img src={track.artwork} alt=""/>:<div className={'fc-home-music-equalizer style-'+track.visualStyle}>{Array.from({length:9},(_,index)=><i key={index}/>)}</div>}<span>{current?.id===track.id&&musicPlaying?'Ⅱ':'▶'}</span></button><div className="fc-community-track-copy"><small>{track.genres.join(' · ')}</small><strong>{track.title}</strong><span>{track.artist}</span></div><div className="fc-community-track-actions"><button type="button" aria-label="Like">♡</button><button type="button" aria-label="Comments">💬</button><button type="button" aria-label="Save">＋</button><button type="button" aria-label="Share">↗</button></div></article>)}</div></section>
+        {current&&<section className="fc-music-community-now-playing"><span>Now playing</span><strong>{current.title}</strong><small>{current.artist}</small><button className="fc-music-mini-control fc-music-mini-play" type="button" onClick={toggleMusicPlayback}>{musicPlaying?'Ⅱ':'▶'}</button><button className="fc-ghost-button" type="button" onClick={openMusic}>Open full player</button></section>}
       </>}
       {renderBottomNav()}
     </div>
   }
-
   function renderMusic() {
     const current = musicCurrentTrack
     const visibleTracks = musicVisibleTracks()
