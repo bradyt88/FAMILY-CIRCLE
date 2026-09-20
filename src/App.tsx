@@ -313,9 +313,9 @@ export default function App() {
     if (!requireAccess('music', 'Music Community')) return
     setMusicCommunityProfileError('')
     if (musicCommunityProfile) {
-      setMusicCommunityDisplayName(musicCommunityProfile.displayName)
-      setMusicCommunityHandle(musicCommunityProfile.handle)
-      setMusicCommunityBio(musicCommunityProfile.bio)
+      setMusicCommunityDisplayName(musicCommunityProfile?.displayName)
+      setMusicCommunityHandle(musicCommunityProfile?.handle)
+      setMusicCommunityBio(musicCommunityProfile?.bio)
     }
     setToolMode('musicCommunity')
     setActiveTab('home')
