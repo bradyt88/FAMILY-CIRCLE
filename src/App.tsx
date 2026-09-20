@@ -7,6 +7,28 @@ type ToolMode = 'emergency' | 'profile' | 'family' | 'games' | 'notifications' |
 type HomeTab = 'home' | 'chat' | 'photos' | 'calendar' | 'tasks' | 'shopping'
 type AccountType = 'adult' | 'child'
 type Plan = 'free' | 'plus' | 'premium'
+type SubscriptionState = { plan: Plan; monthlyPublishAllowance: number; monthlyPublishedTracks: number }
+
+const SUBSCRIPTION_CONFIG: Record<Plan, { monthlyPublishAllowance: number }> = {
+  free: { monthlyPublishAllowance: 0 },
+  plus: { monthlyPublishAllowance: 0 },
+  premium: { monthlyPublishAllowance: 10 },
+}
+
+function loadSubscriptionState(): SubscriptionState {
+  try {
+    const saved = localStorage.getItem('family-circle-subscription')
+    const parsed = saved ? JSON.parse(saved) as Partial<SubscriptionState> : {}
+    const plan: Plan = parsed.plan === 'plus' || parsed.plan === 'premium' ? parsed.plan : 'free'
+    return {
+      plan,
+      monthlyPublishAllowance: SUBSCRIPTION_CONFIG[plan].monthlyPublishAllowance,
+      monthlyPublishedTracks: typeof parsed.monthlyPublishedTracks === 'number' && parsed.monthlyPublishedTracks >= 0 ? parsed.monthlyPublishedTracks : 0,
+    }
+  } catch {
+    return { plan: 'free', monthlyPublishAllowance: SUBSCRIPTION_CONFIG.free.monthlyPublishAllowance, monthlyPublishedTracks: 0 }
+  }
+}
 type ChildPermissionKey = 'chat' | 'tasks' | 'photos' | 'games' | 'music' | 'youtube' | 'globalMultiplayer' | 'location'
 type ChildPermissions = Record<ChildPermissionKey, boolean>
 
@@ -173,6 +195,7 @@ export default function App() {
   const [showOnboarding, setShowOnboarding] = useState(true)
   const [onboardingView, setOnboardingView] = useState<'splash' | 'families'>('splash')
   const [accountType, setAccountType] = useState<AccountType>('adult')
+  const [subscription, setSubscription] = useState<SubscriptionState>(() => loadSubscriptionState())
   const [childPermissions, setChildPermissions] = useState<ChildPermissions>({ chat: true, tasks: true, photos: true, games: true, music: true, youtube: false, globalMultiplayer: false, location: true })
   const [accessNotice, setAccessNotice] = useState<{ title: string; message: string; action: 'restriction' | 'upgrade' | 'child' } | null>(null)
   const [screen, setScreen] = useState<'members' | 'home'>('members')
@@ -231,6 +254,10 @@ export default function App() {
   const [musicVolume, setMusicVolume] = useState(() => { const saved = Number(localStorage.getItem('family-circle-music-volume')); return Number.isFinite(saved) ? Math.min(1, Math.max(0, saved)) : 0.7 })
 
   useEffect(() => {
+    localStorage.setItem('family-circle-subscription', JSON.stringify(subscription))
+  }, [subscription])
+
+  useEffect(() => {
     const refreshQuote = () => setDailyQuote(dailyFamilyQuote())
     const timer = window.setInterval(refreshQuote, 60 * 1000)
     return () => window.clearInterval(timer)
@@ -257,6 +284,31 @@ export default function App() {
       setMusicCurrentTime(0)
     }
   }, [musicChildMode, musicCurrentTrack])
+
+  function hasPlan(required: Plan) {
+    const rank: Record<Plan, number> = { free: 0, plus: 1, premium: 2 }
+    return rank[subscription.plan] >= rank[required]
+  }
+
+  function requirePlan(required: Plan, featureName: string) {
+    if (hasPlan(required)) return true
+    setAccessNotice({
+      title: `${featureName} requires ${required === 'premium' ? 'Premium' : 'Plus'}`,
+      message: `Your current plan is ${subscription.plan === 'free' ? 'Free' : subscription.plan}. Upgrade your plan to access this feature.`,
+      action: 'upgrade',
+    })
+    return false
+  }
+
+  function canPublishMusicTrack(trackCount = 1) {
+    if (!requirePlan('premium', 'Music publishing')) return false
+    return subscription.monthlyPublishedTracks + trackCount <= subscription.monthlyPublishAllowance
+  }
+
+  function recordPublishedMusicTracks(trackCount: number) {
+    if (trackCount < 1) return
+    setSubscription((current) => ({ ...current, monthlyPublishedTracks: current.monthlyPublishedTracks + trackCount }))
+  }
 
   function openMusic() {
     if (!requireAccess('music', 'Family Circle Music')) return
