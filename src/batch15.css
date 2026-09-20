@@ -2935,3 +2935,14 @@
 .fc-recognition-panel{margin-top:18px;padding:20px;border:2px solid rgba(255,255,255,.08);border-radius:22px;background:linear-gradient(135deg,rgba(22,25,57,.96),rgba(35,17,58,.92));box-shadow:inset 0 0 32px rgba(132,91,255,.04)}.fc-recognition-head{display:flex;align-items:center;justify-content:space-between;gap:12px}.fc-recognition-head h2{margin:.2rem 0 0}.fc-recognition-status{padding:7px 10px;border-radius:999px;background:rgba(177,130,255,.12);border:1px solid rgba(177,130,255,.28);color:#d8c5ff;font-size:.72rem;font-weight:800}.fc-star-chart{display:grid;grid-template-columns:repeat(10,1fr);gap:7px;margin:18px 0 12px}.fc-star-chart span{display:grid;place-items:center;aspect-ratio:1;color:rgba(255,255,255,.12);font-size:1.2rem;border:1px dashed rgba(255,255,255,.08);border-radius:9px}.fc-star-chart span.earned{color:#ffe88b;text-shadow:0 0 12px rgba(255,220,100,.55);background:rgba(255,220,100,.05);border-color:rgba(255,220,100,.2)}.fc-recognition-stats{display:flex;gap:16px;flex-wrap:wrap;color:#b9bbd1}.fc-recognition-panel>small{display:block;color:#8f93af;margin-top:10px}
 .court-feature-card{border-color:rgba(190,150,255,.24)!important}
 @media(max-width:760px){.fc-award-vote-grid{grid-template-columns:1fr}.fc-weekly-awards-head{align-items:flex-start;flex-direction:column}.fc-home-court-card{grid-template-columns:auto 1fr auto;padding:18px}.fc-star-chart{grid-template-columns:repeat(5,1fr)}}
+
+/* Controlled Home header layout: profile hero above the separate Family Circle brand row */
+.fc-home-topbar{display:grid;gap:16px;align-items:stretch}
+.fc-home-profile-hero{width:100%;min-height:104px;display:grid;grid-template-columns:auto 1fr auto;align-items:center;text-align:left;padding:18px 20px}
+.fc-home-profile-arrow{font-size:1.45rem;color:#cfc3ff;opacity:.9}
+.fc-home-brand-row{position:relative;min-height:78px;display:flex;align-items:center;justify-content:center}
+.fc-home-brand-row .fc-home-logo{position:relative;left:auto;top:auto;transform:none}
+.fc-home-brand-row .fc-home-actions{position:absolute;right:0;top:50%;transform:translateY(-50%)}
+.fc-home-brand-row .fc-home-logo img{width:min(230px,52vw);max-height:68px;object-fit:contain;filter:drop-shadow(0 0 18px rgba(121,105,255,.22));animation:fcLogoDrift 7s ease-in-out infinite}
+@keyframes fcLogoDrift{0%,100%{transform:translateX(-4px) translateY(0);filter:drop-shadow(0 0 14px rgba(121,105,255,.16))}50%{transform:translateX(4px) translateY(-2px);filter:drop-shadow(0 0 24px rgba(121,105,255,.32))}}
+@media(max-width:760px){.fc-home-profile-hero{min-height:96px;padding:15px}.fc-home-avatar{width:64px;height:64px}.fc-home-brand-row{min-height:70px}.fc-home-brand-row .fc-home-actions{right:2px}.fc-home-brand-row .fc-home-logo img{width:min(190px,55vw)}}
