@@ -567,8 +567,17 @@ export default function App() {
       else if (result.leaders.length > 1) next={...next,clownTie:{candidates:result.leaders,votes:{},statements:{}},clownAnnounced:false}
       else next={...next,clownAnnounced:true}
     }
-    if (isRecognitionTieBreakOpen()) {
-      (['fam','clown'] as const).forEach((type) => { const tie=type==='fam'?next.famTie:next.clownTie; if (!tie || (type==='fam'&&next.famWinner) || (type==='clown'&&next.clownWinner)) return; const result=tally(tie.votes,tie.candidates); if(result.leaders.length===1){ next={...next,[type==='fam'?'famWinner':'clownWinner']:result.leaders[0],[type==='fam'?'famTie':'clownTie']:null,[type==='fam'?'famAnnounced':'clownAnnounced']:true} } })
+    if (isRecognitionTieBreakOpen() || now.getHours() >= 21) {
+      (['fam','clown'] as const).forEach((type) => {
+        const tie=type==='fam'?next.famTie:next.clownTie
+        if (!tie || (type==='fam'&&next.famWinner) || (type==='clown'&&next.clownWinner)) return
+        const result=tally(tie.votes,tie.candidates)
+        const winnerKey=type==='fam'?'famWinner':'clownWinner'
+        const tieKey=type==='fam'?'famTie':'clownTie'
+        const announcedKey=type==='fam'?'famAnnounced':'clownAnnounced'
+        if(result.leaders.length===1){ next={...next,[winnerKey]:result.leaders[0],[tieKey]:null,[announcedKey]:true} }
+        else if(now.getHours() >= 21){ next={...next,[tieKey]:null,[announcedKey]:true} }
+      })
     }
     const awardsToApply: Array<{type:'fam'|'clown'; winner:string|null}> = [{type:'fam',winner:next.famWinner},{type:'clown',winner:next.clownWinner}]
     if (next.famWinner && !weeklyRecognition.famWinner) applyRecognitionAward(next.famWinner,'fam',next.weekKey)
