@@ -3160,3 +3160,20 @@
   .fc-profile-settings-socials>label>b{justify-self:start}
   .fc-personal-calendar-wrap .fc-calendar-side{grid-template-columns:1fr}
 }
+
+
+/* Family Members / profile visual polish */
+.fc-tree-panel{border:1px solid rgba(138,114,255,.66)!important;background:linear-gradient(145deg,rgba(20,18,52,.97),rgba(8,11,27,.98))!important;box-shadow:0 24px 80px rgba(80,52,170,.18),inset 0 0 36px rgba(138,114,255,.035)!important}
+.fc-tree-panel .fc-panel-head{border-bottom:1px solid rgba(138,114,255,.16);padding-bottom:14px}
+.fc-tree{position:relative;padding:10px 4px 4px}
+.fc-tree-node{border:1px solid rgba(138,114,255,.28)!important;background:linear-gradient(145deg,rgba(15,20,45,.96),rgba(8,11,26,.96))!important;box-shadow:0 14px 42px rgba(0,0,0,.22);transition:.18s ease!important}
+.fc-tree-node:hover,.fc-tree-node:focus-visible{transform:translateY(-3px);border-color:rgba(82,217,255,.65)!important;box-shadow:0 18px 48px rgba(47,89,160,.20),0 0 22px rgba(82,217,255,.08)}
+.fc-tree-node.current{border-color:rgba(255,95,199,.64)!important;background:linear-gradient(145deg,rgba(42,20,61,.96),rgba(10,13,31,.97))!important;box-shadow:0 18px 55px rgba(105,38,125,.20),inset 0 0 26px rgba(255,95,199,.035)}
+.fc-tree-node strong{font-size:.9rem}
+.fc-tree-node small{color:#52d9ff!important}
+.fc-tree-node .fc-avatar{border:2px solid rgba(138,114,255,.46);box-shadow:0 0 0 6px rgba(138,114,255,.055),0 0 22px rgba(138,114,255,.12)}
+.fc-tree-node.current .fc-avatar{border-color:rgba(255,95,199,.58);box-shadow:0 0 0 6px rgba(255,95,199,.055),0 0 24px rgba(255,95,199,.16)}
+.fc-tree-connector{background:linear-gradient(180deg,rgba(255,95,199,.42),rgba(82,217,255,.38))!important;box-shadow:0 0 12px rgba(138,114,255,.18)}
+.fc-tree-branches:before{background:linear-gradient(90deg,rgba(255,95,199,.28),rgba(82,217,255,.34),rgba(138,114,255,.28))!important}
+.fc-profile-saved-status{padding:7px 11px;border:1px solid rgba(82,217,255,.25);border-radius:999px;background:rgba(82,217,255,.05)}
+.fc-profile-saved-hero{border-color:rgba(138,114,255,.58)!important;box-shadow:0 24px 90px rgba(65,42,145,.20),inset 0 0 40px rgba(138,114,255,.035)!important}
