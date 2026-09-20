@@ -2408,3 +2408,294 @@
   }
   .fc-profile-layout>.fc-panel:nth-child(2){padding:19px}
 }
+
+
+/* Home interaction pass — profile + emergency now use the same animated visual language as Music Community. */
+@keyframes fcActionSweep{
+  0%{background-position:0% 50%}
+  100%{background-position:220% 50%}
+}
+@keyframes fcEmergencyPulse{
+  0%,100%{box-shadow:0 0 0 0 rgba(255,61,117,.05),0 20px 65px rgba(0,0,0,.28)}
+  50%{box-shadow:0 0 0 7px rgba(255,61,117,.06),0 0 34px rgba(255,61,117,.22),0 20px 65px rgba(0,0,0,.28)}
+}
+@keyframes fcEmergencySweep{
+  0%{transform:translateX(-120%) skewX(-18deg);opacity:0}
+  18%{opacity:.75}
+  52%{opacity:.25}
+  100%{transform:translateX(480%) skewX(-18deg);opacity:0}
+}
+@keyframes fcProfileGlow{
+  0%,100%{box-shadow:0 0 0 6px rgba(124,92,255,.08),0 0 22px rgba(82,217,255,.12)}
+  50%{box-shadow:0 0 0 8px rgba(255,95,199,.07),0 0 38px rgba(82,217,255,.23),0 0 55px rgba(255,95,199,.08)}
+}
+@keyframes fcProfileSweep{
+  0%{transform:translateX(-140%) skewX(-18deg);opacity:0}
+  25%{opacity:.5}
+  60%{opacity:.15}
+  100%{transform:translateX(420%) skewX(-18deg);opacity:0}
+}
+
+/* Profile entry: make it the visual first impression rather than a small corner control. */
+.fc-home-profile{
+  min-height:88px;
+  width:min(430px,100%);
+  padding:9px 15px 9px 9px;
+  border-radius:24px;
+  overflow:hidden;
+  background:
+    radial-gradient(circle at 4% 50%,rgba(124,92,255,.16),transparent 42%),
+    linear-gradient(135deg,rgba(15,20,48,.76),rgba(8,12,29,.72));
+  border-color:rgba(124,92,255,.20);
+  box-shadow:0 12px 38px rgba(0,0,0,.18),inset 0 0 28px rgba(82,217,255,.035);
+}
+.fc-home-profile::after{
+  content:"";
+  position:absolute;
+  top:-20%;
+  left:0;
+  width:34%;
+  height:140%;
+  background:linear-gradient(90deg,transparent,rgba(82,217,255,.18),rgba(255,95,199,.14),transparent);
+  filter:blur(8px);
+  transform:translateX(-140%) skewX(-18deg);
+  pointer-events:none;
+  opacity:0;
+}
+.fc-home-profile:hover::after,
+.fc-home-profile:focus-visible::after{animation:fcProfileSweep 1.1s ease-out}
+.fc-home-avatar{
+  width:72px;
+  height:72px;
+  font-size:1.18rem;
+  border-width:2px;
+  animation:fcProfileGlow 3.2s ease-in-out infinite;
+}
+.fc-home-profile:hover,
+.fc-home-profile:focus-visible{
+  transform:translateY(-2px);
+  border-color:rgba(82,217,255,.55);
+  box-shadow:0 16px 48px rgba(79,72,190,.22),0 0 30px rgba(82,217,255,.08);
+}
+.fc-home-profile:hover .fc-home-avatar,
+.fc-home-profile:focus-visible .fc-home-avatar{
+  transform:scale(1.07);
+  box-shadow:0 0 0 8px rgba(124,92,255,.12),0 0 38px rgba(82,217,255,.3),0 0 58px rgba(255,95,199,.10);
+}
+.fc-home-profile-copy strong{font-size:1.12rem}
+.fc-home-profile-copy small{font-size:.76rem}
+.fc-home-profile-copy em{font-size:.78rem}
+.fc-home-profile-copy span{font-size:.76rem}
+
+/* Emergency: unmistakably important, but still part of the Family Circle design system. */
+.fc-home-emergency-feature{margin-top:16px}
+.fc-home-emergency-card{
+  position:relative;
+  isolation:isolate;
+  overflow:hidden;
+  width:100%;
+  min-height:184px;
+  padding:25px 30px;
+  display:grid;
+  grid-template-columns:auto 1fr auto;
+  align-items:center;
+  gap:20px;
+  text-align:left;
+  color:#fff;
+  border-radius:27px;
+  border:1px solid rgba(255,61,117,.72);
+  background:
+    radial-gradient(circle at 8% 50%,rgba(255,61,117,.24),transparent 34%),
+    radial-gradient(circle at 82% 15%,rgba(255,95,199,.10),transparent 30%),
+    linear-gradient(135deg,rgba(68,10,32,.82),rgba(13,10,29,.98));
+  box-shadow:0 20px 65px rgba(0,0,0,.28),inset 0 0 34px rgba(255,61,117,.055);
+  animation:fcEmergencyPulse 3.2s ease-in-out infinite;
+  transition:transform .22s ease,border-color .22s ease;
+}
+.fc-home-emergency-card::before{
+  content:"";
+  position:absolute;
+  inset:0;
+  z-index:-1;
+  background:linear-gradient(110deg,transparent 18%,rgba(255,112,153,.16) 35%,rgba(255,61,117,.32) 50%,transparent 67%);
+  background-size:230% 100%;
+  animation:fcActionSweep 3.6s linear infinite;
+  opacity:.75;
+}
+.fc-home-emergency-card::after{
+  content:"";
+  position:absolute;
+  top:-30%;
+  left:0;
+  width:24%;
+  height:160%;
+  background:linear-gradient(90deg,transparent,rgba(255,255,255,.18),transparent);
+  filter:blur(5px);
+  animation:fcEmergencySweep 4.4s ease-in-out infinite;
+  pointer-events:none;
+}
+.fc-home-emergency-card:hover,
+.fc-home-emergency-card:focus-visible{
+  transform:translateY(-3px) scale(1.006);
+  border-color:#ff6d92;
+  box-shadow:0 0 0 5px rgba(255,61,117,.06),0 0 45px rgba(255,61,117,.24),0 24px 70px rgba(0,0,0,.32);
+  outline:none;
+}
+.fc-home-emergency-icon{
+  width:72px;
+  height:72px;
+  display:grid;
+  place-items:center;
+  border-radius:22px;
+  background:linear-gradient(145deg,rgba(255,61,117,.25),rgba(255,95,199,.10));
+  border:1px solid rgba(255,125,158,.42);
+  font-size:2.2rem;
+  box-shadow:0 0 28px rgba(255,61,117,.20);
+}
+.fc-home-emergency-copy{display:grid;gap:7px;position:relative;z-index:1}
+.fc-home-emergency-copy strong{font-size:1.55rem;letter-spacing:-.02em}
+.fc-home-emergency-copy small{color:#ffd1dc;font-size:.9rem}
+.fc-home-emergency-card>b{position:relative;z-index:1;font-size:3rem;font-weight:400;text-shadow:0 0 22px rgba(255,95,199,.55);transition:transform .22s ease}
+.fc-home-emergency-card:hover>b,
+.fc-home-emergency-card:focus-visible>b{transform:translateX(7px) scale(1.06)}
+
+/* Shared action sweep for Home/profile controls. */
+.fc-home-music-community-card,
+.fc-dashboard-card button,
+.fc-quick-tile,
+.fc-feature-card,
+.fc-round-button,
+.fc-primary-button,
+.fc-outline-button,
+.fc-ghost-button,
+.fc-profile-save-button{
+  position:relative;
+  overflow:hidden;
+}
+.fc-home-music-community-card::after,
+.fc-dashboard-card button::after,
+.fc-quick-tile::after,
+.fc-feature-card::after,
+.fc-round-button::after,
+.fc-primary-button::after,
+.fc-outline-button::after,
+.fc-ghost-button::after,
+.fc-profile-save-button::after{
+  content:"";
+  position:absolute;
+  top:-30%;
+  left:0;
+  width:24%;
+  height:160%;
+  background:linear-gradient(90deg,transparent,rgba(255,255,255,.13),transparent);
+  transform:translateX(-160%) skewX(-18deg);
+  pointer-events:none;
+  opacity:0;
+}
+.fc-home-music-community-card:hover::after,
+.fc-home-music-community-card:focus-visible::after,
+.fc-dashboard-card button:hover::after,
+.fc-dashboard-card button:focus-visible::after,
+.fc-quick-tile:hover::after,
+.fc-quick-tile:focus-visible::after,
+.fc-feature-card:hover::after,
+.fc-feature-card:focus-visible::after,
+.fc-round-button:hover::after,
+.fc-round-button:focus-visible::after,
+.fc-primary-button:hover::after,
+.fc-primary-button:focus-visible::after,
+.fc-outline-button:hover::after,
+.fc-outline-button:focus-visible::after,
+.fc-ghost-button:hover::after,
+.fc-ghost-button:focus-visible::after,
+.fc-profile-save-button:hover::after,
+.fc-profile-save-button:focus-visible::after{animation:fcActionSweep 1s ease-out;opacity:1}
+
+/* Saved profile becomes the large profile view instead of leaving the editor hanging open. */
+.fc-profile-saved-shell{display:grid;gap:14px}
+.fc-profile-saved-hero{
+  position:relative;
+  overflow:hidden;
+  display:grid;
+  grid-template-columns:280px 1fr;
+  align-items:center;
+  gap:38px;
+  min-height:520px;
+  padding:44px;
+  border:1px solid rgba(124,92,255,.52);
+  border-radius:32px;
+  background:
+    radial-gradient(circle at 18% 50%,rgba(255,95,199,.20),transparent 30%),
+    radial-gradient(circle at 82% 15%,rgba(82,217,255,.15),transparent 35%),
+    linear-gradient(145deg,rgba(23,20,54,.98),rgba(7,10,25,.99));
+  box-shadow:0 26px 85px rgba(0,0,0,.35),inset 0 1px 0 rgba(255,255,255,.05);
+}
+.fc-profile-saved-hero::before{
+  content:"";
+  position:absolute;
+  inset:0;
+  background:linear-gradient(115deg,transparent 15%,rgba(255,95,199,.08) 45%,rgba(82,217,255,.10) 52%,transparent 80%);
+  background-size:220% 100%;
+  animation:fcActionSweep 6s linear infinite;
+  pointer-events:none;
+}
+.fc-profile-saved-photo-wrap{position:relative;z-index:1;display:grid;justify-items:center;gap:14px}
+.fc-profile-saved-photo{
+  width:230px;
+  height:230px;
+  font-size:3.2rem;
+  border:3px solid rgba(255,255,255,.22);
+  box-shadow:0 0 0 10px rgba(124,92,255,.08),0 0 70px rgba(82,217,255,.20),0 0 100px rgba(255,95,199,.10);
+}
+.fc-profile-saved-status{
+  padding:8px 13px;
+  border-radius:999px;
+  border:1px solid rgba(55,223,191,.34);
+  background:rgba(55,223,191,.08);
+  color:#9effe9;
+  font-size:.72rem;
+  font-weight:800;
+}
+.fc-profile-saved-copy{position:relative;z-index:1}
+.fc-profile-saved-copy h2{margin:0;font-size:clamp(2.5rem,6vw,5rem);line-height:.95;letter-spacing:-.045em}
+.fc-profile-saved-bio{max-width:650px;margin:18px 0 0;color:#d8dced;font-size:1.12rem;line-height:1.6}
+.fc-profile-saved-links{display:flex;flex-wrap:wrap;gap:10px 16px;margin-top:20px}
+.fc-profile-saved-links a:not(.fc-phone-link){color:#8eefff;text-decoration:none}
+.fc-profile-saved-actions{display:flex;flex-wrap:wrap;gap:10px;margin-top:28px}
+.fc-profile-saved-strip{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:12px;
+  padding:13px 16px;
+  border:1px solid rgba(82,217,255,.22);
+  border-radius:17px;
+  background:rgba(12,19,42,.72);
+}
+.fc-profile-saved-strip span{color:#91ffe4;font-weight:800;font-size:.78rem}
+.fc-profile-saved-strip small{color:#8f99b6;font-size:.7rem}
+
+@media (max-width:760px){
+  .fc-home-topbar{grid-template-columns:minmax(0,1fr) auto;gap:10px}
+  .fc-home-logo{display:none}
+  .fc-home-profile{min-height:82px;width:100%;padding:8px 11px 8px 8px}
+  .fc-home-avatar{width:66px;height:66px}
+  .fc-home-profile-copy strong{font-size:1rem}
+  .fc-home-profile-copy em{max-width:220px}
+  .fc-home-emergency-card{min-height:168px;padding:22px 20px;grid-template-columns:auto 1fr auto;gap:14px}
+  .fc-home-emergency-icon{width:62px;height:62px;font-size:1.9rem;border-radius:19px}
+  .fc-home-emergency-copy strong{font-size:1.28rem}
+  .fc-home-emergency-copy small{font-size:.78rem}
+  .fc-home-emergency-card>b{font-size:2.5rem}
+  .fc-profile-saved-hero{grid-template-columns:1fr;min-height:0;padding:30px 22px;text-align:center;gap:22px}
+  .fc-profile-saved-photo{width:180px;height:180px}
+  .fc-profile-saved-copy{display:grid;justify-items:center}
+  .fc-profile-saved-copy h2{font-size:3rem}
+  .fc-profile-saved-bio{font-size:.98rem}
+  .fc-profile-saved-links,.fc-profile-saved-actions{justify-content:center}
+  .fc-profile-saved-strip{display:grid;text-align:center}
+}
+@media (prefers-reduced-motion:reduce){
+  .fc-home-avatar,.fc-home-emergency-card,.fc-home-emergency-card::before,.fc-home-emergency-card::after,.fc-profile-saved-hero::before{animation:none}
+  .fc-home-profile::after{display:none}
+}
