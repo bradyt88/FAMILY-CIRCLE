@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import logoUrl from '../design/brand/family-circle-logo.png'
 import './onboarding.css'
 
