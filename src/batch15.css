@@ -2248,3 +2248,163 @@
 @media (max-width:640px){
   .fc-music-community-demo-creators{padding:15px}
 }
+
+
+/* Family profile refresh — keeps the approved layout, adds the Music Community visual language. */
+.fc-home-profile{
+  position:relative;
+  isolation:isolate;
+  padding:8px 12px 8px 7px;
+  border:1px solid transparent;
+  border-radius:20px;
+  transition:border-color .22s ease,background .22s ease,box-shadow .22s ease,transform .22s ease;
+}
+.fc-home-profile::before{
+  content:"";
+  position:absolute;
+  inset:0;
+  z-index:-1;
+  border-radius:20px;
+  background:linear-gradient(120deg,rgba(82,217,255,.08),rgba(124,92,255,.05),rgba(255,95,199,.08));
+  opacity:0;
+  transition:opacity .22s ease;
+}
+.fc-home-profile:hover,
+.fc-home-profile:focus-visible{
+  border-color:rgba(120,226,255,.38);
+  background:rgba(10,15,33,.52);
+  box-shadow:0 10px 35px rgba(79,72,190,.16);
+  transform:translateY(-1px);
+  outline:none;
+}
+.fc-home-profile:hover::before,
+.fc-home-profile:focus-visible::before{opacity:1}
+.fc-home-avatar{
+  position:relative;
+  flex:0 0 auto;
+  border:1px solid rgba(255,255,255,.22);
+  box-shadow:0 0 0 5px rgba(124,92,255,.06),0 0 0 rgba(82,217,255,0);
+  transition:transform .22s ease,box-shadow .22s ease,border-color .22s ease;
+}
+.fc-home-profile:hover .fc-home-avatar,
+.fc-home-profile:focus-visible .fc-home-avatar{
+  transform:scale(1.045);
+  border-color:rgba(82,217,255,.72);
+  box-shadow:0 0 0 5px rgba(124,92,255,.10),0 0 25px rgba(82,217,255,.25);
+}
+.fc-home-profile-copy strong{transition:color .22s ease,text-shadow .22s ease}
+.fc-home-profile:hover .fc-home-profile-copy strong,
+.fc-home-profile:focus-visible .fc-home-profile-copy strong{
+  color:#fff;
+  text-shadow:0 0 16px rgba(82,217,255,.25);
+}
+.fc-home-profile-copy span{transition:color .22s ease}
+.fc-home-profile:hover .fc-home-profile-copy span,
+.fc-home-profile:focus-visible .fc-home-profile-copy span{color:#d9d5ff}
+
+/* Public/private Family Circle profile page: richer than the foundation card, but still recognisably Family Circle. */
+.fc-profile-layout{
+  gap:18px;
+}
+.fc-profile-layout>.fc-panel{
+  position:relative;
+  overflow:hidden;
+  border-color:rgba(124,92,255,.28);
+  background:
+    radial-gradient(circle at 12% 8%,rgba(82,217,255,.10),transparent 30%),
+    radial-gradient(circle at 90% 12%,rgba(255,95,199,.10),transparent 34%),
+    linear-gradient(145deg,rgba(16,20,48,.97),rgba(7,10,25,.98));
+  box-shadow:0 22px 75px rgba(0,0,0,.32);
+}
+.fc-profile-layout>.fc-panel:first-child{
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:flex-start;
+  min-height:430px;
+  padding:30px 24px;
+}
+.fc-profile-layout>.fc-panel:first-child::before{
+  content:"";
+  position:absolute;
+  width:260px;
+  height:260px;
+  top:-120px;
+  left:50%;
+  transform:translateX(-50%);
+  border-radius:50%;
+  background:conic-gradient(from 120deg,rgba(82,217,255,.24),rgba(124,92,255,.18),rgba(255,95,199,.22),rgba(82,217,255,.24));
+  filter:blur(35px);
+  pointer-events:none;
+}
+.fc-profile-photo-wrap{position:relative;z-index:1}
+.fc-profile-photo-button{color:#aeb7d3}
+.fc-profile-photo{
+  border:2px solid rgba(255,255,255,.20);
+  box-shadow:0 0 0 7px rgba(124,92,255,.08),0 0 35px rgba(82,217,255,.16);
+  transition:transform .25s ease,box-shadow .25s ease,border-color .25s ease;
+}
+.fc-profile-photo-button:hover .fc-profile-photo,
+.fc-profile-photo-button:focus-within .fc-profile-photo{
+  transform:scale(1.035);
+  border-color:rgba(82,217,255,.7);
+  box-shadow:0 0 0 7px rgba(124,92,255,.13),0 0 42px rgba(255,95,199,.18);
+}
+.fc-profile-hero h2,
+.fc-profile-hero .fc-status-chip,
+.fc-profile-hero .fc-muted,
+.fc-profile-hero .fc-phone-link{position:relative;z-index:1}
+.fc-profile-hero h2{
+  margin-top:17px;
+  font-size:clamp(1.45rem,3vw,2rem);
+  letter-spacing:-.02em;
+}
+.fc-status-chip{
+  box-shadow:0 0 20px rgba(124,92,255,.10);
+}
+.fc-profile-layout>.fc-panel:nth-child(2){
+  padding:24px;
+}
+.fc-profile-layout>.fc-panel:nth-child(2) .fc-panel-head{
+  padding-bottom:13px;
+  border-bottom:1px solid rgba(255,255,255,.07);
+}
+.fc-profile-layout>.fc-panel:nth-child(2) .fc-panel-head h2{
+  font-size:1.35rem;
+}
+.fc-social-block{
+  padding-top:4px;
+}
+.fc-social-block label{
+  padding:9px 10px;
+  border:1px solid rgba(255,255,255,.06);
+  border-radius:14px;
+  background:rgba(5,9,23,.48);
+  transition:border-color .2s ease,background .2s ease;
+}
+.fc-social-block label:focus-within{
+  border-color:rgba(82,217,255,.34);
+  background:rgba(15,21,46,.72);
+}
+.fc-read-profile>div{
+  padding:14px 12px;
+  border:1px solid rgba(255,255,255,.06);
+  border-radius:14px;
+  background:rgba(5,9,23,.42);
+}
+@media (max-width:760px){
+  .fc-home-profile{
+    padding:6px 8px 6px 5px;
+    gap:9px;
+    border-radius:17px;
+  }
+  .fc-home-profile-copy em{max-width:150px}
+  .fc-home-profile-copy strong{font-size:.9rem}
+  .fc-home-profile-copy span{font-size:.67rem}
+  .fc-home-avatar{width:50px;height:50px}
+  .fc-profile-layout>.fc-panel:first-child{
+    min-height:0;
+    padding:26px 18px;
+  }
+  .fc-profile-layout>.fc-panel:nth-child(2){padding:19px}
+}
