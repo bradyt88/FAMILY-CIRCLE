@@ -5,6 +5,11 @@ import './batch15.css'
 
 type ToolMode = 'emergency' | 'profile' | 'family' | 'games' | 'notifications' | 'settings' | 'map' | 'music'
 type HomeTab = 'home' | 'chat' | 'photos' | 'calendar' | 'tasks' | 'shopping'
+type AccountType = 'adult' | 'child'
+type Plan = 'free' | 'plus' | 'premium'
+type ChildPermissionKey = 'chat' | 'tasks' | 'photos' | 'games' | 'music' | 'youtube' | 'globalMultiplayer' | 'location'
+type ChildPermissions = Record<ChildPermissionKey, boolean>
+
 type StatusOption = 'Home' | 'Work' | 'Partying' | 'Recovering' | 'Playing' | 'Gaming' | 'Toilet 😂' | 'Movies' | 'Sleeping' | 'Gym' | 'Travelling' | 'Holiday' | 'Out & About'
 type SocialName = 'Facebook' | 'TikTok' | 'Snapchat' | 'YouTube'
 type FamilyMember = { id: string; label: string; initials: string; accent: string; phone: string; bio: string; status: StatusOption; locationLabel: string; lastUpdated: string; mapX: number; mapY: number; photo?: string | null; socials: Record<SocialName, string> }
@@ -167,6 +172,10 @@ function FeatureHeader({ title, description, onHome }: { title: string; descript
 export default function App() {
   const [showOnboarding, setShowOnboarding] = useState(true)
   const [onboardingView, setOnboardingView] = useState<'splash' | 'families'>('splash')
+  const [accountType, setAccountType] = useState<AccountType>('adult')
+  const [accountPlan, setAccountPlan] = useState<Plan>('free')
+  const [childPermissions, setChildPermissions] = useState<ChildPermissions>({ chat: true, tasks: true, photos: true, games: true, music: true, youtube: false, globalMultiplayer: false, location: true })
+  const [accessNotice, setAccessNotice] = useState<{ title: string; message: string; action: 'restriction' | 'upgrade' | 'child' } | null>(null)
   const [screen, setScreen] = useState<'members' | 'home'>('members')
   const [selectedMemberId, setSelectedMemberId] = useState<string>(memberSeeds[0].id)
   const [members, setMembers] = useState<FamilyMember[]>(loadMembers)
@@ -251,6 +260,7 @@ export default function App() {
   }, [musicChildMode, musicCurrentTrack])
 
   function openMusic() {
+    if (!requireAccess('music', 'Family Circle Music')) return
     setToolMode('music')
     setActiveTab('home')
   }
@@ -277,6 +287,7 @@ export default function App() {
   }
 
   function selectMusicTrack(track: MusicTrack) {
+    if (accountType === 'child' && !childPermissions.music) return
     if (musicChildMode && !track.kidsAllowed) return
     setMusicCurrentTrack(track)
     setMusicCurrentTime(0)
@@ -285,6 +296,7 @@ export default function App() {
   }
 
   function selectMusicPlaylist(playlist: string) {
+    if (!requireAccess('music', 'Family Circle Music')) return
     setMusicPlaylist(playlist)
   }
 
@@ -301,10 +313,38 @@ export default function App() {
   const pendingMoney = moneyRequests.filter((request) => request.status === 'Pending')
   const unreadMessageCount = messages.filter((message) => message.memberId !== selectedMember.id && !readMessageIdsByMember[selectedMember.id]?.includes(message.id)).length
 
-  function completeOnboarding() {
+  function completeOnboarding(_family: { id: string; name: string }, setup: { accountType: AccountType; plan: Plan; childPermissions: ChildPermissions }) {
+    setAccountType(setup.accountType)
+    setAccountPlan(setup.plan)
+    setChildPermissions(setup.childPermissions)
     setShowOnboarding(false)
     setOnboardingView('families')
     setScreen('members')
+  }
+
+  function hasChildAccess(key: ChildPermissionKey) {
+    return accountType !== 'child' || childPermissions[key]
+  }
+
+  function requireAccess(key: ChildPermissionKey, featureName: string) {
+    if (accountType !== 'child') return true
+    if (childPermissions[key]) return true
+    setAccessNotice({
+      title: featureName + ' is restricted',
+      message: 'Your Family Moderator has restricted access to this feature.',
+      action: 'restriction',
+    })
+    return false
+  }
+
+  function requirePlan(featureName: string, minimum: 'plus' | 'premium') {
+    if (accountPlan === 'premium' || (minimum === 'plus' && accountPlan === 'plus')) return true
+    setAccessNotice({
+      title: featureName + ' needs an upgrade',
+      message: 'This feature is available on a higher Family Circle plan.',
+      action: 'upgrade',
+    })
+    return false
   }
 
   function switchFamily() {
@@ -354,12 +394,18 @@ export default function App() {
   }
 
   function goToTab(tab: HomeTab) {
+    const accessKey: Partial<Record<HomeTab, ChildPermissionKey>> = { chat: 'chat', photos: 'photos', calendar: 'tasks', tasks: 'tasks' }
+    const key = accessKey[tab]
+    if (key && !requireAccess(key, tab === 'chat' ? 'Family Chat' : tab === 'photos' ? 'Family Photos & Videos' : tab === 'calendar' ? 'Calendar' : 'Family Tasks')) return
     setActiveTab(tab)
     setToolMode(null)
     if (tab === 'chat') markMessagesRead(selectedMember.id)
   }
 
   function openTool(mode: ToolMode) {
+    const accessKey: Partial<Record<ToolMode, ChildPermissionKey>> = { games: 'games', music: 'music', map: 'location' }
+    const key = accessKey[mode]
+    if (key && !requireAccess(key, mode === 'games' ? 'Family Games' : mode === 'music' ? 'Family Circle Music' : 'Location Sharing')) return
     setToolMode(mode)
     setActiveTab('home')
     if (mode === 'map') requestBrowserLocation((coordinates) => setDemoLocation(coordinates))
@@ -605,13 +651,13 @@ export default function App() {
         { label: 'Weekly Shop', desc: 'Add items to the family shop', icon: '🛒', tone: 'shopping', action: () => goToTab('shopping') },
         { label: 'Tasks', desc: 'Jobs & responsibilities', icon: '✓', tone: 'green', action: () => goToTab('tasks') },
         { label: 'Calendar', desc: 'Events & plans', icon: '▦', tone: 'magenta', action: () => goToTab('calendar') },
-      ].map((item) => <button className={`fc-quick-tile ${item.tone}`} type="button" key={item.label} onClick={item.action}><span>{item.icon}</span><strong>{item.label}</strong><small>{item.desc}</small></button>)}</section>
+      ].map((item) => <button className={`fc-quick-tile ${item.tone}${(item.label === 'Chat' && !hasChildAccess('chat')) || (item.label === 'Photos' && !hasChildAccess('photos')) || (item.label === 'Tasks' && !hasChildAccess('tasks')) || (item.label === 'Calendar' && !hasChildAccess('tasks')) ? ' fc-quick-tile-locked' : ''}`} type="button" key={item.label} onClick={item.action}><span>{item.icon}</span><strong>{item.label}</strong><small>{item.desc}</small></button>)}</section>
 
       <section className="fc-feature-grid">
-        <button className="fc-feature-card map-card" type="button" onClick={() => openTool('map')}><span className="fc-feature-icon">📍</span><div><small>Family location</small><strong>Where Is Everyone?</strong><span>{sharedMembers.length} family member{sharedMembers.length === 1 ? '' : 's'} sharing location</span></div><b>→</b></button>
+        <button className={`fc-feature-card map-card${!hasChildAccess('location') ? ' fc-feature-card-locked' : ''}`} type="button" onClick={() => openTool('map')}><span className="fc-feature-icon">📍</span><div><small>Family location</small><strong>Where Is Everyone?</strong><span>{sharedMembers.length} family member{sharedMembers.length === 1 ? '' : 's'} sharing location</span></div><b>→</b></button>
         <button className="fc-feature-card members-card" type="button" onClick={() => openTool('family')}><span className="fc-feature-icon">👨‍👩‍👧‍👦</span><div><small>Your family</small><strong>Family Members</strong><span>View the family tree and profiles.</span></div><b>→</b></button>
-        <button className="fc-feature-card games-card" type="button" onClick={() => openTool('games')}><span className="fc-feature-icon">🎮</span><div><small>Fun together</small><strong>Challenge a Family Member</strong><span>Games hub coming soon.</span></div><b>→</b></button>
-        <button className="fc-feature-card music-card" type="button" onClick={openMusic}><span className="fc-feature-icon">♫</span><div><small>Family Circle Music</small><strong>Music for the family</strong><span>Original music, playlists and more.</span></div><b>→</b></button>
+        <button className={`fc-feature-card games-card${!hasChildAccess('games') ? ' fc-feature-card-locked' : ''}`} type="button" onClick={() => openTool('games')}><span className="fc-feature-icon">🎮</span><div><small>Fun together</small><strong>Challenge a Family Member</strong><span>Games hub coming soon.</span></div><b>→</b></button>
+        <button className={`fc-feature-card music-card${!hasChildAccess('music') ? ' fc-feature-card-locked' : ''}`} type="button" onClick={openMusic}><span className="fc-feature-icon">♫</span><div><small>Family Circle Music</small><strong>Music for the family</strong><span>Original music, playlists and more.</span></div><b>→</b></button>
       </section>
 
       {renderBottomNav()}
@@ -864,6 +910,8 @@ export default function App() {
   }
 
   if (screen === 'members') return <main className="fc-app-shell fc-members-screen"><header className="fc-brand-header"><div className="fc-brand-lockup"><img src={logoUrl} alt="Family Circle" /><strong>Family Circle</strong></div><span>● Private family space</span></header><section className="fc-members-intro"><p className="fc-kicker">Welcome</p><h1>Who's using Family Circle?</h1><p className="fc-muted">Choose your family profile to continue.</p></section><section className="fc-member-grid">{members.map((member) => <button className="fc-member-card" key={member.id} type="button" onClick={() => chooseMember(member.id)}><AppAvatar member={member} className="fc-member-avatar" /><strong>{member.label}</strong><span>{member.status}</span><small>Enter PIN →</small></button>)}</section><p className="fc-private-note">▣ Your family information stays private.</p><button className="fc-switch-family-link" type="button" onClick={switchFamily}>Switch family</button>{pinOpen && <div className="fc-modal-backdrop" onMouseDown={() => setPinOpen(false)}><section className="fc-pin-modal" onMouseDown={(event) => event.stopPropagation()}><button className="fc-modal-close" type="button" onClick={() => setPinOpen(false)}>×</button><div className="fc-pin-profile"><AppAvatar member={selectedMember} /><div><p className="fc-kicker">Family profile</p><strong>{selectedMember.label}</strong></div></div><h2>Enter your PIN</h2><p className="fc-muted">Enter your 4-digit PIN to unlock your family space.</p><div className="fc-pin-dots">{[0, 1, 2, 3].map((index) => <span className={index < pin.length ? 'filled' : ''} key={index} />)}</div>{pinError && <p className="fc-error">{pinError}</p>}<div className="fc-keypad">{['1', '2', '3', '4', '5', '6', '7', '8', '9'].map((digit) => <button type="button" key={digit} onClick={() => setPin((current) => current.length < 4 ? current + digit : current)}>{digit}</button>)}<button type="button" onClick={() => { setPin(''); setPinOpen(false) }}>Cancel</button><button type="button" onClick={() => setPin((current) => current.length < 4 ? current + '0' : current)}>0</button><button type="button" onClick={() => setPin((current) => current.slice(0, -1))}>⌫</button></div><button className="fc-primary-button" type="button" onClick={submitPin}>Continue</button></section></div>}</main>
+
+  {accessNotice && <div className="fc-modal-backdrop" onMouseDown={() => setAccessNotice(null)}><section className="fc-access-modal" onMouseDown={(event) => event.stopPropagation()}><button className="fc-modal-close" type="button" onClick={() => setAccessNotice(null)}>×</button><div className="fc-access-modal-icon">{accessNotice.action === 'upgrade' ? '⭐' : accessNotice.action === 'child' ? '😄' : '🔒'}</div><p className="fc-kicker">Family Circle</p><h2>{accessNotice.title}</h2><p className="fc-muted">{accessNotice.message}</p>{accessNotice.action === 'restriction' && <p className="fc-access-modal-note">Ask your Family Moderator to remove the restriction.</p>}{accessNotice.action === 'upgrade' && <p className="fc-access-modal-note">Upgrade your account to unlock this feature.</p>}{accessNotice.action === 'child' && <p className="fc-access-modal-note">Not quite — this one is keeping the grown-ups out. 😄</p>}<button className="fc-primary-button" type="button" onClick={() => setAccessNotice(null)}>{accessNotice.action === 'upgrade' ? 'View Plans' : 'Got it'}</button></section></div>}
 
   return <main className="fc-app-shell fc-home-screen"><div className="fc-home-shell"><audio ref={musicAudioRef} onTimeUpdate={(event) => setMusicCurrentTime(event.currentTarget.currentTime)} onLoadedMetadata={(event) => setMusicDuration(event.currentTarget.duration)} onPlay={() => setMusicPlaying(true)} onPause={() => setMusicPlaying(false)} onEnded={handleMusicEnded} preload="metadata" />{renderActive()}{musicCurrentTrack && <div className="fc-music-mini-player"><button className={`fc-music-mini-art${musicCurrentTrack.artwork ? ' fc-music-mini-artwork' : ` fc-music-mini-visual style-${musicCurrentTrack.visualStyle}`}`} type="button" onClick={openMusic} aria-label="Open Music player">{musicCurrentTrack.artwork ? <img src={musicCurrentTrack.artwork} alt="" /> : [0,1,2,3,4].map((index) => <i key={index} />)}</button><button className="fc-music-mini-copy" type="button" onClick={openMusic}><strong>{musicCurrentTrack.title}</strong><small>{musicCurrentTrack.artist}</small></button><button className="fc-music-mini-control" type="button" onClick={() => { const list = musicVisibleTracks(); const index = list.findIndex((track) => track.id === musicCurrentTrack.id); if (index >= 0 && list.length > 1) selectMusicTrack(list[(index - 1 + list.length) % list.length]) }} aria-label="Previous track">◀</button><button className="fc-music-mini-control fc-music-mini-play" type="button" onClick={toggleMusicPlayback} aria-label={musicPlaying ? 'Pause music' : 'Play music'}>{musicPlaying ? 'Ⅱ' : '▶'}</button><button className="fc-music-mini-control" type="button" onClick={() => { const list = musicVisibleTracks(); const index = list.findIndex((track) => track.id === musicCurrentTrack.id); if (index >= 0 && list.length > 1) selectMusicTrack(list[(index + 1) % list.length]) }} aria-label="Next track">▶</button><button className="fc-music-mini-chevron" type="button" onClick={openMusic} aria-label="Expand Music player">⌃</button></div>}</div></main>
 }
