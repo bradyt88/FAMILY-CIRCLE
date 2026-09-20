@@ -3076,3 +3076,87 @@
 .fc-star-note-editor{padding:16px;border:1px solid rgba(255,255,255,.08);border-radius:18px;background:rgba(5,8,25,.38)}.fc-star-note-editor>div:first-child{display:flex;flex-direction:column;gap:3px}.fc-star-note-editor small{color:#7f88a7}.fc-star-note-editor textarea{width:100%;margin:11px 0;padding:11px;border-radius:13px;border:1px solid rgba(255,255,255,.1);background:rgba(255,255,255,.035);color:#fff;resize:vertical}.fc-star-note-actions{display:flex;gap:8px;align-items:center;flex-wrap:wrap}.fc-star-note-actions>span{margin-right:auto;color:#737c99;font-size:.72rem}
 @keyframes fcStarModalIn{from{opacity:0;transform:scale(.985)}to{opacity:1;transform:scale(1)}}
 @media(max-width:700px){.fc-demo-vote-message{grid-template-columns:1fr}.fc-demo-vote-results{grid-template-columns:1fr}.fc-star-chart-grid{grid-template-columns:repeat(3,minmax(0,1fr))}.fc-star-calendar-grid{grid-template-columns:1fr}.fc-star-calendar-modal{padding:18px}.fc-recognition-head{flex-direction:column}.fc-recognition-status{align-self:flex-start}}
+
+
+/* === Phase 0 visual pass: personal calendar, chat and active presence === */
+.fc-online-dot{display:inline-block;width:8px;height:8px;border-radius:50%;background:#555d72;box-shadow:0 0 0 3px rgba(85,93,114,.10);vertical-align:middle;margin-right:4px}
+.fc-online-dot.online{background:#37dfbf;box-shadow:0 0 0 3px rgba(55,223,191,.13),0 0 12px rgba(55,223,191,.55);animation:fcOnlinePulse 2.4s ease-in-out infinite}
+@keyframes fcOnlinePulse{0%,100%{opacity:.72;transform:scale(.92)}50%{opacity:1;transform:scale(1)}}
+
+.fc-personal-calendar-wrap{margin-top:14px}
+.fc-personal-calendar-wrap>.fc-page{padding:0}
+.fc-personal-calendar-wrap .fc-feature-header{padding:22px 4px 16px}
+.fc-calendar-main,.fc-calendar-side>.fc-panel{border-color:rgba(138,114,255,.46);box-shadow:0 22px 70px rgba(61,40,140,.16),inset 0 0 32px rgba(138,114,255,.035)}
+.fc-calendar-main{background:linear-gradient(145deg,rgba(18,22,52,.98),rgba(8,11,27,.98));position:relative;overflow:hidden}
+.fc-calendar-main::before{content:"";position:absolute;inset:0;pointer-events:none;background:linear-gradient(120deg,transparent 25%,rgba(82,217,255,.035) 48%,transparent 70%);background-size:220% 100%;animation:fcCalendarSweep 9s linear infinite}
+@keyframes fcCalendarSweep{0%{background-position:120% 0}100%{background-position:-120% 0}}
+.fc-calendar-toolbar,.fc-calendar-weekdays,.fc-calendar-grid,.fc-calendar-key{position:relative;z-index:1}
+.fc-calendar-toolbar{border-bottom:1px solid rgba(255,255,255,.07);padding-bottom:14px}
+.fc-calendar-nav{border:1px solid rgba(138,114,255,.55)!important;background:rgba(138,114,255,.08)!important;box-shadow:0 0 18px rgba(138,114,255,.08)}
+.fc-today-button{border:1px solid rgba(82,217,255,.42)!important;background:rgba(82,217,255,.07)!important;color:#dffaff!important;border-radius:999px!important}
+.fc-calendar-weekdays span{color:#b9c4e7;font-weight:800;letter-spacing:.08em}
+.fc-calendar-cell{border:1px solid rgba(255,255,255,.055)!important;background:rgba(7,11,28,.62)!important;transition:.18s ease}
+.fc-calendar-cell:hover{transform:translateY(-2px);border-color:rgba(82,217,255,.48)!important;background:rgba(82,217,255,.055)!important}
+.fc-calendar-cell.today{box-shadow:inset 0 0 0 1px rgba(82,217,255,.62),0 0 20px rgba(82,217,255,.08)}
+.fc-calendar-cell.selected{border-color:rgba(255,95,199,.70)!important;background:linear-gradient(145deg,rgba(138,114,255,.16),rgba(255,95,199,.07))!important;box-shadow:0 0 22px rgba(138,114,255,.12)}
+.fc-calendar-markers i{width:6px;height:6px;border-radius:50%;background:#52d9ff;box-shadow:0 0 8px rgba(82,217,255,.55)}
+.fc-calendar-markers i.personal{background:#ff5fc7;box-shadow:0 0 8px rgba(255,95,199,.55)}
+.fc-calendar-markers i.family{background:#52d9ff}
+.fc-calendar-key .personal-key{background:#ff5fc7!important;box-shadow:0 0 8px rgba(255,95,199,.45)}
+.fc-calendar-event{border:1px solid rgba(255,255,255,.07)!important;background:rgba(8,12,29,.72)!important}
+.fc-calendar-event.family-event{border-color:rgba(82,217,255,.24)!important}
+.fc-calendar-event.personal-event{border-color:rgba(255,95,199,.26)!important;background:linear-gradient(135deg,rgba(255,95,199,.07),rgba(138,114,255,.05))!important}
+.fc-calendar-event>b{font-size:.62rem;color:#52d9ff}
+.fc-calendar-event.personal-event>b{color:#ff9ade}
+.fc-calendar-side>.fc-panel .fc-panel-head h2{font-size:1.05rem}
+
+.fc-chat-page{width:100%}
+.fc-chat-vote-slot{margin-bottom:12px}
+.fc-weekly-vote-collapsed{border:1px solid rgba(255,95,199,.55);border-radius:18px;background:linear-gradient(135deg,rgba(31,13,55,.88),rgba(12,15,36,.94));box-shadow:0 16px 45px rgba(75,35,120,.16);overflow:hidden}
+.fc-weekly-vote-collapsed summary{list-style:none;cursor:pointer;display:flex;align-items:center;justify-content:space-between;gap:16px;padding:13px 16px}
+.fc-weekly-vote-collapsed summary::-webkit-details-marker{display:none}
+.fc-weekly-vote-collapsed summary>span{display:grid;gap:2px}
+.fc-weekly-vote-collapsed summary small{color:#ffb7e6;font-size:.64rem;text-transform:uppercase;letter-spacing:.12em;font-weight:800}
+.fc-weekly-vote-collapsed summary strong{font-size:.92rem}
+.fc-weekly-vote-collapsed summary>b{font-size:.7rem;color:#cfd6f3;display:flex;align-items:center;gap:8px;white-space:nowrap}
+.fc-weekly-vote-collapsed summary i{font-style:normal;font-size:1rem;color:#ff82d7;transition:.18s ease}
+.fc-weekly-vote-collapsed[open] summary i{transform:rotate(180deg)}
+.fc-weekly-vote-expanded{padding:0 14px 14px;border-top:1px solid rgba(255,255,255,.06)}
+.fc-chat-main-panel{border:1px solid rgba(82,217,255,.48);border-radius:24px;background:linear-gradient(145deg,rgba(13,19,44,.97),rgba(7,10,24,.98));padding:20px;box-shadow:0 24px 80px rgba(28,45,100,.16);min-height:clamp(520px,65vh,760px);display:flex;flex-direction:column}
+.fc-chat-main-panel .fc-chat-list{flex:1;max-height:none;min-height:330px;padding:6px 8px 10px 2px;scrollbar-width:thin;scrollbar-color:rgba(82,217,255,.55) transparent}
+.fc-chat-main-panel .fc-chat-list::-webkit-scrollbar{width:7px}
+.fc-chat-main-panel .fc-chat-list::-webkit-scrollbar-track{background:transparent}
+.fc-chat-main-panel .fc-chat-list::-webkit-scrollbar-thumb{border-radius:99px;background:linear-gradient(180deg,rgba(82,217,255,.72),rgba(138,114,255,.72));border:1px solid rgba(255,255,255,.08)}
+.fc-chat-main-panel .fc-composer{margin-top:auto;padding-top:12px;border-top:1px solid rgba(255,255,255,.07)}
+.fc-chat-main-panel .fc-chat-bubble{border-color:rgba(82,217,255,.10);background:linear-gradient(145deg,rgba(10,16,36,.92),rgba(6,10,25,.88));box-shadow:inset 0 0 20px rgba(82,217,255,.018)}
+.fc-chat-main-panel .fc-chat-row-outgoing .fc-chat-bubble{border-color:rgba(255,95,199,.16)}
+.fc-chat-main-panel .fc-composer>button{box-shadow:0 0 18px rgba(82,217,255,.12)}
+.fc-chat-main-panel .fc-composer>input:focus{border-color:rgba(82,217,255,.58);box-shadow:0 0 0 3px rgba(82,217,255,.07)}
+.fc-chat-main-panel .fc-attach{border-color:rgba(138,114,255,.36);background:rgba(138,114,255,.055)}
+
+.fc-profile-settings-socials{display:grid;gap:9px}
+.fc-profile-settings-socials>label{display:grid;grid-template-columns:105px minmax(0,1fr) auto;align-items:center;gap:9px;padding:10px 11px;border:1px solid rgba(138,114,255,.20);border-radius:14px;background:rgba(8,12,29,.62)}
+.fc-profile-settings-socials>label>span{font-weight:800;font-size:.78rem}
+.fc-profile-settings-socials>label input{min-width:0}
+.fc-profile-settings-socials>label>b{font-size:.65rem;color:#8790ac}
+.fc-profile-settings-socials>label>b.active{color:#37dfbf}
+.fc-profile-settings-socials>.fc-primary-button{justify-self:start;margin-top:4px}
+
+.fc-status-chip{display:flex;align-items:center;justify-content:center;gap:4px}
+.fc-profile-saved-status{display:flex!important;align-items:center;gap:4px}
+.fc-member-card span{display:flex;align-items:center;gap:4px}
+.fc-tree-node>span{display:flex;align-items:center;gap:4px}
+
+@media (max-width:760px){
+  .fc-calendar-layout{grid-template-columns:1fr!important}
+  .fc-calendar-main{padding:13px}
+  .fc-calendar-cell{min-height:58px!important}
+  .fc-calendar-day-number{font-size:.8rem}
+  .fc-chat-main-panel{padding:13px;min-height:calc(100vh - 210px);border-radius:20px}
+  .fc-chat-main-panel .fc-chat-list{padding-right:3px}
+  .fc-weekly-vote-collapsed summary{padding:12px}
+  .fc-weekly-vote-collapsed summary>b{font-size:.62rem}
+  .fc-profile-settings-socials>label{grid-template-columns:1fr}
+  .fc-profile-settings-socials>label>b{justify-self:start}
+  .fc-personal-calendar-wrap .fc-calendar-side{grid-template-columns:1fr}
+}
