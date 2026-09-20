@@ -714,7 +714,8 @@ export default function App() {
     setProfileMessage('Cover photo removed.')
   }
 
-  function uploadProfilePhoto(file: File):
+  function uploadProfilePhoto(file: File) {
+    if (!file.type.startsWith('image/') || profileTarget.id !== selectedMember.id) return
     const reader = new FileReader()
     reader.onload = () => {
       const photo = typeof reader.result === 'string' ? reader.result : ''
