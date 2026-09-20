@@ -929,7 +929,7 @@ export default function App() {
       </section>
 
       <section className="fc-home-court-feature">
-        <button className="fc-home-court-card" type="button" onClick={() => openTool('games')}>
+        <button className="fc-home-court-card" type="button" onClick={() => openTool('familyCourt')}>
           <span className="fc-home-court-icon">⚖️</span>
           <span className="fc-home-court-copy"><small>Settle it in the circle</small><strong>Family Court</strong><em>Bring your family case before the jury.</em></span>
           <b>→</b>
