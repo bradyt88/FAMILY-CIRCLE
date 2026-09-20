@@ -315,7 +315,6 @@ export default function App() {
   const [profileMessage, setProfileMessage] = useState('')
   const [profileSavedView, setProfileSavedView] = useState(false)
   const [profilePhotoViewer, setProfilePhotoViewer] = useState<string | null>(null)
-  const [profileCoverViewer, setProfileCoverViewer] = useState<string | null>(null)
   const [moneyRequests, setMoneyRequests] = useState<MoneyRequest[]>([])
   const [shoppingItems, setShoppingItems] = useState<string[]>([])
   const [shoppingInput, setShoppingInput] = useState('')
@@ -580,7 +579,6 @@ export default function App() {
         else if(now.getHours() >= 21){ next={...next,[tieKey]:null,[announcedKey]:true} }
       })
     }
-    const awardsToApply: Array<{type:'fam'|'clown'; winner:string|null}> = [{type:'fam',winner:next.famWinner},{type:'clown',winner:next.clownWinner}]
     if (next.famWinner && !weeklyRecognition.famWinner) applyRecognitionAward(next.famWinner,'fam',next.weekKey)
     if (next.clownWinner && !weeklyRecognition.clownWinner) applyRecognitionAward(next.clownWinner,'clown',next.weekKey)
     if (next.famWinner || next.famAnnounced || next.famTie) {
