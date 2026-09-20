@@ -42,7 +42,8 @@ type FamilyPhoto = { id: string; src: string; name: string; time: string }
 type FamilyEvent = { id: string; title: string; date: string; time: string; location: string }
 type FamilyTask = { id: string; title: string; dueDate: string; assignedTo: string; completed: boolean }
 type MoneyRequest = { id: string; requesterId: string; amount: string; purpose: string; dueDate: string; status: 'Pending' | 'Accepted'; lenderId?: string; taskId?: string; calendarEventId?: string }
-type MusicTrack = { id: string; title: string; artist: string; genres: string[]; audioSrc: string; artwork?: string; youtubeUrl?: string; explicit: boolean; kidsAllowed: boolean; visualStyle: 1 | 2 | 3 | 4 | 5 }\ntype MusicCommunityProfile = { displayName: string; handle: string; bio: string }
+type MusicTrack = { id: string; title: string; artist: string; genres: string[]; audioSrc: string; artwork?: string; youtubeUrl?: string; explicit: boolean; kidsAllowed: boolean; visualStyle: 1 | 2 | 3 | 4 | 5 }
+type MusicCommunityProfile = { displayName: string; handle: string; bio: string }
 
 const musicLibrary: MusicTrack[] = [
   { id: 'late-night-ghosts', title: 'Late Night Ghosts', artist: 'Coreykt', genres: ['Chilled', 'R&B', 'Hip-Hop'], audioSrc: `${import.meta.env.BASE_URL}music/audio/Late Night Ghosts.mp3`, youtubeUrl: 'https://youtu.be/t6L480nXQ9M?is=RNp81PJPqzK_f4wm', explicit: true, kidsAllowed: false, visualStyle: 3 },
@@ -50,7 +51,19 @@ const musicLibrary: MusicTrack[] = [
   { id: 'six-seven', title: 'Six seven', artist: 'bradyxai', genres: ['Kids / Family'], audioSrc: `${import.meta.env.BASE_URL}music/audio/Six seven.mp3`, artwork: `${import.meta.env.BASE_URL}music/artwork/ChatGPT Image Sep 19, 2026, 06_25_58 PM.png`, explicit: false, kidsAllowed: true, visualStyle: 5 },
 ]
 
-const musicPlaylists = ['Chilled', 'Hip-Hop', 'R&B', 'Rock', 'Pop', 'Kids / Family']\n\nfunction loadMusicCommunityProfile(): MusicCommunityProfile | null {\n  try {\n    const saved = localStorage.getItem('family-circle-music-community-profile')\n    if (!saved) return null\n    const parsed = JSON.parse(saved) as Partial<MusicCommunityProfile>\n    if (typeof parsed.displayName !== 'string' || typeof parsed.handle !== 'string') return null\n    return { displayName: parsed.displayName, handle: parsed.handle, bio: typeof parsed.bio === 'string' ? parsed.bio : '' }\n  } catch {\n    return null\n  }\n}
+const musicPlaylists = ['Chilled', 'Hip-Hop', 'R&B', 'Rock', 'Pop', 'Kids / Family']
+
+function loadMusicCommunityProfile(): MusicCommunityProfile | null {
+  try {
+    const saved = localStorage.getItem('family-circle-music-community-profile')
+    if (!saved) return null
+    const parsed = JSON.parse(saved) as Partial<MusicCommunityProfile>
+    if (typeof parsed.displayName !== 'string' || typeof parsed.handle !== 'string') return null
+    return { displayName: parsed.displayName, handle: parsed.handle, bio: typeof parsed.bio === 'string' ? parsed.bio : '' }
+  } catch {
+    return null
+  }
+}
 type EmergencyPending = { title: string; description: string; tone: string; needsLocation: boolean; message?: string }
 
 const statusOptions: StatusOption[] = ['Home', 'Work', 'Partying', 'Recovering', 'Playing', 'Gaming', 'Toilet 😂', 'Movies', 'Sleeping', 'Gym', 'Travelling', 'Holiday', 'Out & About']
@@ -251,7 +264,12 @@ export default function App() {
   const [musicRecentlyPlayed, setMusicRecentlyPlayed] = useState<string[]>([])
   const [musicChildMode, setMusicChildMode] = useState(false)
   const [musicChildYouTubeAllowed, setMusicChildYouTubeAllowed] = useState(false)
-  const [musicVolume, setMusicVolume] = useState(() => { const saved = Number(localStorage.getItem('family-circle-music-volume')); return Number.isFinite(saved) ? Math.min(1, Math.max(0, saved)) : 0.7 })\n  const [musicCommunityProfile, setMusicCommunityProfile] = useState<MusicCommunityProfile | null>(() => loadMusicCommunityProfile())\n  const [musicCommunityDisplayName, setMusicCommunityDisplayName] = useState('')\n  const [musicCommunityHandle, setMusicCommunityHandle] = useState('')\n  const [musicCommunityBio, setMusicCommunityBio] = useState('')\n  const [musicCommunityProfileError, setMusicCommunityProfileError] = useState('')
+  const [musicVolume, setMusicVolume] = useState(() => { const saved = Number(localStorage.getItem('family-circle-music-volume')); return Number.isFinite(saved) ? Math.min(1, Math.max(0, saved)) : 0.7 })
+  const [musicCommunityProfile, setMusicCommunityProfile] = useState<MusicCommunityProfile | null>(() => loadMusicCommunityProfile())
+  const [musicCommunityDisplayName, setMusicCommunityDisplayName] = useState('')
+  const [musicCommunityHandle, setMusicCommunityHandle] = useState('')
+  const [musicCommunityBio, setMusicCommunityBio] = useState('')
+  const [musicCommunityProfileError, setMusicCommunityProfileError] = useState('')
 
   useEffect(() => {
     localStorage.setItem('family-circle-subscription', JSON.stringify(subscription))
