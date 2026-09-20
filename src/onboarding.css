@@ -48,3 +48,18 @@
 .fc-emergency-note strong{font-size:.72rem}.fc-emergency-note span{color:#929cb7;font-size:.64rem;line-height:1.4}
 .fc-child-access-continue{width:100%;margin-top:18px}
 @media (max-width:640px){.fc-child-access-row{align-items:flex-start}.fc-access-switch{padding-top:1px}}
+
+.fc-payment-demo-head{display:flex;align-items:center;justify-content:space-between;gap:14px;margin-top:16px;padding:14px 15px;border:1px solid rgba(82,217,255,.18);border-radius:15px;background:rgba(82,217,255,.035)}
+.fc-payment-demo-head>div{display:grid;gap:4px}
+.fc-payment-demo-head small{color:#7f8aa5;font-size:.63rem;text-transform:uppercase;letter-spacing:.08em;font-weight:800}
+.fc-payment-demo-head strong{font-size:.82rem}
+.fc-test-card-button{min-height:38px;border-color:rgba(82,217,255,.38);white-space:nowrap}
+.fc-payment-fields{display:grid;gap:11px;margin-top:12px}
+.fc-payment-fields label{display:grid;gap:6px}
+.fc-payment-fields label span{font-size:.68rem;color:#b8c3dc;font-weight:750}
+.fc-payment-fields input{width:100%;min-height:44px;border:1px solid rgba(55,223,191,.18);border-radius:11px;background:#0b1127;color:#fff;padding:10px 12px;box-sizing:border-box}
+.fc-payment-fields input::placeholder{color:#65718d}
+.fc-payment-field-row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.fc-payment-demo-note{margin:11px 0 0;color:#8290aa;font-size:.64rem;line-height:1.4;text-align:center}
+.fc-payment-continue:disabled{opacity:.42;cursor:not-allowed}
+@media (max-width:640px){.fc-payment-demo-head{align-items:stretch;flex-direction:column}.fc-test-card-button{width:100%}}
