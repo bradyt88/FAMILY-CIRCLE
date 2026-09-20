@@ -34,7 +34,10 @@ type ChildPermissions = Record<ChildPermissionKey, boolean>
 
 type StatusOption = 'Home' | 'Work' | 'Partying' | 'Recovering' | 'Playing' | 'Gaming' | 'Toilet 😂' | 'Movies' | 'Sleeping' | 'Gym' | 'Travelling' | 'Holiday' | 'Out & About'
 type SocialName = 'Facebook' | 'TikTok' | 'Snapchat' | 'YouTube'
-type FamilyMember = { id: string; label: string; initials: string; accent: string; phone: string; bio: string; status: StatusOption; locationLabel: string; lastUpdated: string; mapX: number; mapY: number; photo?: string | null; socials: Record<SocialName, string> }
+type MemberRecognition = { famOfWeekWins: number; clownOfWeekWins: number; weeklyAwards: Array<{ weekKey: string; type: 'fam' | 'clown' }> }
+type RecognitionTie = { candidates: string[]; votes: Record<string, string>; statements: Record<string, string> }
+type WeeklyRecognition = { weekKey: string; famVotes: Record<string, string>; clownVotes: Record<string, string>; famWinner: string | null; clownWinner: string | null; famTie: RecognitionTie | null; clownTie: RecognitionTie | null; famAnnounced: boolean; clownAnnounced: boolean }
+type FamilyMember = { id: string; label: string; initials: string; accent: string; phone: string; bio: string; status: StatusOption; locationLabel: string; lastUpdated: string; mapX: number; mapY: number; photo?: string | null; socials: Record<SocialName, string>; recognition?: MemberRecognition }
 type ChatMessage = { id: string; memberId: string; name: string; initials: string; accent: string; time: string; text: string; image?: string; moneyRequestId?: string }
 type Notification = { id: string; kind: 'Chat' | 'Task' | 'Calendar' | 'Emergency' | 'Profile' | 'Money'; title: string; detail: string; time: string }
 type NotificationPreferences = { Chat: boolean; Task: boolean; Calendar: boolean; Profile: boolean; Money: boolean; Emergency: true }
@@ -99,9 +102,9 @@ const socialNames: SocialName[] = ['Facebook', 'TikTok', 'Snapchat', 'YouTube']
 const socialIcons: Record<SocialName, string> = { Facebook: 'f', TikTok: '♪', Snapchat: '👻', YouTube: '▶' }
 
 const memberSeeds: FamilyMember[] = [
-  { id: 'member-1', label: 'Family Member 1', initials: 'FM', accent: 'member-accent-one', phone: '+44 7700 900001', bio: 'Keeping the family moving.', status: 'Work', locationLabel: 'Work', lastUpdated: '2 min ago', mapX: 25, mapY: 37, photo: null, socials: { Facebook: '', TikTok: '', Snapchat: '', YouTube: '' } },
-  { id: 'member-2', label: 'Family Member 2', initials: 'FM', accent: 'member-accent-two', phone: '+44 7700 900002', bio: 'Home is wherever we are together.', status: 'Home', locationLabel: 'Home', lastUpdated: '4 min ago', mapX: 57, mapY: 61, photo: null, socials: { Facebook: '', TikTok: '', Snapchat: '', YouTube: '' } },
-  { id: 'member-3', label: 'Family Member 3', initials: 'FM', accent: 'member-accent-three', phone: '+44 7700 900003', bio: 'Always part of the circle.', status: 'Playing', locationLabel: 'Out & About', lastUpdated: '8 min ago', mapX: 76, mapY: 24, photo: null, socials: { Facebook: '', TikTok: '', Snapchat: '', YouTube: '' } },
+  { id: 'member-1', label: 'Family Member 1', initials: 'FM', accent: 'member-accent-one', phone: '+44 7700 900001', bio: 'Keeping the family moving.', status: 'Work', locationLabel: 'Work', lastUpdated: '2 min ago', mapX: 25, mapY: 37, photo: null, socials: { Facebook: '', TikTok: '', Snapchat: '', YouTube: '' }, recognition: { famOfWeekWins: 0, clownOfWeekWins: 0, weeklyAwards: [] } },
+  { id: 'member-2', label: 'Family Member 2', initials: 'FM', accent: 'member-accent-two', phone: '+44 7700 900002', bio: 'Home is wherever we are together.', status: 'Home', locationLabel: 'Home', lastUpdated: '4 min ago', mapX: 57, mapY: 61, photo: null, socials: { Facebook: '', TikTok: '', Snapchat: '', YouTube: '' }, recognition: { famOfWeekWins: 0, clownOfWeekWins: 0, weeklyAwards: [] } },
+  { id: 'member-3', label: 'Family Member 3', initials: 'FM', accent: 'member-accent-three', phone: '+44 7700 900003', bio: 'Always part of the circle.', status: 'Playing', locationLabel: 'Out & About', lastUpdated: '8 min ago', mapX: 76, mapY: 24, photo: null, socials: { Facebook: '', TikTok: '', Snapchat: '', YouTube: '' }, recognition: { famOfWeekWins: 0, clownOfWeekWins: 0, weeklyAwards: [] } },
 ]
 
 const initialMessages: ChatMessage[] = [
@@ -136,6 +139,29 @@ function loadNotificationPreferences(): NotificationPreferences {
 function persistNotificationPreferences(value: NotificationPreferences) {
   localStorage.setItem('family-circle-notification-preferences', JSON.stringify(value))
 }
+
+function recognitionWeekKey(now = new Date()) {
+  const date = new Date(now)
+  const day = date.getDay()
+  const beforeSundayVote = day !== 0 || date.getHours() < 17
+  const daysUntilSunday = (7 - day) % 7
+  if (beforeSundayVote) date.setDate(date.getDate() + (daysUntilSunday || 7))
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`
+}
+function isRecognitionVotingOpen(now = new Date()) { return now.getDay() === 0 && now.getHours() >= 17 && now.getHours() < 20 }
+function isRecognitionTieBreakOpen(now = new Date()) { return now.getDay() === 0 && now.getHours() >= 20 && now.getHours() < 21 }
+function emptyWeeklyRecognition(weekKey: string): WeeklyRecognition { return { weekKey, famVotes: {}, clownVotes: {}, famWinner: null, clownWinner: null, famTie: null, clownTie: null, famAnnounced: false, clownAnnounced: false } }
+function loadWeeklyRecognition(): WeeklyRecognition {
+  const key = 'family-circle-weekly-recognition'
+  try {
+    const saved = localStorage.getItem(key)
+    const parsed = saved ? JSON.parse(saved) as Partial<WeeklyRecognition> : null
+    const weekKey = recognitionWeekKey()
+    if (!parsed || parsed.weekKey !== weekKey) return emptyWeeklyRecognition(weekKey)
+    return { ...emptyWeeklyRecognition(weekKey), ...parsed, famVotes: parsed.famVotes ?? {}, clownVotes: parsed.clownVotes ?? {}, famTie: parsed.famTie ?? null, clownTie: parsed.clownTie ?? null }
+  } catch { return emptyWeeklyRecognition(recognitionWeekKey()) }
+}
+function persistWeeklyRecognition(value: WeeklyRecognition) { localStorage.setItem('family-circle-weekly-recognition', JSON.stringify(value)) }
 
 function loadMembers() {
   return memberSeeds.map((member) => {
@@ -227,6 +253,20 @@ function AppAvatar({ member, className = '' }: { member: FamilyMember; className
   return member.photo ? <img className={`fc-avatar ${className}`} src={member.photo} alt={`${member.label} profile`} /> : <span className={`fc-avatar ${member.accent} ${className}`}>{member.initials}</span>
 }
 
+function recognitionStatus(member: FamilyMember) {
+  const wins = memberRecognitionSafe(member).famOfWeekWins
+  if (wins >= 20) return 'Royalty'
+  if (wins >= 10) return 'Family Legend'
+  if (wins >= 5) return 'Family Ace'
+  if (wins >= 2) return 'Fan Favourite'
+  return 'Family Member'
+}
+function memberRecognitionSafe(member: FamilyMember): MemberRecognition { return member.recognition ?? { famOfWeekWins: 0, clownOfWeekWins: 0, weeklyAwards: [] } }
+function RecognitionProfile({ member }: { member: FamilyMember; members: FamilyMember[] }) {
+  const recognition=memberRecognitionSafe(member), stars=Math.min(20,recognition.famOfWeekWins)
+  return <section className="fc-recognition-panel"><div className="fc-recognition-head"><div><p className="fc-kicker">Weekly recognition</p><h2>⭐ My Family Star Chart</h2></div><span className="fc-recognition-status">{recognitionStatus(member)}</span></div><div className="fc-star-chart" aria-label={`${recognition.famOfWeekWins} Fam of the Week wins`}>{Array.from({length:20},(_,i)=><span key={i} className={i<stars?'earned':''}>★</span>)}</div><div className="fc-recognition-stats"><span>⭐ <b>{recognition.famOfWeekWins}</b> Fam wins</span><span>🤡 <b>{recognition.clownOfWeekWins}</b> Clown wins</span></div><small>20 Fam of the Week wins unlocks Royalty.</small></section>
+}
+
 function FeatureHeader({ title, description, onHome }: { title: string; description: string; onHome: () => void }) {
   const accent = title.includes('Emergency') ? 'emergency' : title.includes('Shopping') || title.includes('Weekly Shop') ? 'shopping' : title.includes('Chat') ? 'pink' : title.includes('Calendar') ? 'purple' : title.includes('Tasks') ? 'green' : title.includes('Photos') ? 'cyan' : title.includes('Where Is') ? 'cyan' : title.includes('Family Members') ? 'purple' : 'purple'
   return <div className={`fc-feature-header ${accent}`}><div><p className="fc-kicker">Family Circle</p><h1>{title}</h1><p className="fc-muted">{description}</p></div><button className="fc-ghost-button" type="button" onClick={onHome}>← Home</button></div>
@@ -248,6 +288,8 @@ export default function App() {
   const [activeTab, setActiveTab] = useState<HomeTab>('home')
   const [toolMode, setToolMode] = useState<ToolMode | null>(null)
   const [messages, setMessages] = useState<ChatMessage[]>(initialMessages)
+  const [weeklyRecognition, setWeeklyRecognition] = useState<WeeklyRecognition>(() => loadWeeklyRecognition())
+  const [tieStatementDrafts, setTieStatementDrafts] = useState<Record<string, string>>({})
   const [photos, setPhotos] = useState<FamilyPhoto[]>([])
   const [pendingChatPhoto, setPendingChatPhoto] = useState<string | null>(null)
   const [chatDraft, setChatDraft] = useState('')
@@ -316,6 +358,18 @@ export default function App() {
   useEffect(() => {
     localStorage.setItem('family-circle-subscription', JSON.stringify(subscription))
   }, [subscription])
+
+  useEffect(() => { persistWeeklyRecognition(weeklyRecognition) }, [weeklyRecognition])
+  useEffect(() => {
+    const refreshRecognition = () => {
+      const key = recognitionWeekKey()
+      if (key !== weeklyRecognition.weekKey) setWeeklyRecognition(emptyWeeklyRecognition(key))
+      finaliseWeeklyRecognition()
+    }
+    refreshRecognition()
+    const timer = window.setInterval(refreshRecognition, 30000)
+    return () => window.clearInterval(timer)
+  }, [weeklyRecognition])
 
   useEffect(() => {
     const refreshQuote = () => setDailyQuote(dailyFamilyQuote())
@@ -471,6 +525,64 @@ export default function App() {
   function persistMember(updated: FamilyMember) {
     setMembers((current) => current.map((member) => member.id === updated.id ? updated : member))
     localStorage.setItem(`family-circle-member-${updated.id}`, JSON.stringify(updated))
+  }
+
+  function memberRecognition(member: FamilyMember): MemberRecognition { return member.recognition ?? { famOfWeekWins: 0, clownOfWeekWins: 0, weeklyAwards: [] } }
+  function castWeeklyVote(type: 'fam' | 'clown', candidateId: string) {
+    if (!isRecognitionVotingOpen() || !members.some((member) => member.id === candidateId)) return
+    setWeeklyRecognition((current) => current.weekKey === recognitionWeekKey() ? { ...current, [type === 'fam' ? 'famVotes' : 'clownVotes']: { ...(type === 'fam' ? current.famVotes : current.clownVotes), [selectedMember.id]: candidateId } } : current)
+  }
+  function submitTieStatement(type: 'fam' | 'clown', candidateId: string) {
+    const tie = type === 'fam' ? weeklyRecognition.famTie : weeklyRecognition.clownTie
+    if (!tie?.candidates.includes(candidateId) || selectedMember.id !== candidateId) return
+    const statement = (tieStatementDrafts[candidateId] ?? '').trim().slice(0, 240)
+    if (!statement) return
+    setWeeklyRecognition((current) => { const target = type === 'fam' ? current.famTie : current.clownTie; if (!target) return current; const nextTie = { ...target, statements: { ...target.statements, [candidateId]: statement } }; return { ...current, [type === 'fam' ? 'famTie' : 'clownTie']: nextTie } })
+    setTieStatementDrafts((current) => ({ ...current, [candidateId]: '' }))
+  }
+  function castTieBreakVote(type: 'fam' | 'clown', candidateId: string) {
+    if (!isRecognitionTieBreakOpen()) return
+    const tie = type === 'fam' ? weeklyRecognition.famTie : weeklyRecognition.clownTie
+    if (!tie?.candidates.includes(candidateId)) return
+    setWeeklyRecognition((current) => { const target = type === 'fam' ? current.famTie : current.clownTie; if (!target) return current; const nextTie = { ...target, votes: { ...target.votes, [selectedMember.id]: candidateId } }; return { ...current, [type === 'fam' ? 'famTie' : 'clownTie']: nextTie } })
+  }
+  function finaliseWeeklyRecognition() {
+    const now = new Date()
+    if (weeklyRecognition.weekKey !== recognitionWeekKey()) return
+    if (now.getDay() !== 0 || now.getHours() < 20) return
+    let next = weeklyRecognition
+    const tally = (votes: Record<string,string>, candidates: string[]) => {
+      const counts = new Map<string, number>(); candidates.forEach((id) => counts.set(id, 0)); Object.values(votes).forEach((id) => counts.set(id, (counts.get(id) ?? 0) + 1)); const max = Math.max(0, ...counts.values()); const leaders = [...counts.entries()].filter(([,count]) => count === max && max > 0).map(([id]) => id); return { leaders, counts }
+    }
+    const candidates = members.map((member) => member.id)
+    if (now.getHours() >= 20 && !next.famWinner && !next.famTie && !next.famAnnounced) {
+      const result=tally(next.famVotes,candidates)
+      if (result.leaders.length === 1) next={...next,famWinner:result.leaders[0],famAnnounced:true}
+      else if (result.leaders.length > 1) next={...next,famTie:{candidates:result.leaders,votes:{},statements:{}},famAnnounced:false}
+      else next={...next,famAnnounced:true}
+    }
+    if (now.getHours() >= 20 && !next.clownWinner && !next.clownTie && !next.clownAnnounced) {
+      const result=tally(next.clownVotes,candidates)
+      if (result.leaders.length === 1) next={...next,clownWinner:result.leaders[0],clownAnnounced:true}
+      else if (result.leaders.length > 1) next={...next,clownTie:{candidates:result.leaders,votes:{},statements:{}},clownAnnounced:false}
+      else next={...next,clownAnnounced:true}
+    }
+    if (isRecognitionTieBreakOpen()) {
+      (['fam','clown'] as const).forEach((type) => { const tie=type==='fam'?next.famTie:next.clownTie; if (!tie || (type==='fam'&&next.famWinner) || (type==='clown'&&next.clownWinner)) return; const result=tally(tie.votes,tie.candidates); if(result.leaders.length===1){ next={...next,[type==='fam'?'famWinner':'clownWinner']:result.leaders[0],[type==='fam'?'famTie':'clownTie']:null,[type==='fam'?'famAnnounced':'clownAnnounced']:true} } })
+    }
+    const awardsToApply: Array<{type:'fam'|'clown'; winner:string|null}> = [{type:'fam',winner:next.famWinner},{type:'clown',winner:next.clownWinner}]
+    if (next.famWinner && !weeklyRecognition.famWinner) applyRecognitionAward(next.famWinner,'fam',next.weekKey)
+    if (next.clownWinner && !weeklyRecognition.clownWinner) applyRecognitionAward(next.clownWinner,'clown',next.weekKey)
+    if (next.famWinner || next.famAnnounced || next.famTie) {
+      const winnerName=next.famWinner?members.find(m=>m.id===next.famWinner)?.label:null
+      if (winnerName && !messages.some(m=>m.id===`recognition-fam-${next.weekKey}`)) setMessages(current=>[{id:`recognition-fam-${next.weekKey}`,memberId:next.famWinner!,name:'Family Circle',initials:'FC',accent:'member-accent-one',time:'20:00',text:`🏆 Fam of the Week: ${winnerName}! ⭐`},...current])
+      else if (!winnerName && next.famAnnounced && !messages.some(m=>m.id===`recognition-fam-none-${next.weekKey}`)) setMessages(current=>[{id:`recognition-fam-none-${next.weekKey}`,memberId:selectedMember.id,name:'Family Circle',initials:'FC',accent:selectedMember.accent,time:'20:00',text:'🏆 Fam of the Week: No votes were received this week.'},...current])
+    }
+    if (next.clownWinner && !messages.some(m=>m.id===`recognition-clown-${next.weekKey}`)) { const winnerName=members.find(m=>m.id===next.clownWinner)?.label; if(winnerName) setMessages(current=>[{id:`recognition-clown-${next.weekKey}`,memberId:next.clownWinner!,name:'Family Circle',initials:'FC',accent:'member-accent-three',time:'20:00',text:`🤡 Clown of the Week: ${winnerName}! 🤡`},...current]) }
+    if (next.famWinner!==weeklyRecognition.famWinner || next.clownWinner!==weeklyRecognition.clownWinner || next.famTie!==weeklyRecognition.famTie || next.clownTie!==weeklyRecognition.clownTie || next.famAnnounced!==weeklyRecognition.famAnnounced || next.clownAnnounced!==weeklyRecognition.clownAnnounced) setWeeklyRecognition(next)
+  }
+  function applyRecognitionAward(winnerId:string,type:'fam'|'clown',weekKey:string) {
+    setMembers(current=>current.map(member=>{ if(member.id!==winnerId) return member; const recognition=memberRecognition(member); if(recognition.weeklyAwards.some(a=>a.weekKey===weekKey&&a.type===type)) return member; const updatedRecognition={...recognition, famOfWeekWins:recognition.famOfWeekWins+(type==='fam'?1:0), clownOfWeekWins:recognition.clownOfWeekWins+(type==='clown'?1:0), weeklyAwards:[...recognition.weeklyAwards,{weekKey,type}]}; const updated={...member,recognition:updatedRecognition}; localStorage.setItem(`family-circle-member-${member.id}`,JSON.stringify(updated)); return updated}))
   }
 
   function chooseMember(memberId: string) {
@@ -785,6 +897,14 @@ export default function App() {
         </button>
       </section>
 
+      <section className="fc-home-court-feature">
+        <button className="fc-home-court-card" type="button" onClick={() => openTool('games')}>
+          <span className="fc-home-court-icon">⚖️</span>
+          <span className="fc-home-court-copy"><small>Settle it in the circle</small><strong>Family Court</strong><em>Bring your family case before the jury.</em></span>
+          <b>→</b>
+        </button>
+      </section>
+
       <section className="fc-dashboard-grid">
         <article className="fc-dashboard-card cyan"><div className="fc-card-head"><div><small>Family Chat</small><h2>Latest conversation</h2></div><div className="fc-card-head-actions">{unreadMessageCount > 0 && <span className="fc-unread-count">{unreadMessageCount} new</span>}<button type="button" onClick={() => goToTab('chat')}>→</button></div></div>{firstThreeMessages.map((message) => <div className={isMessageUnread(message.id) ? "fc-mini-row fc-unread-row" : "fc-mini-row"} key={message.id}><AppAvatar member={members.find((m) => m.id === message.memberId) ?? selectedMember} /><div><strong>{message.name}</strong><span>{message.text}</span></div><time>{message.time}</time></div>)}<button className="fc-outline-button" type="button" onClick={() => goToTab('chat')}>View All Messages →</button></article>
         <article className="fc-dashboard-card pink"><div className="fc-card-head"><div><small>Today's Events</small><h2>Family plans</h2></div><button type="button" onClick={() => goToTab('calendar')}>→</button></div>{todaysEvents.length ? todaysEvents.slice(0, 3).map((event) => <div className="fc-mini-row" key={event.id}><span className="fc-event-icon">📅</span><div><strong>{event.title}</strong><span>{event.time} · {event.location}</span></div></div>) : <p className="fc-muted">No more events today.</p>}<button className="fc-outline-button pink" type="button" onClick={() => goToTab('calendar')}>View Calendar →</button></article>
@@ -798,6 +918,7 @@ export default function App() {
         <button className={`fc-feature-card games-card${!hasChildAccess('games') ? ' fc-feature-card-locked' : ''}`} type="button" onClick={() => openTool('games')}><span className="fc-feature-icon">🎮</span><div><small>Fun together</small><strong>Challenge a Family Member</strong><span>Games hub coming soon.</span></div><b>→</b></button>
         <button className={`fc-feature-card music-card${!hasChildAccess('music') ? ' fc-feature-card-locked' : ''}`} type="button" onClick={openMusic}><span className="fc-feature-icon">♫</span><div><small>Family Circle Music</small><strong>Music for the family</strong><span>Original music, playlists and more.</span></div><b>→</b></button>
         <button className="fc-feature-card shopping-feature-card" type="button" onClick={() => goToTab('shopping')}><span className="fc-feature-icon">🛒</span><div><small>Family shopping</small><strong>Weekly Shop</strong><span>Keep the family shopping list together.</span></div><b>→</b></button>
+        <button className="fc-feature-card court-feature-card" type="button" onClick={() => openTool('games')}><span className="fc-feature-icon">⚖️</span><div><small>Family jury</small><strong>Family Court</strong><span>Bring a family dispute before the circle.</span></div><b>→</b></button>
       </section>
 
       {renderBottomNav()}
@@ -806,7 +927,20 @@ export default function App() {
   }
 
   function renderChat() {
-    return <div className="fc-page"><FeatureHeader title="Family Chat" description="Keep the family conversation together in one private space." onHome={() => goToTab('home')} /><div className="fc-feature-shell"><div className="fc-panel"><div className="fc-panel-head"><div><small>Family conversation</small><h2>Chat</h2></div><span className="fc-pill">Private family space</span></div><div className="fc-chat-list">{messages.map((message, index) => { const linkedMoneyRequest = message.moneyRequestId ? moneyRequests.find((request) => request.id === message.moneyRequestId) : null; const requester = linkedMoneyRequest ? members.find((member) => member.id === linkedMoneyRequest.requesterId) ?? selectedMember : null; const lender = linkedMoneyRequest?.lenderId ? members.find((member) => member.id === linkedMoneyRequest.lenderId) : null; const unread = isMessageUnread(message.id); const outgoing = message.memberId === selectedMember.id; const previous = messages[index - 1]; const grouped = Boolean(previous && previous.memberId === message.memberId); return <div className={outgoing ? (unread ? "fc-chat-row fc-chat-row-outgoing fc-unread-row" : "fc-chat-row fc-chat-row-outgoing") : (unread ? "fc-chat-row fc-chat-row-incoming fc-unread-row" : "fc-chat-row fc-chat-row-incoming")} key={message.id}><AppAvatar member={members.find((m) => m.id === message.memberId) ?? selectedMember} className={grouped ? "fc-chat-avatar fc-chat-avatar-grouped" : "fc-chat-avatar"} /><div className="fc-chat-bubble"><div className="fc-chat-meta">{!grouped && <strong>{outgoing ? "You" : message.name}</strong>}{unread && <span className="fc-unread-label">NEW</span>}<time>{message.time}</time></div>{linkedMoneyRequest ? <div className="fc-money-chat-card"><div className="fc-money-chat-head"><strong>💷 Money Request</strong><span className={linkedMoneyRequest.status === 'Accepted' ? 'fc-money-chat-status accepted' : 'fc-money-chat-status'}>{linkedMoneyRequest.status === 'Accepted' ? 'Accepted' : 'Awaiting acceptance'}</span></div><strong className="fc-money-chat-amount">£{linkedMoneyRequest.amount}</strong><p>{linkedMoneyRequest.purpose}</p><small>Requested by {requester?.label ?? message.name} · Repayment due {formatLongDate(linkedMoneyRequest.dueDate)}</small>{linkedMoneyRequest.status === 'Accepted' && <small className="fc-money-chat-accepted">✓ Accepted by {lender?.label ?? 'family member'} · Repayment task and calendar event created.</small>}{linkedMoneyRequest.status === 'Pending' && linkedMoneyRequest.requesterId !== selectedMember.id && <button className="fc-money-chat-accept" type="button" onClick={() => acceptMoneyRequest(linkedMoneyRequest.id)}>Accept Request</button>}{linkedMoneyRequest.status === 'Pending' && linkedMoneyRequest.requesterId === selectedMember.id && <small className="fc-money-chat-waiting">Waiting for another family member to accept.</small>}</div> : <><p>{message.text}</p>{message.image && <img src={message.image} alt="Family shared" />}</>}</div></div> })}</div>{pendingChatPhoto && <div className="fc-pending-photo"><img src={pendingChatPhoto} alt="Ready to send" /><button type="button" onClick={() => setPendingChatPhoto(null)}>×</button></div>}<div className="fc-composer"><label className="fc-attach"><input className="fc-hidden" type="file" accept="image/*" onChange={(event) => { const file = event.target.files?.[0]; if (file) stageChatPhoto(file); event.currentTarget.value = '' }} />＋ Photo</label><input value={chatDraft} onChange={(event) => setChatDraft(event.target.value)} onKeyDown={(event) => { if (event.key === 'Enter') sendChatMessage() }} placeholder="Write a family message…" /><button type="button" onClick={sendChatMessage}>Send</button></div></div></div>{renderBottomNav()}</div>
+    return <div className="fc-page"><FeatureHeader title="Family Chat" description="Keep the family conversation together in one private space." onHome={() => goToTab('home')} /><div className="fc-feature-shell">
+      <section className="fc-weekly-awards-panel">
+        <div className="fc-weekly-awards-head"><div><p className="fc-kicker">Every Sunday</p><h2>⭐ Weekly Family Awards</h2></div><span className={isRecognitionVotingOpen() ? 'fc-vote-status open' : 'fc-vote-status'}>{isRecognitionVotingOpen() ? 'Voting open · 5–8 PM' : weeklyRecognition.famTie || weeklyRecognition.clownTie ? 'Tie-breaker in Chat' : 'Voting closed'}</span></div>
+        {isRecognitionVotingOpen() ? <div className="fc-award-vote-grid">
+          <div className="fc-award-vote-card fam"><span>⭐</span><strong>Fam of the Week</strong><small>Choose your family favourite.</small><div className="fc-award-candidates">{members.map(member=><button key={member.id} type="button" className={weeklyRecognition.famVotes[selectedMember.id]===member.id?'selected':''} onClick={()=>castWeeklyVote('fam',member.id)}><AppAvatar member={member}/><span>{member.label}</span>{weeklyRecognition.famVotes[selectedMember.id]===member.id&&<b>✓</b>}</button>)}</div></div>
+          <div className="fc-award-vote-card clown"><span>🤡</span><strong>Clown of the Week</strong><small>Choose this week's chaos champion.</small><div className="fc-award-candidates">{members.map(member=><button key={member.id} type="button" className={weeklyRecognition.clownVotes[selectedMember.id]===member.id?'selected':''} onClick={()=>castWeeklyVote('clown',member.id)}><AppAvatar member={member}/><span>{member.label}</span>{weeklyRecognition.clownVotes[selectedMember.id]===member.id&&<b>✓</b>}</button>)}</div></div>
+        </div> : <div className="fc-award-closed">
+          <div><strong>🔒 The weekly vote is closed.</strong><span>Votes are only counted between 5:00 PM and 8:00 PM on Sunday.</span></div>
+          {weeklyRecognition.famWinner && <div className="fc-award-result fam"><span>⭐</span><div><small>Fam of the Week</small><strong>{members.find(m=>m.id===weeklyRecognition.famWinner)?.label}</strong></div></div>}
+          {weeklyRecognition.clownWinner && <div className="fc-award-result clown"><span>🤡</span><div><small>Clown of the Week</small><strong>{members.find(m=>m.id===weeklyRecognition.clownWinner)?.label}</strong></div></div>}
+          {weeklyRecognition.famTie && <div className="fc-tie-break"><strong>⭐ Fam tie-breaker</strong><p>Make your family case in Chat, then vote for the winner.</p>{weeklyRecognition.famTie.candidates.map(id=>{const member=members.find(m=>m.id===id)!; return <div className="fc-tie-candidate" key={id}><AppAvatar member={member}/><div><strong>{member.label}</strong>{weeklyRecognition.famTie?.statements[id]&&<p>“{weeklyRecognition.famTie.statements[id]}”</p>}{selectedMember.id===id&&<><textarea value={tieStatementDrafts[id]??''} maxLength={240} rows={2} onChange={e=>setTieStatementDrafts(c=>({...c,[id]:e.target.value}))} placeholder="Explain your Family Moment of the Week…" /><button className="fc-outline-button" type="button" onClick={()=>submitTieStatement('fam',id)}>Post my case</button></>}{isRecognitionTieBreakOpen()&&<button className="fc-outline-button" type="button" onClick={()=>castTieBreakVote('fam',id)}>Vote for {member.label}</button>}</div></div>})}</div>}
+          {weeklyRecognition.clownTie && <div className="fc-tie-break"><strong>🤡 Clown tie-breaker</strong><p>Explain your Clown Moment of the Week, then let the family decide.</p>{weeklyRecognition.clownTie.candidates.map(id=>{const member=members.find(m=>m.id===id)!; return <div className="fc-tie-candidate" key={id}><AppAvatar member={member}/><div><strong>{member.label}</strong>{weeklyRecognition.clownTie?.statements[id]&&<p>“{weeklyRecognition.clownTie.statements[id]}”</p>}{selectedMember.id===id&&<><textarea value={tieStatementDrafts[id]??''} maxLength={240} rows={2} onChange={e=>setTieStatementDrafts(c=>({...c,[id]:e.target.value}))} placeholder="Explain your Clown Moment of the Week…" /><button className="fc-outline-button" type="button" onClick={()=>submitTieStatement('clown',id)}>Post my case</button></>}{isRecognitionTieBreakOpen()&&<button className="fc-outline-button" type="button" onClick={()=>castTieBreakVote('clown',id)}>Vote for {member.label}</button>}</div></div>})}</div>}
+        </div>}
+      </section><div className="fc-panel"><div className="fc-panel-head"><div><small>Family conversation</small><h2>Chat</h2></div><span className="fc-pill">Private family space</span></div><div className="fc-chat-list">{messages.map((message, index) => { const linkedMoneyRequest = message.moneyRequestId ? moneyRequests.find((request) => request.id === message.moneyRequestId) : null; const requester = linkedMoneyRequest ? members.find((member) => member.id === linkedMoneyRequest.requesterId) ?? selectedMember : null; const lender = linkedMoneyRequest?.lenderId ? members.find((member) => member.id === linkedMoneyRequest.lenderId) : null; const unread = isMessageUnread(message.id); const outgoing = message.memberId === selectedMember.id; const previous = messages[index - 1]; const grouped = Boolean(previous && previous.memberId === message.memberId); return <div className={outgoing ? (unread ? "fc-chat-row fc-chat-row-outgoing fc-unread-row" : "fc-chat-row fc-chat-row-outgoing") : (unread ? "fc-chat-row fc-chat-row-incoming fc-unread-row" : "fc-chat-row fc-chat-row-incoming")} key={message.id}><AppAvatar member={members.find((m) => m.id === message.memberId) ?? selectedMember} className={grouped ? "fc-chat-avatar fc-chat-avatar-grouped" : "fc-chat-avatar"} /><div className="fc-chat-bubble"><div className="fc-chat-meta">{!grouped && <strong>{outgoing ? "You" : message.name}</strong>}{unread && <span className="fc-unread-label">NEW</span>}<time>{message.time}</time></div>{linkedMoneyRequest ? <div className="fc-money-chat-card"><div className="fc-money-chat-head"><strong>💷 Money Request</strong><span className={linkedMoneyRequest.status === 'Accepted' ? 'fc-money-chat-status accepted' : 'fc-money-chat-status'}>{linkedMoneyRequest.status === 'Accepted' ? 'Accepted' : 'Awaiting acceptance'}</span></div><strong className="fc-money-chat-amount">£{linkedMoneyRequest.amount}</strong><p>{linkedMoneyRequest.purpose}</p><small>Requested by {requester?.label ?? message.name} · Repayment due {formatLongDate(linkedMoneyRequest.dueDate)}</small>{linkedMoneyRequest.status === 'Accepted' && <small className="fc-money-chat-accepted">✓ Accepted by {lender?.label ?? 'family member'} · Repayment task and calendar event created.</small>}{linkedMoneyRequest.status === 'Pending' && linkedMoneyRequest.requesterId !== selectedMember.id && <button className="fc-money-chat-accept" type="button" onClick={() => acceptMoneyRequest(linkedMoneyRequest.id)}>Accept Request</button>}{linkedMoneyRequest.status === 'Pending' && linkedMoneyRequest.requesterId === selectedMember.id && <small className="fc-money-chat-waiting">Waiting for another family member to accept.</small>}</div> : <><p>{message.text}</p>{message.image && <img src={message.image} alt="Family shared" />}</>}</div></div> })}</div>{pendingChatPhoto && <div className="fc-pending-photo"><img src={pendingChatPhoto} alt="Ready to send" /><button type="button" onClick={() => setPendingChatPhoto(null)}>×</button></div>}<div className="fc-composer"><label className="fc-attach"><input className="fc-hidden" type="file" accept="image/*" onChange={(event) => { const file = event.target.files?.[0]; if (file) stageChatPhoto(file); event.currentTarget.value = '' }} />＋ Photo</label><input value={chatDraft} onChange={(event) => setChatDraft(event.target.value)} onKeyDown={(event) => { if (event.key === 'Enter') sendChatMessage() }} placeholder="Write a family message…" /><button type="button" onClick={sendChatMessage}>Send</button></div></div></div>{renderBottomNav()}</div>
   }
   function renderPhotos() {
     return <div className="fc-page"><FeatureHeader title="Recent Photos" description="Photos shared in Family Chat appear here as family memories." onHome={() => goToTab('home')} /><div className="fc-panel"><div className="fc-panel-head"><div><small>Family memories</small><h2>Recent Photos</h2></div><span className="fc-pill">{photos.length} shared</span></div>{photos.length === 0 ? <div className="fc-empty"><span>▧</span><strong>No recent photos yet.</strong><p>Send a photo from Family Chat and it will appear here automatically.</p><button className="fc-primary-button" type="button" onClick={() => goToTab('chat')}>Open Family Chat</button></div> : <div className="fc-photo-grid">{photos.map((photo) => <article key={photo.id}><img src={photo.src} alt={photo.name} /><div><strong>{photo.name}</strong><span>Shared in Family Chat · {photo.time}</span></div></article>)}</div>}</div>{renderBottomNav()}</div>
@@ -966,6 +1100,7 @@ export default function App() {
           <span>✓ Profile saved</span>
           <small>Your profile is now shown as a full profile view.</small>
         </div>
+                <RecognitionProfile member={profileTarget} members={members} />
       </section> : <div className="fc-profile-layout">
         <div className="fc-panel fc-profile-hero">
           <div className="fc-profile-photo-wrap">{isOwn ? <label className="fc-profile-photo-button"><AppAvatar member={{ ...profileTarget, photo: profileTarget.photo }} className="fc-profile-photo" /><span>Change photo</span><input className="fc-hidden" type="file" accept="image/*" onChange={(event) => { const file = event.target.files?.[0]; if (file) uploadProfilePhoto(file); event.currentTarget.value = '' }} /></label> : <AppAvatar member={profileTarget} className="fc-profile-photo" />} {isOwn && profileTarget.photo && <div className="fc-profile-photo-actions"><button className="fc-profile-photo-view-link" type="button" onClick={() => setProfilePhotoViewer(profileTarget.photo!)}>View photo</button><button className="fc-remove-photo" type="button" onClick={removeProfilePhoto}>Remove photo</button></div>}</div>
