@@ -287,6 +287,8 @@ export default function App() {
   const [musicCommunityVisibility, setMusicCommunityVisibility] = useState({ bio:true, likedMusic:true, savedMusic:false, followers:true, allowFollowers:true })
   const [musicCommunityProfileError, setMusicCommunityProfileError] = useState('')
   const [musicCommunityEditing, setMusicCommunityEditing] = useState(false)
+  const [musicCommunityProfileView, setMusicCommunityProfileView] = useState(false)
+  const [musicMiniPlayerVisible, setMusicMiniPlayerVisible] = useState(false)
   const [musicCommunitySettingsOpen, setMusicCommunitySettingsOpen] = useState(false)
   const [musicCommunitySafetyMode, setMusicCommunitySafetyMode] = useState<'block' | 'block-report' | null>(null)
   const [musicCommunitySafetyHandle, setMusicCommunitySafetyHandle] = useState('')
@@ -333,7 +335,7 @@ export default function App() {
 
   function openMusicCommunity() {
     if (!requireAccess('music', 'Music Community')) return
-    setMusicCommunityProfileError(''); setMusicCommunityEditing(false); setMusicCommunitySettingsOpen(false); setMusicCommunitySafetyMode(null); setMusicCommunitySafetyMessage('')
+    setMusicCommunityProfileError(''); setMusicCommunityEditing(false); setMusicCommunitySettingsOpen(false); setMusicCommunitySafetyMode(null); setMusicCommunitySafetyMessage(''); setMusicCommunityProfileView(false)
     const profile=musicCommunityProfiles[selectedMemberId]
     setMusicCommunityDisplayName(profile?.displayName ?? ''); setMusicCommunityHandle(profile?.handle ?? ''); setMusicCommunityBio(profile?.bio ?? ''); setMusicCommunityPhoto(profile?.photo ?? null); setMusicCommunityProfileSongId(profile?.profileSongId ?? null); setMusicCommunityVisibility(profile?.visibility ?? { bio:true, likedMusic:true, savedMusic:false, followers:true, allowFollowers:true })
     setToolMode('musicCommunity'); setActiveTab('home')
@@ -386,6 +388,7 @@ export default function App() {
     if (musicChildMode && !track.kidsAllowed) return
     setMusicCurrentTrack(track)
     setMusicCurrentTime(0)
+    setMusicMiniPlayerVisible(true)
     setMusicPlaying(Boolean(track.audioSrc))
     setMusicRecentlyPlayed((current) => [track.id, ...current.filter((id) => id !== track.id)].slice(0, 8))
   }
@@ -944,9 +947,64 @@ export default function App() {
   }
 
 
+  function renderMusicCommunityProfilePage(profile: MusicCommunityProfile) {
+    const profileSong = profile.profileSongId ? musicLibrary.find((track) => track.id === profile.profileSongId) ?? null : null
+    const creatorTracks = musicLibrary.filter((track) => {
+      const artist = track.artist.toLowerCase().replace(/\s+/g, '')
+      const handle = profile.handle.toLowerCase().replace(/\s+/g, '')
+      const displayName = profile.displayName.toLowerCase().replace(/\s+/g, '')
+      return track.id === profile.profileSongId || artist === handle || artist === displayName
+    })
+    const visibleTracks = creatorTracks.length > 0 ? creatorTracks : profileSong ? [profileSong] : []
+    const playProfileSong = () => {
+      if (!profileSong) return
+      if (musicCurrentTrack?.id === profileSong.id) toggleMusicPlayback()
+      else selectMusicTrack(profileSong)
+    }
+    return <div className="fc-page fc-music-community-profile-page">
+      <header className="fc-music-community-profile-header">
+        <button className="fc-ghost-button" type="button" onClick={() => setMusicCommunityProfileView(false)}>← Music Community</button>
+        <span>Public Music Profile</span>
+      </header>
+      <section className="fc-music-creator-hero">
+        <div className="fc-music-creator-hero-glow" aria-hidden="true" />
+        <div className="fc-music-creator-avatar">{profile.photo ? <img src={profile.photo} alt="" /> : '♫'}</div>
+        <span className="fc-music-community-badge">🎵 Music Creator</span>
+        <h1>{profile.displayName}</h1>
+        <p className="fc-music-creator-handle">@{profile.handle}</p>
+        {profile.visibility.bio && profile.bio && <p className="fc-music-creator-bio">{profile.bio}</p>}
+        <div className="fc-music-creator-stats">
+          {profile.visibility.followers && <span><strong>0</strong> Followers</span>}
+          {profile.visibility.followers && <span><strong>0</strong> Following</span>}
+          <span><strong>{visibleTracks.length}</strong> Releases</span>
+        </div>
+        <div className="fc-music-creator-actions">
+          {profile.visibility.allowFollowers && <button className="fc-primary-button" type="button" onClick={() => {}}>＋ Follow</button>}
+          {profileSong && <button className="fc-ghost-button" type="button" onClick={playProfileSong}>{musicCurrentTrack?.id === profileSong.id && musicPlaying ? 'Ⅱ Pause Profile Song' : '▶ Play Profile Song'}</button>}
+        </div>
+      </section>
+      {profileSong && <section className="fc-music-creator-feature">
+        <button className={'fc-music-creator-record'+(musicCurrentTrack?.id === profileSong.id && musicPlaying ? ' playing' : '')} type="button" onClick={playProfileSong} aria-label="Play profile song">
+          <span>{profileSong.artwork ? <img src={profileSong.artwork} alt="" /> : '♫'}</span>
+        </button>
+        <div><small>FEATURED PROFILE SONG</small><h2>{profileSong.title}</h2><p>{profileSong.artist} · Tap to play</p></div>
+      </section>}
+      <section className="fc-music-creator-releases">
+        <div className="fc-music-community-section-head"><div><small>Music</small><h2>Releases</h2></div><span>{visibleTracks.length} track{visibleTracks.length === 1 ? '' : 's'}</span></div>
+        {visibleTracks.length > 0 ? <div className="fc-music-creator-release-list">{visibleTracks.map((track) => <article className="fc-music-creator-release" key={track.id}>
+          <button className="fc-music-creator-release-art" type="button" onClick={() => selectMusicTrack(track)}>{track.artwork ? <img src={track.artwork} alt="" /> : <span>♫</span>}<b>{musicCurrentTrack?.id === track.id && musicPlaying ? 'Ⅱ' : '▶'}</b></button>
+          <div><small>{track.genres.join(' · ')}</small><strong>{track.title}</strong><span>{track.artist}</span></div>
+        </article>)}</div> : <div className="fc-music-creator-empty">This creator hasn't published any releases yet.</div>}
+      </section>
+      {profile.visibility.likedMusic && <section className="fc-music-creator-placeholder"><span>♡</span><div><strong>Liked Music</strong><small>Liked tracks will appear here when this creator has music to share.</small></div></section>}
+      <button className="fc-music-community-exit" type="button" onClick={() => setMusicCommunityProfileView(false)}>← Back to Music Community</button>
+    </div>
+  }
+
   function renderMusicCommunity() {
     const musicCommunityProfile=musicCommunityProfiles[selectedMemberId] ?? null
     const setupComplete=Boolean(musicCommunityProfile), communityTracks=musicLibrary, current=musicCurrentTrack
+    if (musicCommunityProfileView && musicCommunityProfile) return renderMusicCommunityProfilePage(musicCommunityProfile)
     const profileSong=musicCommunityProfile?.profileSongId ? musicLibrary.find((track)=>track.id===musicCommunityProfile.profileSongId) ?? null : null
     const uploadsRemaining=Math.max(0,subscription.monthlyPublishAllowance-subscription.monthlyPublishedTracks)
     const toggleProfileSong=()=>{if(!profileSong)return;if(current?.id===profileSong.id){toggleMusicPlayback();return}selectMusicTrack(profileSong)}
@@ -958,8 +1016,11 @@ export default function App() {
         <label><span>Public display name *</span><input value={musicCommunityDisplayName} onChange={(event)=>setMusicCommunityDisplayName(event.target.value)} placeholder="e.g. BradyXAi" maxLength={40}/></label><label><span>@Handle *</span><input value={musicCommunityHandle} onChange={(event)=>setMusicCommunityHandle(event.target.value.replace(/\s/g,''))} placeholder="e.g. bradyxai" maxLength={24}/></label><label><span>Short bio</span><textarea value={musicCommunityBio} onChange={(event)=>setMusicCommunityBio(event.target.value)} placeholder="Tell listeners what you make." maxLength={160} rows={3}/></label>
       </div>{musicCommunityProfileError&&<p className="fc-error">{musicCommunityProfileError}</p>}<button className="fc-primary-button fc-music-community-create" type="button" onClick={createMusicCommunityProfile}>Create Music Profile →</button><small className="fc-music-community-privacy">Your Family Circle name, family members, location and private family details are not shown here.</small></section> : <>
         <section className="fc-music-community-profile-shell">
-          <div className="fc-music-community-profile-strip"><div className="fc-music-community-avatar">{musicCommunityProfile?.photo?<img src={musicCommunityProfile.photo} alt=""/>:'♫'}</div><div><small>Music Creator</small><strong>{musicCommunityProfile?.displayName}</strong><span>@{musicCommunityProfile?.handle}{musicCommunityProfile?.visibility.bio&&musicCommunityProfile?.bio?' · '+musicCommunityProfile.bio:''}</span></div><div className="fc-music-community-profile-actions"><button className="fc-ghost-button" type="button" onClick={()=>{setMusicCommunityEditing(true);setMusicCommunitySettingsOpen(false)}}>Edit Profile</button><button className="fc-ghost-button" type="button" onClick={()=>{setMusicCommunitySettingsOpen(true);setMusicCommunityEditing(false)}}>⚙ Profile Settings</button></div></div>
-          {musicCommunityEditing&&<section className="fc-music-community-editor"><div className="fc-music-community-subhead"><div><small>Music Profile</small><h2>Edit Profile</h2></div><button className="fc-ghost-button" type="button" onClick={()=>setMusicCommunityEditing(false)}>← Back to profile</button></div><div className="fc-music-community-form"><label><span>Profile picture</span><input className="fc-music-community-file" type="file" accept="image/*" onChange={(event)=>{const file=event.target.files?.[0];if(file)handleMusicCommunityPhoto(file)}}/></label>{musicCommunityPhoto&&<div className="fc-music-community-photo-preview"><img src={musicCommunityPhoto} alt="Music profile preview"/><button className="fc-ghost-button" type="button" onClick={()=>setMusicCommunityPhoto(null)}>Remove picture</button></div>}<label><span>Public display name *</span><input value={musicCommunityDisplayName} onChange={(event)=>setMusicCommunityDisplayName(event.target.value)} maxLength={40}/></label><label><span>@Handle *</span><input value={musicCommunityHandle} onChange={(event)=>setMusicCommunityHandle(event.target.value.replace(/\s/g,''))} maxLength={24}/></label><label><span>Short bio</span><textarea value={musicCommunityBio} onChange={(event)=>setMusicCommunityBio(event.target.value)} maxLength={160} rows={3}/></label></div>{musicCommunityProfileError&&<p className="fc-error">{musicCommunityProfileError}</p>}<button className="fc-primary-button" type="button" onClick={saveMusicCommunityProfile}>Save Profile</button></section>}
+          <button className="fc-music-community-profile-hero-card" type="button" onClick={() => setMusicCommunityProfileView(true)}>
+            <div className="fc-music-community-profile-hero-art"><div className="fc-music-community-avatar">{musicCommunityProfile?.photo?<img src={musicCommunityProfile.photo} alt=""/>:'♫'}</div></div>
+            <div className="fc-music-community-profile-hero-copy"><span>🎵 MUSIC CREATOR</span><strong>{musicCommunityProfile?.displayName}</strong><small>@{musicCommunityProfile?.handle}</small>{musicCommunityProfile?.visibility.bio&&musicCommunityProfile?.bio&&<p>{musicCommunityProfile.bio}</p>}<b>View Music Profile →</b></div>
+          </button>
+          <div className="fc-music-community-profile-actions"><button className="fc-ghost-button" type="button" onClick={()=>{setMusicCommunityEditing(true);setMusicCommunitySettingsOpen(false)}}>Edit Profile</button><button className="fc-ghost-button" type="button" onClick={()=>{setMusicCommunitySettingsOpen(true);setMusicCommunityEditing(false)}}>⚙ Profile Settings</button></div>          {musicCommunityEditing&&<section className="fc-music-community-editor"><div className="fc-music-community-subhead"><div><small>Music Profile</small><h2>Edit Profile</h2></div><button className="fc-ghost-button" type="button" onClick={()=>setMusicCommunityEditing(false)}>← Back to profile</button></div><div className="fc-music-community-form"><label><span>Profile picture</span><input className="fc-music-community-file" type="file" accept="image/*" onChange={(event)=>{const file=event.target.files?.[0];if(file)handleMusicCommunityPhoto(file)}}/></label>{musicCommunityPhoto&&<div className="fc-music-community-photo-preview"><img src={musicCommunityPhoto} alt="Music profile preview"/><button className="fc-ghost-button" type="button" onClick={()=>setMusicCommunityPhoto(null)}>Remove picture</button></div>}<label><span>Public display name *</span><input value={musicCommunityDisplayName} onChange={(event)=>setMusicCommunityDisplayName(event.target.value)} maxLength={40}/></label><label><span>@Handle *</span><input value={musicCommunityHandle} onChange={(event)=>setMusicCommunityHandle(event.target.value.replace(/\s/g,''))} maxLength={24}/></label><label><span>Short bio</span><textarea value={musicCommunityBio} onChange={(event)=>setMusicCommunityBio(event.target.value)} maxLength={160} rows={3}/></label></div>{musicCommunityProfileError&&<p className="fc-error">{musicCommunityProfileError}</p>}<button className="fc-primary-button" type="button" onClick={saveMusicCommunityProfile}>Save Profile</button></section>}
           {musicCommunitySettingsOpen&&<section className="fc-music-community-settings"><div className="fc-music-community-subhead"><div><small>Music Profile</small><h2>Profile Settings</h2></div><button className="fc-ghost-button" type="button" onClick={()=>setMusicCommunitySettingsOpen(false)}>← Back to profile</button></div><div className="fc-music-community-settings-grid">
             <div className="fc-music-community-setting-card"><div><span>🎵 Profile Song</span><strong>Choose the song shown on your profile</strong><small>It never autoplays. Tap the record on your profile whenever you want to listen.</small></div><select value={musicCommunityProfileSongId??''} onChange={(event)=>setMusicCommunityProfileSongId(event.target.value||null)}><option value="">No profile song</option>{musicLibrary.map((track)=><option value={track.id} key={track.id}>{track.title} · {track.artist}</option>)}</select></div>
             <div className="fc-music-community-setting-card"><div><span>👁 Visibility</span><strong>Choose what other people can see</strong></div>{(['bio','likedMusic','savedMusic','followers','allowFollowers'] as const).map((key)=><label className="fc-music-community-toggle" key={key}><input type="checkbox" checked={musicCommunityVisibility[key]} onChange={(event)=>setMusicCommunityVisibility((value)=>({...value,[key]:event.target.checked}))}/><span>{key==='bio'?'Show my bio':key==='likedMusic'?'Show liked music':key==='savedMusic'?'Show saved music':key==='followers'?'Show followers/following':'Allow people to follow me'}</span></label>)}</div>
@@ -970,9 +1031,7 @@ export default function App() {
         <nav className="fc-music-community-tabs" aria-label="Music Community sections"><button className="active" type="button">✨ Discover</button><button type="button">🆕 New Releases</button><button type="button">♡ Following</button><button type="button">🎹 Instrumentals</button></nav>
         <section className="fc-music-community-filters">{['All','R&B','Hip-Hop','Pop','Rock','Electronic','AI Music','Instrumental','Other'].map((genre)=><button type="button" key={genre} className={genre==='All'?'active':''}>{genre}</button>)}</section>
         <section className="fc-music-community-featured"><div className="fc-music-community-section-head"><div><small>Discover New Music</small><h2>Made inside the Family Circle universe</h2></div><span>{communityTracks.length} demo tracks</span></div><div className="fc-music-community-track-grid">{communityTracks.map((track)=><article className={'fc-community-track-card'+(current?.id===track.id?' active':'')} key={track.id}><button className="fc-community-track-art" type="button" onClick={()=>selectMusicTrack(track)} aria-label={'Play '+track.title}>{track.artwork?<img src={track.artwork} alt=""/>:<div className={'fc-home-music-equalizer style-'+track.visualStyle}>{Array.from({length:9},(_,index)=><i key={index}/>)}</div>}<span>{current?.id===track.id&&musicPlaying?'Ⅱ':'▶'}</span></button><div className="fc-community-track-copy"><small>{track.genres.join(' · ')}</small><strong>{track.title}</strong><span>{track.artist}</span></div><div className="fc-community-track-actions"><button type="button" aria-label="Like">♡</button><button type="button" aria-label="Comments">💬</button><button type="button" aria-label="Save">＋</button><button type="button" aria-label="Share">↗</button></div></article>)}</div></section>
-        {current&&<section className="fc-music-community-now-playing"><span>Now playing</span><strong>{current.title}</strong><small>{current.artist}</small><button className="fc-music-mini-control fc-music-mini-play" type="button" onClick={toggleMusicPlayback}>{musicPlaying?'Ⅱ':'▶'}</button><button className="fc-ghost-button" type="button" onClick={openMusic}>Open full player</button></section>}
       </>}
-      {renderBottomNav()}
     </div>
   }
   function renderMusic() {
@@ -1043,7 +1102,14 @@ export default function App() {
 
   {accessNotice && <div className="fc-modal-backdrop" onMouseDown={() => setAccessNotice(null)}><section className="fc-access-modal" onMouseDown={(event) => event.stopPropagation()}><button className="fc-modal-close" type="button" onClick={() => setAccessNotice(null)}>×</button><div className="fc-access-modal-icon">{accessNotice.action === 'upgrade' ? '⭐' : accessNotice.action === 'child' ? '😄' : '🔒'}</div><p className="fc-kicker">Family Circle</p><h2>{accessNotice.title}</h2><p className="fc-muted">{accessNotice.message}</p>{accessNotice.action === 'restriction' && <p className="fc-access-modal-note">Ask your Family Moderator to remove the restriction.</p>}{accessNotice.action === 'upgrade' && <p className="fc-access-modal-note">Upgrade your account to unlock this feature.</p>}{accessNotice.action === 'child' && <p className="fc-access-modal-note">Not quite — this one is keeping the grown-ups out. 😄</p>}<button className="fc-primary-button" type="button" onClick={() => setAccessNotice(null)}>{accessNotice.action === 'upgrade' ? 'View Plans' : 'Got it'}</button></section></div>}
 
-  return <main className="fc-app-shell fc-home-screen"><div className="fc-home-shell"><audio ref={musicAudioRef} onTimeUpdate={(event) => setMusicCurrentTime(event.currentTarget.currentTime)} onLoadedMetadata={(event) => setMusicDuration(event.currentTarget.duration)} onPlay={() => setMusicPlaying(true)} onPause={() => setMusicPlaying(false)} onEnded={handleMusicEnded} preload="metadata" />{renderActive()}{musicCurrentTrack && <div className="fc-music-mini-player"><button className={`fc-music-mini-art${musicCurrentTrack.artwork ? ' fc-music-mini-artwork' : ` fc-music-mini-visual style-${musicCurrentTrack.visualStyle}`}`} type="button" onClick={openMusic} aria-label="Open Music player">{musicCurrentTrack.artwork ? <img src={musicCurrentTrack.artwork} alt="" /> : [0,1,2,3,4].map((index) => <i key={index} />)}</button><button className="fc-music-mini-copy" type="button" onClick={openMusic}><strong>{musicCurrentTrack.title}</strong><small>{musicCurrentTrack.artist}</small></button><button className="fc-music-mini-control" type="button" onClick={() => { const list = musicVisibleTracks(); const index = list.findIndex((track) => track.id === musicCurrentTrack.id); if (index >= 0 && list.length > 1) selectMusicTrack(list[(index - 1 + list.length) % list.length]) }} aria-label="Previous track">◀</button><button className="fc-music-mini-control fc-music-mini-play" type="button" onClick={toggleMusicPlayback} aria-label={musicPlaying ? 'Pause music' : 'Play music'}>{musicPlaying ? 'Ⅱ' : '▶'}</button><button className="fc-music-mini-control" type="button" onClick={() => { const list = musicVisibleTracks(); const index = list.findIndex((track) => track.id === musicCurrentTrack.id); if (index >= 0 && list.length > 1) selectMusicTrack(list[(index + 1) % list.length]) }} aria-label="Next track">▶</button><button className="fc-music-mini-chevron" type="button" onClick={openMusic} aria-label="Expand Music player">⌃</button></div>}</div></main>
+  return <main className="fc-app-shell fc-home-screen"><div className="fc-home-shell"><audio ref={musicAudioRef} onTimeUpdate={(event) => setMusicCurrentTime(event.currentTarget.currentTime)} onLoadedMetadata={(event) => setMusicDuration(event.currentTarget.duration)} onPlay={() => setMusicPlaying(true)} onPause={() => setMusicPlaying(false)} onEnded={handleMusicEnded} preload="metadata" />{renderActive()}{musicCurrentTrack && musicMiniPlayerVisible && <div className="fc-music-mini-player">
+        <div className={"fc-music-mini-art" + (musicCurrentTrack.artwork ? " fc-music-mini-artwork" : " fc-music-mini-visual style-" + musicCurrentTrack.visualStyle)}>{musicCurrentTrack.artwork ? <img src={musicCurrentTrack.artwork} alt="" /> : [0,1,2,3,4].map((index) => <i key={index} />)}</div>
+        <div className="fc-music-mini-copy"><strong>{musicCurrentTrack.title}</strong><small>{musicCurrentTrack.artist}</small></div>
+        <button className="fc-music-mini-control" type="button" onClick={() => { const list = musicVisibleTracks(); const index = list.findIndex((track) => track.id === musicCurrentTrack.id); if (index >= 0 && list.length > 1) selectMusicTrack(list[(index - 1 + list.length) % list.length]) }} aria-label="Previous track">◀</button>
+        <button className="fc-music-mini-control fc-music-mini-play" type="button" onClick={toggleMusicPlayback} aria-label={musicPlaying ? "Pause music" : "Play music"}>{musicPlaying ? "Ⅱ" : "▶"}</button>
+        <button className="fc-music-mini-control" type="button" onClick={() => { const list = musicVisibleTracks(); const index = list.findIndex((track) => track.id === musicCurrentTrack.id); if (index >= 0 && list.length > 1) selectMusicTrack(list[(index + 1) % list.length]) }} aria-label="Next track">▶</button>
+        <button className="fc-music-mini-close" type="button" onClick={() => setMusicMiniPlayerVisible(false)} aria-label="Dismiss music player">×</button>
+      </div>}}</div></main>
 }
 
 function formatMusicTime(seconds: number) {
