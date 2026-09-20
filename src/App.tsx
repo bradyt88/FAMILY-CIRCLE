@@ -635,19 +635,12 @@ export default function App() {
         </button>
       </section>
 
-      <section className="fc-quick-grid" aria-label="Family shortcuts">{[
-        { label: 'Chat', desc: 'Message the family', icon: '◌', tone: 'cyan', action: () => goToTab('chat') },
-        { label: 'Photos', desc: 'Our memories together', icon: '▧', tone: 'purple', action: () => goToTab('photos') },
-        { label: 'Weekly Shop', desc: 'Add items to the family shop', icon: '🛒', tone: 'shopping', action: () => goToTab('shopping') },
-        { label: 'Tasks', desc: 'Jobs & responsibilities', icon: '✓', tone: 'green', action: () => goToTab('tasks') },
-        { label: 'Calendar', desc: 'Events & plans', icon: '▦', tone: 'magenta', action: () => goToTab('calendar') },
-      ].map((item) => <button className={`fc-quick-tile ${item.tone}${(item.label === 'Chat' && !hasChildAccess('chat')) || (item.label === 'Photos' && !hasChildAccess('photos')) || (item.label === 'Tasks' && !hasChildAccess('tasks')) || (item.label === 'Calendar' && !hasChildAccess('tasks')) ? ' fc-quick-tile-locked' : ''`} type="button" key={item.label} onClick={item.action}><span>{item.icon}</span><strong>{item.label}</strong><small>{item.desc}</small></button>)}</section>
-
-      <section className="fc-feature-grid">
-        <button className={`fc-feature-card map-card${!hasChildAccess('location') ? ' fc-feature-card-locked' : ''}`} type="button" onClick={() => openTool('map')}><span className="fc-feature-icon">📍</span><div><small>Family location</small><strong>Where Is Everyone?</strong><span>{sharedMembers.length} family member{sharedMembers.length === 1 ? '' : 's'} sharing location</span></div><b>→</b></button>
-        <button className="fc-feature-card members-card" type="button" onClick={() => openTool('family')}><span className="fc-feature-icon">👨‍👩‍👧‍👦</span><div><small>Your family</small><strong>Family Members</strong><span>View the family tree and profiles.</span></div><b>→</b></button>
-        <button className={`fc-feature-card games-card${!hasChildAccess('games') ? ' fc-feature-card-locked' : ''}`} type="button" onClick={() => openTool('games')}><span className="fc-feature-icon">🎮</span><div><small>Fun together</small><strong>Challenge a Family Member</strong><span>Games hub coming soon.</span></div><b>→</b></button>
-        <button className={`fc-feature-card music-card${!hasChildAccess('music') ? ' fc-feature-card-locked' : ''}`} type="button" onClick={openMusic}><span className="fc-feature-icon">♫</span><div><small>Family Circle Music</small><strong>Music for the family</strong><span>Original music, playlists and more.</span></div><b>→</b></button>
+      <section className="fc-quick-grid" aria-label="Family shortcuts">
+        <button className={`fc-quick-tile cyan${!hasChildAccess('chat') ? ' fc-quick-tile-locked' : ''}`} type="button" onClick={() => goToTab('chat')}><span>◌</span><strong>Chat</strong><small>Message the family</small></button>
+        <button className={`fc-quick-tile purple${!hasChildAccess('photos') ? ' fc-quick-tile-locked' : ''}`} type="button" onClick={() => goToTab('photos')}><span>▧</span><strong>Photos</strong><small>Our memories together</small></button>
+        <button className="fc-quick-tile shopping" type="button" onClick={() => goToTab('shopping')}><span>🛒</span><strong>Weekly Shop</strong><small>Add items to the family shop</small></button>
+        <button className={`fc-quick-tile green${!hasChildAccess('tasks') ? ' fc-quick-tile-locked' : ''}`} type="button" onClick={() => goToTab('tasks')}><span>✓</span><strong>Tasks</strong><small>Jobs &amp; responsibilities</small></button>
+        <button className={`fc-quick-tile magenta${!hasChildAccess('tasks') ? ' fc-quick-tile-locked' : ''}`} type="button" onClick={() => goToTab('calendar')}><span>▦</span><strong>Calendar</strong><small>Events &amp; plans</small></button>
       </section>
 
       {renderBottomNav()}
