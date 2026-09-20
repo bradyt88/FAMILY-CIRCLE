@@ -6,7 +6,6 @@ import './batch15.css'
 type ToolMode = 'emergency' | 'profile' | 'family' | 'games' | 'notifications' | 'settings' | 'map' | 'music'
 type HomeTab = 'home' | 'chat' | 'photos' | 'calendar' | 'tasks' | 'shopping'
 type AccountType = 'adult' | 'child'
-type Plan = 'free' | 'plus' | 'premium'
 type ChildPermissionKey = 'chat' | 'tasks' | 'photos' | 'games' | 'music' | 'youtube' | 'globalMultiplayer' | 'location'
 type ChildPermissions = Record<ChildPermissionKey, boolean>
 
@@ -173,7 +172,6 @@ export default function App() {
   const [showOnboarding, setShowOnboarding] = useState(true)
   const [onboardingView, setOnboardingView] = useState<'splash' | 'families'>('splash')
   const [accountType, setAccountType] = useState<AccountType>('adult')
-  const [accountPlan, setAccountPlan] = useState<Plan>('free')
   const [childPermissions, setChildPermissions] = useState<ChildPermissions>({ chat: true, tasks: true, photos: true, games: true, music: true, youtube: false, globalMultiplayer: false, location: true })
   const [accessNotice, setAccessNotice] = useState<{ title: string; message: string; action: 'restriction' | 'upgrade' | 'child' } | null>(null)
   const [screen, setScreen] = useState<'members' | 'home'>('members')
@@ -315,7 +313,6 @@ export default function App() {
 
   function completeOnboarding(_family: { id: string; name: string }, setup: { accountType: AccountType; plan: Plan; childPermissions: ChildPermissions }) {
     setAccountType(setup.accountType)
-    setAccountPlan(setup.plan)
     setChildPermissions(setup.childPermissions)
     setShowOnboarding(false)
     setOnboardingView('families')
