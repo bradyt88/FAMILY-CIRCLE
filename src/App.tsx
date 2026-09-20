@@ -140,6 +140,9 @@ function persistNotificationPreferences(value: NotificationPreferences) {
   localStorage.setItem('family-circle-notification-preferences', JSON.stringify(value))
 }
 
+const DEMO_WEEKLY_RECOGNITION_ENABLED = true
+const DEMO_WEEKLY_RECOGNITION_NOTE = 'DEMO DATA — remove this block before production.'
+
 function recognitionWeekKey(now = new Date()) {
   const date = new Date(now)
   const day = date.getDay()
@@ -153,23 +156,30 @@ function isRecognitionTieBreakOpen(now = new Date()) { return now.getDay() === 0
 function emptyWeeklyRecognition(weekKey: string): WeeklyRecognition { return { weekKey, famVotes: {}, clownVotes: {}, famWinner: null, clownWinner: null, famTie: null, clownTie: null, famAnnounced: false, clownAnnounced: false } }
 function loadWeeklyRecognition(): WeeklyRecognition {
   const key = 'family-circle-weekly-recognition'
+  const weekKey = recognitionWeekKey()
   try {
     const saved = localStorage.getItem(key)
     const parsed = saved ? JSON.parse(saved) as Partial<WeeklyRecognition> : null
-    const weekKey = recognitionWeekKey()
-    if (!parsed || parsed.weekKey !== weekKey) return emptyWeeklyRecognition(weekKey)
-    return { ...emptyWeeklyRecognition(weekKey), ...parsed, famVotes: parsed.famVotes ?? {}, clownVotes: parsed.clownVotes ?? {}, famTie: parsed.famTie ?? null, clownTie: parsed.clownTie ?? null }
-  } catch { return emptyWeeklyRecognition(recognitionWeekKey()) }
+    if (parsed && parsed.weekKey === weekKey) return { ...emptyWeeklyRecognition(weekKey), ...parsed, famVotes: parsed.famVotes ?? {}, clownVotes: parsed.clownVotes ?? {}, famTie: parsed.famTie ?? null, clownTie: parsed.clownTie ?? null }
+  } catch {}
+  if (DEMO_WEEKLY_RECOGNITION_ENABLED) return { ...emptyWeeklyRecognition(weekKey), famVotes: { 'member-1': 'member-1', 'member-2': 'member-1', 'member-3': 'member-1' }, clownVotes: { 'member-1': 'member-2', 'member-2': 'member-2', 'member-3': 'member-2' }, famWinner: 'member-1', clownWinner: 'member-2', famAnnounced: true, clownAnnounced: true }
+  return emptyWeeklyRecognition(weekKey)
 }
 function persistWeeklyRecognition(value: WeeklyRecognition) { localStorage.setItem('family-circle-weekly-recognition', JSON.stringify(value)) }
 
 function loadMembers() {
+  const demoRecognition: Record<string, MemberRecognition> = {
+    'member-1': { famOfWeekWins: 2, clownOfWeekWins: 0, weeklyAwards: [{ weekKey: 'demo-1', type: 'fam' }, { weekKey: 'demo-current', type: 'fam' }] },
+    'member-2': { famOfWeekWins: 2, clownOfWeekWins: 2, weeklyAwards: [{ weekKey: 'demo-2', type: 'fam' }, { weekKey: 'demo-4', type: 'fam' }, { weekKey: 'demo-current', type: 'clown' }, { weekKey: 'demo-3', type: 'clown' }] },
+    'member-3': { famOfWeekWins: 2, clownOfWeekWins: 0, weeklyAwards: [{ weekKey: 'demo-5', type: 'fam' }, { weekKey: 'demo-6', type: 'fam' }] },
+  }
   return memberSeeds.map((member) => {
     try {
       const saved = localStorage.getItem(`family-circle-member-${member.id}`)
-      return saved ? { ...member, ...JSON.parse(saved) as Partial<FamilyMember> } : member
+      if (!saved) return DEMO_WEEKLY_RECOGNITION_ENABLED ? { ...member, recognition: demoRecognition[member.id] ?? member.recognition } : member
+      return { ...member, ...JSON.parse(saved) as Partial<FamilyMember> }
     } catch {
-      return member
+      return DEMO_WEEKLY_RECOGNITION_ENABLED ? { ...member, recognition: demoRecognition[member.id] ?? member.recognition } : member
     }
   })
 }
@@ -262,11 +272,65 @@ function recognitionStatus(member: FamilyMember) {
   return 'Family Member'
 }
 function memberRecognitionSafe(member: FamilyMember): MemberRecognition { return member.recognition ?? { famOfWeekWins: 0, clownOfWeekWins: 0, weeklyAwards: [] } }
-function RecognitionProfile({ member }: { member: FamilyMember; members: FamilyMember[] }) {
-  const recognition=memberRecognitionSafe(member), stars=Math.min(20,recognition.famOfWeekWins)
-  return <section className="fc-recognition-panel"><div className="fc-recognition-head"><div><p className="fc-kicker">Weekly recognition</p><h2>⭐ My Family Star Chart</h2></div><span className="fc-recognition-status">{recognitionStatus(member)}</span></div><div className="fc-star-chart" aria-label={`${recognition.famOfWeekWins} Fam of the Week wins`}>{Array.from({length:20},(_,i)=><span key={i} className={i<stars?'earned':''}>★</span>)}</div><div className="fc-recognition-stats"><span>⭐ <b>{recognition.famOfWeekWins}</b> Fam wins</span><span>🤡 <b>{recognition.clownOfWeekWins}</b> Clown wins</span></div><small>20 Fam of the Week wins unlocks Royalty.</small></section>
+function RecognitionProfile({ member, members }: { member: FamilyMember; members: FamilyMember[] }) {
+  const recognition = memberRecognitionSafe(member)
+  const [calendarOpen, setCalendarOpen] = useState(false)
+  const [selectedWeek, setSelectedWeek] = useState('')
+  const [noteDraft, setNoteDraft] = useState('')
+  const [notes, setNotes] = useState<Record<string, string>>(() => {
+    try { return JSON.parse(localStorage.getItem(`family-circle-star-notes-${member.id}`) || '{}') as Record<string, string> } catch { return {} }
+  })
+  const stars = Math.min(20, recognition.famOfWeekWins)
+  const today = new Date()
+  const currentSunday = new Date(today)
+  currentSunday.setDate(today.getDate() - today.getDay())
+  const weeks = Array.from({ length: 6 }, (_, index) => {
+    const date = new Date(currentSunday)
+    date.setDate(currentSunday.getDate() - (5 - index) * 7)
+    return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`
+  })
+  const demoResults: Record<string, { fam?: string; clown?: string }> = {
+    [weeks[0]]: { fam: 'member-2' }, [weeks[1]]: { fam: 'member-3' },
+    [weeks[2]]: { fam: 'member-1', clown: 'member-2' }, [weeks[3]]: { fam: 'member-3', clown: 'member-1' },
+    [weeks[4]]: { fam: 'member-2', clown: 'member-3' }, [weeks[5]]: { fam: 'member-1', clown: 'member-2' },
+  }
+  const memberName = (id?: string) => members.find((item) => item.id === id)?.label ?? 'Family member'
+  const weekLabel = (week: string) => {
+    const [year, month, day] = week.split('-').map(Number)
+    return new Intl.DateTimeFormat('en-GB', { day: 'numeric', month: 'short' }).format(new Date(year, month - 1, day))
+  }
+  const openWeek = (week: string) => { setSelectedWeek(week); setNoteDraft(notes[week] ?? ''); setCalendarOpen(true) }
+  const saveNotes = (next: Record<string, string>) => { setNotes(next); localStorage.setItem(`family-circle-star-notes-${member.id}`, JSON.stringify(next)) }
+  const saveWeekNote = () => {
+    if (!selectedWeek) return
+    const next = { ...notes }
+    if (noteDraft.trim()) next[selectedWeek] = noteDraft.trim().slice(0, 180)
+    else delete next[selectedWeek]
+    saveNotes(next)
+  }
+  const clearWeekNote = () => {
+    if (!selectedWeek) return
+    const next = { ...notes }; delete next[selectedWeek]; saveNotes(next); setNoteDraft('')
+  }
+  return <section className="fc-recognition-panel">
+    <div className="fc-recognition-head"><div><p className="fc-kicker">Personal space</p><h2>⭐ My Family Star Chart</h2><small>Weekly family recognition, with your own private notes.</small></div><span className="fc-recognition-status">{recognitionStatus(member)}</span></div>
+    <button className="fc-star-chart-preview" type="button" onClick={() => openWeek(weeks[5])} aria-label="Open your family star chart">
+      <div className="fc-star-chart-grid">{weeks.map((week) => { const result = demoResults[week] ?? {}; const earned = result.fam === member.id; return <span className={`fc-star-week ${earned ? 'earned' : ''}`} key={week}><small>{weekLabel(week)}</small><b>{earned ? '★' : result.fam ? '☆' : '·'}</b>{result.clown === member.id && <i>🤡</i>}{notes[week] && <em>note</em>}</span> })}</div>
+      <span className="fc-star-chart-open">Open personal calendar →</span>
+    </button>
+    <div className="fc-recognition-stats"><span>⭐ <b>{recognition.famOfWeekWins}</b> Fam wins</span><span>🤡 <b>{recognition.clownOfWeekWins}</b> Clown wins</span></div>
+    <div className="fc-recognition-progress"><span style={{ width: `${Math.min(100, stars / 20 * 100)}%` }} /></div>
+    <small>20 Fam of the Week wins unlocks Royalty.</small>
+    {calendarOpen && <div className="fc-star-calendar-backdrop" role="dialog" aria-modal="true" aria-label="Personal star chart calendar" onMouseDown={() => setCalendarOpen(false)}>
+      <section className="fc-star-calendar-modal" onMouseDown={(event) => event.stopPropagation()}>
+        <button className="fc-star-calendar-close" type="button" onClick={() => setCalendarOpen(false)} aria-label="Close star chart">×</button>
+        <div className="fc-star-calendar-head"><div><p className="fc-kicker">Personal calendar</p><h2>⭐ My Family Star Chart</h2><p>Family awards are shared. Your notes are private to you.</p></div><span>{recognition.famOfWeekWins} ⭐</span></div>
+        <div className="fc-star-calendar-grid">{weeks.map((week) => { const result = demoResults[week] ?? {}; return <button type="button" className={`fc-star-calendar-cell${result.fam === member.id ? ' fam-earned' : ''}${result.clown === member.id ? ' clown-earned' : ''}`} key={week} onClick={() => openWeek(week)}><small>Sunday · {weekLabel(week)}</small><strong>{result.fam === member.id ? '⭐ Fam of the Day' : result.fam ? `⭐ ${memberName(result.fam)}` : 'No award yet'}</strong>{result.clown && <span>🤡 {result.clown === member.id ? 'Clown of the Day' : memberName(result.clown)}</span>}{notes[week] && <em>📝 {notes[week]}</em>}</button> })}</div>
+        <div className="fc-star-note-editor"><div><small>Private note</small><strong>{selectedWeek ? `Notes for Sunday · ${weekLabel(selectedWeek)}` : 'Choose a week above'}</strong></div><textarea value={noteDraft} maxLength={180} rows={3} onChange={(event) => setNoteDraft(event.target.value)} placeholder="e.g. Great week with the family…" /><div className="fc-star-note-actions"><span>{noteDraft.length}/180 · only you can see this</span><button className="fc-primary-button" type="button" onClick={saveWeekNote} disabled={!selectedWeek}>Save note</button><button className="fc-ghost-button" type="button" onClick={clearWeekNote} disabled={!selectedWeek}>Delete note</button></div></div>
+      </section>
+    </div>}
+  </section>
 }
-
 function FeatureHeader({ title, description, onHome }: { title: string; description: string; onHome: () => void }) {
   const accent = title.includes('Emergency') ? 'emergency' : title.includes('Shopping') || title.includes('Weekly Shop') ? 'shopping' : title.includes('Chat') ? 'pink' : title.includes('Calendar') ? 'purple' : title.includes('Tasks') ? 'green' : title.includes('Photos') ? 'cyan' : title.includes('Where Is') ? 'cyan' : title.includes('Family Members') ? 'purple' : 'purple'
   return <div className={`fc-feature-header ${accent}`}><div><p className="fc-kicker">Family Circle</p><h1>{title}</h1><p className="fc-muted">{description}</p></div><button className="fc-ghost-button" type="button" onClick={onHome}>← Home</button></div>
@@ -688,8 +752,13 @@ export default function App() {
 
   function saveProfile() {
     const bio = profileBio.trim().slice(0, 100)
-    const updated = { ...profileTarget, bio, socials: profileSocials }
+    const latest = members.find((member) => member.id === profileTarget.id) ?? profileTarget
+    const updated = { ...latest, bio, status: profileStatus, socials: { ...profileSocials } }
     persistMember(updated)
+    setProfileTargetId(updated.id)
+    setProfileBio(updated.bio)
+    setProfileStatus(updated.status)
+    setProfileSocials(updated.socials)
     setProfileMessage('Profile details saved.')
     setProfileSavedView(true)
   }
@@ -949,6 +1018,14 @@ export default function App() {
 
   function renderChat() {
     return <div className="fc-page"><FeatureHeader title="Family Chat" description="Keep the family conversation together in one private space." onHome={() => goToTab('home')} /><div className="fc-feature-shell">
+      {DEMO_WEEKLY_RECOGNITION_ENABLED && <article className="fc-demo-vote-message">
+        <div className="fc-demo-vote-badge">🗳️</div>
+        <div className="fc-demo-vote-copy"><small>Family Circle · Weekly vote</small><h2>This week's family vote is complete</h2><p>Three family members voted. This is a removable demo of the completed vote card for the future Chat redesign.</p>
+          <div className="fc-demo-vote-results"><span>🏆 <b>Fam of the Day</b><strong>Family Member 1</strong><em>3 votes</em></span><span>🤡 <b>Clown of the Day</b><strong>Family Member 2</strong><em>3 votes</em></span></div>
+          <details><summary>View vote breakdown</summary><div className="fc-demo-vote-breakdown"><span>Family Member 1 → Member 1 ⭐ · Member 2 🤡</span><span>Family Member 2 → Member 1 ⭐ · Member 2 🤡</span><span>Family Member 3 → Member 1 ⭐ · Member 2 🤡</span></div></details>
+          <small className="fc-demo-label">${DEMO_WEEKLY_RECOGNITION_NOTE}</small>
+        </div>
+      </article>}
       <section className="fc-weekly-awards-panel">
         <div className="fc-weekly-awards-head"><div><p className="fc-kicker">Every Sunday</p><h2>⭐ Weekly Family Awards</h2></div><span className={isRecognitionVotingOpen() ? 'fc-vote-status open' : 'fc-vote-status'}>{isRecognitionVotingOpen() ? 'Voting open · 5–8 PM' : weeklyRecognition.famTie || weeklyRecognition.clownTie ? 'Tie-breaker in Chat' : 'Voting closed'}</span></div>
         {isRecognitionVotingOpen() ? <div className="fc-award-vote-grid">
@@ -1141,10 +1218,11 @@ export default function App() {
           {isOwn ? <><label className="fc-textarea-label"><span>Short bio · {profileBio.length}/100</span><textarea maxLength={100} rows={4} value={profileBio} onChange={(event) => setProfileBio(event.target.value)} placeholder="A short line about you…" /></label><label className="fc-form-field"><span>My Status</span><select value={profileStatus} onChange={(event) => { setProfileStatus(event.target.value as StatusOption); changeStatus(event.target.value as StatusOption) }}>{statusOptions.map((status) => <option value={status} key={status}>{status}</option>)}</select></label><div className="fc-social-block"><strong>Social links</strong><p>Paste a real profile link. Active links show green.</p>{socialNames.map((name) => <label key={name}><span>{socialIcons[name]} {name}</span><input value={profileSocials[name]} onChange={(event) => setProfileSocials((current) => ({ ...current, [name]: event.target.value }))} placeholder={`https://${name.toLowerCase()}.com/...`} /><b className={profileSocials[name] ? 'active' : ''}>{profileSocials[name] ? 'Active' : 'Blank'}</b></label>)}</div>{profileMessage && <p className="fc-save-note">{profileMessage}</p>}<button className="fc-primary-button fc-profile-save-button" type="button" onClick={saveProfile}>Save Profile</button></> : <div className="fc-read-profile"><div><strong>My Status</strong><span>{profileTarget.status}</span></div><div><strong>Bio</strong><span>{profileTarget.bio || 'No bio yet.'}</span></div><div><strong>Phone</strong><a href={`tel:${profileTarget.phone}`}>{profileTarget.phone}</a></div><div><strong>Location sharing</strong><span>{locationSharing[profileTarget.id] ? 'On' : 'Off'}</span></div><div><strong>Social links</strong><span>{socialNames.some((name) => profileTarget.socials[name]) ? socialNames.filter((name) => profileTarget.socials[name]).map((name) => <a key={name} href={profileTarget.socials[name]} target="_blank" rel="noreferrer">{socialIcons[name]} {name}</a>) : 'None added yet.'}</span></div></div>}
         </div>
       </div>}
+      {isOwn && !profileSavedView && <RecognitionProfile member={profileTarget} members={members} />}
       {renderBottomNav()}
     </div>
   }
-  function renderNotifications() {
+  function renderNotifications {
     return <div className="fc-page"><FeatureHeader title="Notifications" description="Keep up with family chat, tasks, calendar and emergency requests." onHome={() => goToTab('home')} /><div className="fc-panel"><div className="fc-panel-head"><div><small>Family updates</small><h2>Notifications</h2></div><button className="fc-ghost-button" type="button" onClick={() => setNotifications([])}>Clear all</button></div>{notifications.length === 0 ? <div className="fc-empty"><span>✓</span><strong>You're all caught up.</strong><p>No new family notifications.</p></div> : <div className="fc-notification-list">{notifications.map((item) => <article key={item.id}><span className="fc-notification-icon">{item.kind === 'Emergency' ? '🚨' : item.kind === 'Money' ? '💷' : '•'}</span><div><strong>{item.title}</strong><p>{item.detail}</p><small>{item.time}</small></div></article>)}</div>}</div>{renderBottomNav()}</div>
   }
 
