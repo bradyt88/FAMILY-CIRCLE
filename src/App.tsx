@@ -43,6 +43,7 @@ type Notification = { id: string; kind: 'Chat' | 'Task' | 'Calendar' | 'Emergenc
 type NotificationPreferences = { Chat: boolean; Task: boolean; Calendar: boolean; Profile: boolean; Money: boolean; Emergency: true }
 type FamilyPhoto = { id: string; src: string; name: string; time: string }
 type FamilyEvent = { id: string; title: string; date: string; time: string; location: string }
+type PersonalEvent = FamilyEvent
 type FamilyTask = { id: string; title: string; dueDate: string; assignedTo: string; completed: boolean }
 type MoneyRequest = { id: string; requesterId: string; amount: string; purpose: string; dueDate: string; status: 'Pending' | 'Accepted'; lenderId?: string; taskId?: string; calendarEventId?: string }
 type MusicTrack = { id: string; title: string; artist: string; genres: string[]; audioSrc: string; artwork?: string; youtubeUrl?: string; explicit: boolean; kidsAllowed: boolean; visualStyle: 1 | 2 | 3 | 4 | 5 }
@@ -364,6 +365,14 @@ export default function App() {
     { id: 'event-2', title: 'Football Training', date: todayKey(), time: '17:00', location: 'Leisure Centre' },
     { id: 'event-3', title: 'Weekly Food Shop', date: (() => { const d = new Date(); d.setDate(d.getDate() + 1); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}` })(), time: '18:00', location: 'Supermarket' },
   ])
+  const [personalEvents, setPersonalEvents] = useState<PersonalEvent[]>(() => {
+    try {
+      const saved = localStorage.getItem('family-circle-personal-events')
+      return saved ? JSON.parse(saved) as PersonalEvent[] : []
+    } catch { return [] }
+  })
+  const [activeStatusSharing, setActiveStatusSharing] = useState(() => localStorage.getItem('family-circle-active-status') !== 'false')
+  const [appVisible, setAppVisible] = useState(true)
   const [tasks, setTasks] = useState<FamilyTask[]>([
     { id: 'task-1', title: 'Take bins out', dueDate: todayKey(), assignedTo: 'member-2', completed: false },
     { id: 'task-2', title: 'Tidy your room', dueDate: todayKey(), assignedTo: 'member-1', completed: false },
@@ -547,6 +556,13 @@ export default function App() {
     return musicLibrary.filter((track) => (!musicPlaylist || track.genres.includes(musicPlaylist)) && (!musicChildMode || track.kidsAllowed))
   }
 
+
+  useEffect(() => {
+    const syncVisibility = () => setAppVisible(document.visibilityState === 'visible')
+    syncVisibility()
+    document.addEventListener('visibilitychange', syncVisibility)
+    return () => document.removeEventListener('visibilitychange', syncVisibility)
+  }, [])
 
   const selectedMember = members.find((member) => member.id === selectedMemberId) ?? members[0]
   const profileTarget = members.find((member) => member.id === profileTargetId) ?? selectedMember
@@ -753,7 +769,7 @@ export default function App() {
   function saveProfile() {
     const bio = profileBio.trim().slice(0, 100)
     const latest = members.find((member) => member.id === profileTarget.id) ?? profileTarget
-    const updated = { ...latest, bio, status: profileStatus, socials: { ...profileSocials } }
+    const updated = { ...latest, bio, status: profileStatus }
     persistMember(updated)
     setProfileTargetId(updated.id)
     setProfileBio(updated.bio)
@@ -925,6 +941,22 @@ export default function App() {
     reader.readAsDataURL(file)
   }
 
+  function addPersonalEvent(title: string, date: string, time: string, location: string) {
+    if (!title.trim() || !date || !time) return
+    const next = [...personalEvents, { id: `personal-event-${Date.now()}`, title: title.trim(), date, time, location: location.trim() }]
+    setPersonalEvents(next)
+    localStorage.setItem('family-circle-personal-events', JSON.stringify(next))
+  }
+
+  function saveActiveStatusPreference(enabled: boolean) {
+    setActiveStatusSharing(enabled)
+    localStorage.setItem('family-circle-active-status', String(enabled))
+  }
+
+  function memberIsOnline(memberId: string) {
+    return activeStatusSharing && appVisible && memberId === selectedMember.id
+  }
+
   function addEvent(title: string, date: string, time: string, location: string) {
     if (!title.trim() || !date || !time) return
     setEvents((current) => [...current, { id: `event-${Date.now()}`, title: title.trim(), date, time, location: location.trim() }])
@@ -954,7 +986,7 @@ export default function App() {
       <header className="fc-home-topbar">
         <button className="fc-home-profile fc-home-profile-hero" type="button" onClick={() => openProfile(selectedMember.id)} style={selectedMember.coverPhoto ? { backgroundImage: `linear-gradient(90deg,rgba(7,10,27,.95) 0%,rgba(7,10,27,.78) 42%,rgba(7,10,27,.45) 100%),url("${selectedMember.coverPhoto}")` } : undefined}>
           <AppAvatar member={selectedMember} className="fc-home-avatar" />
-          <span className="fc-home-profile-copy"><small>{timeGreeting()}</small><strong>{selectedMember.label}</strong><em>{selectedMember.bio || 'Keeping the family moving.'}</em><span>● My Status · {selectedMember.status}</span></span>
+          <span className="fc-home-profile-copy"><small>{timeGreeting()}</small><strong>{selectedMember.label}</strong><em>{selectedMember.bio || 'Keeping the family moving.'}</em><span><i className={`fc-online-dot${memberIsOnline(selectedMember.id) ? ' online' : ''}`} /> {memberIsOnline(selectedMember.id) ? 'Online' : 'Offline'} · {selectedMember.status}</span></span>
           <b className="fc-home-profile-arrow">→</b>
         </button>
         <div className="fc-home-brand-row">
@@ -1017,35 +1049,30 @@ export default function App() {
   }
 
   function renderChat() {
-    return <div className="fc-page"><FeatureHeader title="Family Chat" description="Keep the family conversation together in one private space." onHome={() => goToTab('home')} /><div className="fc-feature-shell">
-      {DEMO_WEEKLY_RECOGNITION_ENABLED && <article className="fc-demo-vote-message">
-        <div className="fc-demo-vote-badge">🗳️</div>
-        <div className="fc-demo-vote-copy"><small>Family Circle · Weekly vote</small><h2>This week's family vote is complete</h2><p>Three family members voted. This is a removable demo of the completed vote card for the future Chat redesign.</p>
-          <div className="fc-demo-vote-results"><span>🏆 <b>Fam of the Day</b><strong>Family Member 1</strong><em>3 votes</em></span><span>🤡 <b>Clown of the Day</b><strong>Family Member 2</strong><em>3 votes</em></span></div>
-          <details><summary>View vote breakdown</summary><div className="fc-demo-vote-breakdown"><span>Family Member 1 → Member 1 ⭐ · Member 2 🤡</span><span>Family Member 2 → Member 1 ⭐ · Member 2 🤡</span><span>Family Member 3 → Member 1 ⭐ · Member 2 🤡</span></div></details>
-          <small className="fc-demo-label">${DEMO_WEEKLY_RECOGNITION_NOTE}</small>
-        </div>
-      </article>}
-      <section className="fc-weekly-awards-panel">
-        <div className="fc-weekly-awards-head"><div><p className="fc-kicker">Every Sunday</p><h2>⭐ Weekly Family Awards</h2></div><span className={isRecognitionVotingOpen() ? 'fc-vote-status open' : 'fc-vote-status'}>{isRecognitionVotingOpen() ? 'Voting open · 5–8 PM' : weeklyRecognition.famTie || weeklyRecognition.clownTie ? 'Tie-breaker in Chat' : 'Voting closed'}</span></div>
-        {isRecognitionVotingOpen() ? <div className="fc-award-vote-grid">
+    return <div className="fc-page fc-chat-page">
+      <FeatureHeader title="Family Chat" description="Keep the family conversation together in one private space." onHome={() => goToTab('home')} />
+      <section className="fc-chat-vote-slot"><details className="fc-weekly-vote-collapsed">
+        <summary><span><small>Sunday · 5:00–8:00 PM</small><strong>⭐ Family Circle Weekly Vote</strong></span><b>{isRecognitionVotingOpen() ? 'Voting open' : weeklyRecognition.famWinner || weeklyRecognition.clownWinner ? 'Results available' : 'Closed'} <i>⌄</i></b></summary>
+        <div className="fc-weekly-vote-expanded">{isRecognitionVotingOpen() ? <div className="fc-award-vote-grid">
           <div className="fc-award-vote-card fam"><span>⭐</span><strong>Fam of the Week</strong><small>Choose your family favourite.</small><div className="fc-award-candidates">{members.map(member=><button key={member.id} type="button" className={weeklyRecognition.famVotes[selectedMember.id]===member.id?'selected':''} onClick={()=>castWeeklyVote('fam',member.id)}><AppAvatar member={member}/><span>{member.label}</span>{weeklyRecognition.famVotes[selectedMember.id]===member.id&&<b>✓</b>}</button>)}</div></div>
           <div className="fc-award-vote-card clown"><span>🤡</span><strong>Clown of the Week</strong><small>Choose this week's chaos champion.</small><div className="fc-award-candidates">{members.map(member=><button key={member.id} type="button" className={weeklyRecognition.clownVotes[selectedMember.id]===member.id?'selected':''} onClick={()=>castWeeklyVote('clown',member.id)}><AppAvatar member={member}/><span>{member.label}</span>{weeklyRecognition.clownVotes[selectedMember.id]===member.id&&<b>✓</b>}</button>)}</div></div>
-        </div> : <div className="fc-award-closed">
-          <div><strong>🔒 The weekly vote is closed.</strong><span>Votes are only counted between 5:00 PM and 8:00 PM on Sunday.</span></div>
-          {weeklyRecognition.famWinner && <div className="fc-award-result fam"><span>⭐</span><div><small>Fam of the Week</small><strong>{members.find(m=>m.id===weeklyRecognition.famWinner)?.label}</strong></div></div>}
-          {weeklyRecognition.clownWinner && <div className="fc-award-result clown"><span>🤡</span><div><small>Clown of the Week</small><strong>{members.find(m=>m.id===weeklyRecognition.clownWinner)?.label}</strong></div></div>}
-          {weeklyRecognition.famTie && <div className="fc-tie-break"><strong>⭐ Fam tie-breaker</strong><p>Make your family case in Chat, then vote for the winner.</p>{weeklyRecognition.famTie.candidates.map(id=>{const member=members.find(m=>m.id===id)!; return <div className="fc-tie-candidate" key={id}><AppAvatar member={member}/><div><strong>{member.label}</strong>{weeklyRecognition.famTie?.statements[id]&&<p>“{weeklyRecognition.famTie.statements[id]}”</p>}{selectedMember.id===id&&<><textarea value={tieStatementDrafts[id]??''} maxLength={240} rows={2} onChange={e=>setTieStatementDrafts(c=>({...c,[id]:e.target.value}))} placeholder="Explain your Family Moment of the Week…" /><button className="fc-outline-button" type="button" onClick={()=>submitTieStatement('fam',id)}>Post my case</button></>}{isRecognitionTieBreakOpen()&&<button className="fc-outline-button" type="button" onClick={()=>castTieBreakVote('fam',id)}>Vote for {member.label}</button>}</div></div>})}</div>}
-          {weeklyRecognition.clownTie && <div className="fc-tie-break"><strong>🤡 Clown tie-breaker</strong><p>Explain your Clown Moment of the Week, then let the family decide.</p>{weeklyRecognition.clownTie.candidates.map(id=>{const member=members.find(m=>m.id===id)!; return <div className="fc-tie-candidate" key={id}><AppAvatar member={member}/><div><strong>{member.label}</strong>{weeklyRecognition.clownTie?.statements[id]&&<p>“{weeklyRecognition.clownTie.statements[id]}”</p>}{selectedMember.id===id&&<><textarea value={tieStatementDrafts[id]??''} maxLength={240} rows={2} onChange={e=>setTieStatementDrafts(c=>({...c,[id]:e.target.value}))} placeholder="Explain your Clown Moment of the Week…" /><button className="fc-outline-button" type="button" onClick={()=>submitTieStatement('clown',id)}>Post my case</button></>}{isRecognitionTieBreakOpen()&&<button className="fc-outline-button" type="button" onClick={()=>castTieBreakVote('clown',id)}>Vote for {member.label}</button>}</div></div>})}</div>}
-        </div>}
-      </section><div className="fc-panel"><div className="fc-panel-head"><div><small>Family conversation</small><h2>Chat</h2></div><span className="fc-pill">Private family space</span></div><div className="fc-chat-list">{messages.map((message, index) => { const linkedMoneyRequest = message.moneyRequestId ? moneyRequests.find((request) => request.id === message.moneyRequestId) : null; const requester = linkedMoneyRequest ? members.find((member) => member.id === linkedMoneyRequest.requesterId) ?? selectedMember : null; const lender = linkedMoneyRequest?.lenderId ? members.find((member) => member.id === linkedMoneyRequest.lenderId) : null; const unread = isMessageUnread(message.id); const outgoing = message.memberId === selectedMember.id; const previous = messages[index - 1]; const grouped = Boolean(previous && previous.memberId === message.memberId); return <div className={outgoing ? (unread ? "fc-chat-row fc-chat-row-outgoing fc-unread-row" : "fc-chat-row fc-chat-row-outgoing") : (unread ? "fc-chat-row fc-chat-row-incoming fc-unread-row" : "fc-chat-row fc-chat-row-incoming")} key={message.id}><AppAvatar member={members.find((m) => m.id === message.memberId) ?? selectedMember} className={grouped ? "fc-chat-avatar fc-chat-avatar-grouped" : "fc-chat-avatar"} /><div className="fc-chat-bubble"><div className="fc-chat-meta">{!grouped && <strong>{outgoing ? "You" : message.name}</strong>}{unread && <span className="fc-unread-label">NEW</span>}<time>{message.time}</time></div>{linkedMoneyRequest ? <div className="fc-money-chat-card"><div className="fc-money-chat-head"><strong>💷 Money Request</strong><span className={linkedMoneyRequest.status === 'Accepted' ? 'fc-money-chat-status accepted' : 'fc-money-chat-status'}>{linkedMoneyRequest.status === 'Accepted' ? 'Accepted' : 'Awaiting acceptance'}</span></div><strong className="fc-money-chat-amount">£{linkedMoneyRequest.amount}</strong><p>{linkedMoneyRequest.purpose}</p><small>Requested by {requester?.label ?? message.name} · Repayment due {formatLongDate(linkedMoneyRequest.dueDate)}</small>{linkedMoneyRequest.status === 'Accepted' && <small className="fc-money-chat-accepted">✓ Accepted by {lender?.label ?? 'family member'} · Repayment task and calendar event created.</small>}{linkedMoneyRequest.status === 'Pending' && linkedMoneyRequest.requesterId !== selectedMember.id && <button className="fc-money-chat-accept" type="button" onClick={() => acceptMoneyRequest(linkedMoneyRequest.id)}>Accept Request</button>}{linkedMoneyRequest.status === 'Pending' && linkedMoneyRequest.requesterId === selectedMember.id && <small className="fc-money-chat-waiting">Waiting for another family member to accept.</small>}</div> : <><p>{message.text}</p>{message.image && <img src={message.image} alt="Family shared" />}</>}</div></div> })}</div>{pendingChatPhoto && <div className="fc-pending-photo"><img src={pendingChatPhoto} alt="Ready to send" /><button type="button" onClick={() => setPendingChatPhoto(null)}>×</button></div>}<div className="fc-composer"><label className="fc-attach"><input className="fc-hidden" type="file" accept="image/*" onChange={(event) => { const file = event.target.files?.[0]; if (file) stageChatPhoto(file); event.currentTarget.value = '' }} />＋ Photo</label><input value={chatDraft} onChange={(event) => setChatDraft(event.target.value)} onKeyDown={(event) => { if (event.key === 'Enter') sendChatMessage() }} placeholder="Write a family message…" /><button type="button" onClick={sendChatMessage}>Send</button></div></div></div>{renderBottomNav()}</div>
+        </div> : <div className="fc-award-closed"><div><strong>🔒 The weekly vote is closed.</strong><span>Votes are counted between 5:00 PM and 8:00 PM on Sunday.</span></div>{weeklyRecognition.famWinner&&<div className="fc-award-result fam"><span>⭐</span><div><small>Fam of the Week</small><strong>{members.find(m=>m.id===weeklyRecognition.famWinner)?.label}</strong></div></div>}{weeklyRecognition.clownWinner&&<div className="fc-award-result clown"><span>🤡</span><div><small>Clown of the Week</small><strong>{members.find(m=>m.id===weeklyRecognition.clownWinner)?.label}</strong></div></div>}</div>}</div>
+      </details></section>
+      <section className="fc-chat-main-panel">
+        <div className="fc-panel-head"><div><small>Family conversation</small><h2>Chat</h2></div><span className="fc-pill">Private family space</span></div>
+        <div className="fc-chat-list">{messages.map((message, index) => { const linkedMoneyRequest = message.moneyRequestId ? moneyRequests.find((request) => request.id === message.moneyRequestId) : null; const requester = linkedMoneyRequest ? members.find((member) => member.id === linkedMoneyRequest.requesterId) ?? selectedMember : null; const lender = linkedMoneyRequest?.lenderId ? members.find((member) => member.id === linkedMoneyRequest.lenderId) : null; const unread = isMessageUnread(message.id); const outgoing = message.memberId === selectedMember.id; const previous = messages[index - 1]; const grouped = Boolean(previous && previous.memberId === message.memberId); return <div className={outgoing ? (unread ? "fc-chat-row fc-chat-row-outgoing fc-unread-row" : "fc-chat-row fc-chat-row-outgoing") : (unread ? "fc-chat-row fc-chat-row-incoming fc-unread-row" : "fc-chat-row fc-chat-row-incoming")} key={message.id}><AppAvatar member={members.find((m) => m.id === message.memberId) ?? selectedMember} className={grouped ? "fc-chat-avatar fc-chat-avatar-grouped" : "fc-chat-avatar"} /><div className="fc-chat-bubble"><div className="fc-chat-meta">{!grouped && <strong>{outgoing ? "You" : message.name}</strong>}{unread && <span className="fc-unread-label">NEW</span>}<time>{message.time}</time></div>{linkedMoneyRequest ? <div className="fc-money-chat-card"><div className="fc-money-chat-head"><strong>💷 Money Request</strong><span className={linkedMoneyRequest.status === 'Accepted' ? 'fc-money-chat-status accepted' : 'fc-money-chat-status'}>{linkedMoneyRequest.status === 'Accepted' ? 'Accepted' : 'Awaiting acceptance'}</span></div><strong className="fc-money-chat-amount">£{linkedMoneyRequest.amount}</strong><p>{linkedMoneyRequest.purpose}</p><small>Requested by {requester?.label ?? message.name} · Repayment due {formatLongDate(linkedMoneyRequest.dueDate)}</small>{linkedMoneyRequest.status === 'Accepted' && <small className="fc-money-chat-accepted">✓ Accepted by {lender?.label ?? 'family member'} · Repayment task and calendar event created.</small>}{linkedMoneyRequest.status === 'Pending' && linkedMoneyRequest.requesterId !== selectedMember.id && <button className="fc-money-chat-accept" type="button" onClick={() => acceptMoneyRequest(linkedMoneyRequest.id)}>Accept Request</button>}{linkedMoneyRequest.status === 'Pending' && linkedMoneyRequest.requesterId === selectedMember.id && <small className="fc-money-chat-waiting">Waiting for another family member to accept.</small>}</div> : <><p>{message.text}</p>{message.image&&<img src={message.image} alt="Family shared" />}</>}</div></div> })}</div>
+        {pendingChatPhoto&&<div className="fc-pending-photo"><img src={pendingChatPhoto} alt="Ready to send" /><button type="button" onClick={()=>setPendingChatPhoto(null)}>×</button></div>}
+        <div className="fc-composer"><label className="fc-attach"><input className="fc-hidden" type="file" accept="image/*" onChange={(event)=>{const file=event.target.files?.[0];if(file)stageChatPhoto(file);event.currentTarget.value=''}}/>＋ Photo</label><input value={chatDraft} onChange={event=>setChatDraft(event.target.value)} onKeyDown={event=>{if(event.key==='Enter')sendChatMessage()}} placeholder="Write a family message…" /><button type="button" onClick={sendChatMessage}>Send</button></div>
+      </section>
+      {renderBottomNav()}
+    </div>
   }
   function renderPhotos() {
     return <div className="fc-page"><FeatureHeader title="Recent Photos" description="Photos shared in Family Chat appear here as family memories." onHome={() => goToTab('home')} /><div className="fc-panel"><div className="fc-panel-head"><div><small>Family memories</small><h2>Recent Photos</h2></div><span className="fc-pill">{photos.length} shared</span></div>{photos.length === 0 ? <div className="fc-empty"><span>▧</span><strong>No recent photos yet.</strong><p>Send a photo from Family Chat and it will appear here automatically.</p><button className="fc-primary-button" type="button" onClick={() => goToTab('chat')}>Open Family Chat</button></div> : <div className="fc-photo-grid">{photos.map((photo) => <article key={photo.id}><img src={photo.src} alt={photo.name} /><div><strong>{photo.name}</strong><span>Shared in Family Chat · {photo.time}</span></div></article>)}</div>}</div>{renderBottomNav()}</div>
   }
 
   function renderCalendar() {
-    return <CalendarPanel events={events} onAdd={addEvent} onBack={() => goToTab('home')} onNav={renderBottomNav} />
+    return <CalendarPanel events={events} personalEvents={personalEvents} onAdd={addEvent} onBack={() => goToTab('home')} onNav={renderBottomNav} mode="family" />
   }
 
   function renderTasks() {
@@ -1085,7 +1112,7 @@ export default function App() {
   }
 
   function renderFamily() {
-    return <div className="fc-page"><FeatureHeader title="Family Members" description="Your family tree is about connection, not complicated relationship rules." onHome={() => goToTab('home')} /><div className="fc-panel fc-tree-panel"><div className="fc-panel-head"><div><small>Your family</small><h2>Family Circle Tree</h2></div><span className="fc-pill">3 profiles</span></div><div className="fc-tree"><div className="fc-tree-top"><button className="fc-tree-node current" type="button" onClick={() => openProfile(selectedMember.id)}><AppAvatar member={selectedMember} /><strong>{selectedMember.label}</strong><span>{selectedMember.status}</span></button></div><div className="fc-tree-connector" /><div className="fc-tree-branches">{members.filter((member) => member.id !== selectedMember.id).map((member) => <button className="fc-tree-node" type="button" key={member.id} onClick={() => openProfile(member.id)}><AppAvatar member={member} /><strong>{member.label}</strong><span>{member.status}</span><small>View profile →</small></button>)}</div></div></div>{renderBottomNav()}</div>
+    return <div className="fc-page"><FeatureHeader title="Family Members" description="Your family tree is about connection, not complicated relationship rules." onHome={() => goToTab('home')} /><div className="fc-panel fc-tree-panel"><div className="fc-panel-head"><div><small>Your family</small><h2>Family Circle Tree</h2></div><span className="fc-pill">3 profiles</span></div><div className="fc-tree"><div className="fc-tree-top"><button className="fc-tree-node current" type="button" onClick={() => openProfile(selectedMember.id)}><AppAvatar member={selectedMember} /><strong>{selectedMember.label}</strong><span><i className={`fc-online-dot${memberIsOnline(selectedMember.id) ? ' online' : ''}`} /> {memberIsOnline(selectedMember.id) ? 'Online' : 'Offline'} · {selectedMember.status}</span></button></div><div className="fc-tree-connector" /><div className="fc-tree-branches">{members.filter((member) => member.id !== selectedMember.id).map((member) => <button className="fc-tree-node" type="button" key={member.id} onClick={() => openProfile(member.id)}><AppAvatar member={member} /><strong>{member.label}</strong><span><i className={`fc-online-dot${memberIsOnline(member.id) ? ' online' : ''}`} /> {memberIsOnline(member.id) ? 'Online' : 'Offline'} · {member.status}</span><small>View profile →</small></button>)}</div></div></div>{renderBottomNav()}</div>
   }
 
   function renderGames() {
@@ -1203,19 +1230,20 @@ export default function App() {
           <span>✓ Profile saved</span>
           <small>Your profile is now shown as a full profile view.</small>
         </div>
+        <section className="fc-personal-calendar-wrap"><CalendarPanel events={events} personalEvents={personalEvents} onAdd={addEvent} onAddPersonal={addPersonalEvent} onBack={() => {}} onNav={() => <></>} mode="personal" /></section>
                 <RecognitionProfile member={profileTarget} members={members} />
       </section> : <div className="fc-profile-layout">
         <div className="fc-panel fc-profile-hero" style={profileTarget.coverPhoto ? { backgroundImage: `linear-gradient(135deg,rgba(10,13,32,.96),rgba(10,13,32,.78)),url("${profileTarget.coverPhoto}")` } : undefined}>
           <div className="fc-profile-cover-edit-row"><label className="fc-profile-cover-upload"><span>▧ Add cover photo</span><input className="fc-hidden" type="file" accept="image/*" onChange={(event) => { const file=event.target.files?.[0]; if(file) uploadProfileCover(file); event.currentTarget.value='' }} /></label>{profileTarget.coverPhoto && <button type="button" onClick={removeProfileCover}>Remove cover</button>}</div>
           <div className="fc-profile-photo-wrap">{isOwn ? <label className="fc-profile-photo-button"><AppAvatar member={{ ...profileTarget, photo: profileTarget.photo }} className="fc-profile-photo" /><span>Change photo</span><input className="fc-hidden" type="file" accept="image/*" onChange={(event) => { const file = event.target.files?.[0]; if (file) uploadProfilePhoto(file); event.currentTarget.value = '' }} /></label> : <AppAvatar member={profileTarget} className="fc-profile-photo" />} {isOwn && profileTarget.photo && <div className="fc-profile-photo-actions"><button className="fc-profile-photo-view-link" type="button" onClick={() => setProfilePhotoViewer(profileTarget.photo!)}>View photo</button><button className="fc-remove-photo" type="button" onClick={removeProfilePhoto}>Remove photo</button></div>}</div>
           <h2>{profileTarget.label}</h2>
-          <p className="fc-status-chip">My Status · {profileTarget.status}</p>
+          <p className="fc-status-chip"><i className={`fc-online-dot${memberIsOnline(profileTarget.id) ? ' online' : ''}`} /> {memberIsOnline(profileTarget.id) ? 'Online' : 'Offline'} · {profileTarget.status}</p>
           <p className="fc-muted">{profileTarget.bio || 'No bio yet.'}</p>
           <a className="fc-phone-link" href={`tel:${profileTarget.phone}`}>☎ {profileTarget.phone}</a>
         </div>
         <div className="fc-panel">
           <div className="fc-panel-head"><div><small>Profile details</small><h2>{isOwn ? 'Edit your details' : 'About this family member'}</h2></div></div>
-          {isOwn ? <><label className="fc-textarea-label"><span>Short bio · {profileBio.length}/100</span><textarea maxLength={100} rows={4} value={profileBio} onChange={(event) => setProfileBio(event.target.value)} placeholder="A short line about you…" /></label><label className="fc-form-field"><span>My Status</span><select value={profileStatus} onChange={(event) => { setProfileStatus(event.target.value as StatusOption); changeStatus(event.target.value as StatusOption) }}>{statusOptions.map((status) => <option value={status} key={status}>{status}</option>)}</select></label><div className="fc-social-block"><strong>Social links</strong><p>Paste a real profile link. Active links show green.</p>{socialNames.map((name) => <label key={name}><span>{socialIcons[name]} {name}</span><input value={profileSocials[name]} onChange={(event) => setProfileSocials((current) => ({ ...current, [name]: event.target.value }))} placeholder={`https://${name.toLowerCase()}.com/...`} /><b className={profileSocials[name] ? 'active' : ''}>{profileSocials[name] ? 'Active' : 'Blank'}</b></label>)}</div>{profileMessage && <p className="fc-save-note">{profileMessage}</p>}<button className="fc-primary-button fc-profile-save-button" type="button" onClick={saveProfile}>Save Profile</button></> : <div className="fc-read-profile"><div><strong>My Status</strong><span>{profileTarget.status}</span></div><div><strong>Bio</strong><span>{profileTarget.bio || 'No bio yet.'}</span></div><div><strong>Phone</strong><a href={`tel:${profileTarget.phone}`}>{profileTarget.phone}</a></div><div><strong>Location sharing</strong><span>{locationSharing[profileTarget.id] ? 'On' : 'Off'}</span></div><div><strong>Social links</strong><span>{socialNames.some((name) => profileTarget.socials[name]) ? socialNames.filter((name) => profileTarget.socials[name]).map((name) => <a key={name} href={profileTarget.socials[name]} target="_blank" rel="noreferrer">{socialIcons[name]} {name}</a>) : 'None added yet.'}</span></div></div>}
+          {isOwn ? <><label className="fc-textarea-label"><span>Short bio · {profileBio.length}/100</span><textarea maxLength={100} rows={4} value={profileBio} onChange={(event) => setProfileBio(event.target.value)} placeholder="A short line about you…" /></label><label className="fc-form-field"><span>My Status</span><select value={profileStatus} onChange={(event) => { setProfileStatus(event.target.value as StatusOption); changeStatus(event.target.value as StatusOption) }}>{statusOptions.map((status) => <option value={status} key={status}>{status}</option>)}</select></label>{profileMessage && <p className="fc-save-note">{profileMessage}</p>}<button className="fc-primary-button fc-profile-save-button" type="button" onClick={saveProfile}>Save Profile</button></> : <div className="fc-read-profile"><div><strong>Active status</strong><span>{memberIsOnline(profileTarget.id) ? '🟢 Online' : '⚫ Offline'}</span></div><div><strong>My Status</strong><span>{profileTarget.status}</span></div><div><strong>Bio</strong><span>{profileTarget.bio || 'No bio yet.'}</span></div><div><strong>Phone</strong><a href={`tel:${profileTarget.phone}`}>{profileTarget.phone}</a></div><div><strong>Location sharing</strong><span>{locationSharing[profileTarget.id] ? 'On' : 'Off'}</span></div><div><strong>Social links</strong><span>{socialNames.some((name) => profileTarget.socials[name]) ? socialNames.filter((name) => profileTarget.socials[name]).map((name) => <a key={name} href={profileTarget.socials[name]} target="_blank" rel="noreferrer">{socialIcons[name]} {name}</a>) : 'None added yet.'}</span></div></div>}
         </div>
       </div>}
       {isOwn && !profileSavedView && <RecognitionProfile member={profileTarget} members={members} />}
@@ -1244,6 +1272,10 @@ export default function App() {
         <label className="fc-setting-row"><span><strong>👤 Family/profile updates</strong><small>Notify me when a family member updates their status or profile.</small></span><input type="checkbox" checked={notificationPreferences.Profile} onChange={(event) => updateNotificationPreference('Profile', event.target.checked)} /></label>
         <label className="fc-setting-row"><span><strong>💷 Money updates</strong><small>Notify me about family money requests and accepted requests.</small></span><input type="checkbox" checked={notificationPreferences.Money} onChange={(event) => updateNotificationPreference('Money', event.target.checked)} /></label>
         <div className="fc-setting-note"><strong>Phone notifications foundation</strong><span>These preferences are now stored per device. The production push service will use the same rules when real accounts and device registration are connected.</span></div>
+        <div className="fc-settings-section"><p className="fc-kicker">Profile presence</p><h2>How you appear</h2><p className="fc-muted">Your active status is separate from your chosen profile status.</p></div>
+        <label className="fc-setting-row"><span><strong>🟢 Show Active Status</strong><small>Show family members when you're currently using Family Circle.</small></span><input type="checkbox" checked={activeStatusSharing} onChange={(event) => saveActiveStatusPreference(event.target.checked)} /></label>
+        <div className="fc-settings-section"><p className="fc-kicker">Profile links</p><h2>Social links</h2><p className="fc-muted">Add your social links here. They appear automatically on your profile.</p></div>
+        <div className="fc-profile-settings-socials">{socialNames.map((name) => <label key={name}><span>{socialIcons[name]} {name}</span><input value={profileSocials[name]} onChange={(event) => setProfileSocials((current) => ({ ...current, [name]: event.target.value }))} placeholder={`https://${name.toLowerCase()}.com/...`} /><b className={profileSocials[name] ? 'active' : ''}>{profileSocials[name] ? 'Active' : 'Blank'}</b></label>)}<button className="fc-primary-button" type="button" onClick={saveProfileSettings}>Save Profile Links</button></div>
         <div className="fc-settings-section"><p className="fc-kicker">Location & safety</p></div>
         <div className="fc-setting-row"><span><strong>Share my location with family</strong><small>Shows you on Where Is Everyone?</small></span><input type="checkbox" checked={Boolean(locationSharing[selectedMember.id])} onChange={(event) => setLocationSharing((current) => ({ ...current, [selectedMember.id]: event.target.checked }))} /></div>
         <div className="fc-setting-row"><span><strong>Location permission</strong><small>{locationPermission === 'granted' ? 'Granted' : locationPermission === 'denied' ? 'Denied' : 'Not checked'}</small></span><button className="fc-ghost-button" type="button" onClick={() => requestBrowserLocation(() => undefined)}>Check permission</button></div>
@@ -1428,7 +1460,7 @@ export default function App() {
     return <Onboarding initialView={onboardingView} onComplete={completeOnboarding} />
   }
 
-  if (screen === 'members') return <main className="fc-app-shell fc-members-screen"><header className="fc-brand-header"><div className="fc-brand-lockup"><img src={logoUrl} alt="Family Circle" /><strong>Family Circle</strong></div><span>● Private family space</span></header><section className="fc-members-intro"><p className="fc-kicker">Welcome</p><h1>Who's using Family Circle?</h1><p className="fc-muted">Choose your family profile to continue.</p></section><section className="fc-member-grid">{members.map((member) => <button className="fc-member-card" key={member.id} type="button" onClick={() => chooseMember(member.id)}><AppAvatar member={member} className="fc-member-avatar" /><strong>{member.label}</strong><span>{member.status}</span><small>Enter PIN →</small></button>)}</section><p className="fc-private-note">▣ Your family information stays private.</p><button className="fc-switch-family-link" type="button" onClick={switchFamily}>Switch family</button>{pinOpen && <div className="fc-modal-backdrop" onMouseDown={() => setPinOpen(false)}><section className="fc-pin-modal" onMouseDown={(event) => event.stopPropagation()}><button className="fc-modal-close" type="button" onClick={() => setPinOpen(false)}>×</button><div className="fc-pin-profile"><AppAvatar member={selectedMember} /><div><p className="fc-kicker">Family profile</p><strong>{selectedMember.label}</strong></div></div><h2>Enter your PIN</h2><p className="fc-muted">Enter your 4-digit PIN to unlock your family space.</p><div className="fc-pin-dots">{[0, 1, 2, 3].map((index) => <span className={index < pin.length ? 'filled' : ''} key={index} />)}</div>{pinError && <p className="fc-error">{pinError}</p>}<div className="fc-keypad">{['1', '2', '3', '4', '5', '6', '7', '8', '9'].map((digit) => <button type="button" key={digit} onClick={() => setPin((current) => current.length < 4 ? current + digit : current)}>{digit}</button>)}<button type="button" onClick={() => { setPin(''); setPinOpen(false) }}>Cancel</button><button type="button" onClick={() => setPin((current) => current.length < 4 ? current + '0' : current)}>0</button><button type="button" onClick={() => setPin((current) => current.slice(0, -1))}>⌫</button></div><button className="fc-primary-button" type="button" onClick={submitPin}>Continue</button></section></div>}</main>
+  if (screen === 'members') return <main className="fc-app-shell fc-members-screen"><header className="fc-brand-header"><div className="fc-brand-lockup"><img src={logoUrl} alt="Family Circle" /><strong>Family Circle</strong></div><span>● Private family space</span></header><section className="fc-members-intro"><p className="fc-kicker">Welcome</p><h1>Who's using Family Circle?</h1><p className="fc-muted">Choose your family profile to continue.</p></section><section className="fc-member-grid">{members.map((member) => <button className="fc-member-card" key={member.id} type="button" onClick={() => chooseMember(member.id)}><AppAvatar member={member} className="fc-member-avatar" /><strong>{member.label}</strong><span><i className={`fc-online-dot${memberIsOnline(member.id) ? ' online' : ''}`} /> {memberIsOnline(member.id) ? 'Online' : 'Offline'} · {member.status}</span><small>Enter PIN →</small></button>)}</section><p className="fc-private-note">▣ Your family information stays private.</p><button className="fc-switch-family-link" type="button" onClick={switchFamily}>Switch family</button>{pinOpen && <div className="fc-modal-backdrop" onMouseDown={() => setPinOpen(false)}><section className="fc-pin-modal" onMouseDown={(event) => event.stopPropagation()}><button className="fc-modal-close" type="button" onClick={() => setPinOpen(false)}>×</button><div className="fc-pin-profile"><AppAvatar member={selectedMember} /><div><p className="fc-kicker">Family profile</p><strong>{selectedMember.label}</strong></div></div><h2>Enter your PIN</h2><p className="fc-muted">Enter your 4-digit PIN to unlock your family space.</p><div className="fc-pin-dots">{[0, 1, 2, 3].map((index) => <span className={index < pin.length ? 'filled' : ''} key={index} />)}</div>{pinError && <p className="fc-error">{pinError}</p>}<div className="fc-keypad">{['1', '2', '3', '4', '5', '6', '7', '8', '9'].map((digit) => <button type="button" key={digit} onClick={() => setPin((current) => current.length < 4 ? current + digit : current)}>{digit}</button>)}<button type="button" onClick={() => { setPin(''); setPinOpen(false) }}>Cancel</button><button type="button" onClick={() => setPin((current) => current.length < 4 ? current + '0' : current)}>0</button><button type="button" onClick={() => setPin((current) => current.slice(0, -1))}>⌫</button></div><button className="fc-primary-button" type="button" onClick={submitPin}>Continue</button></section></div>}</main>
 
   {accessNotice && <div className="fc-modal-backdrop" onMouseDown={() => setAccessNotice(null)}><section className="fc-access-modal" onMouseDown={(event) => event.stopPropagation()}><button className="fc-modal-close" type="button" onClick={() => setAccessNotice(null)}>×</button><div className="fc-access-modal-icon">{accessNotice.action === 'upgrade' ? '⭐' : accessNotice.action === 'child' ? '😄' : '🔒'}</div><p className="fc-kicker">Family Circle</p><h2>{accessNotice.title}</h2><p className="fc-muted">{accessNotice.message}</p>{accessNotice.action === 'restriction' && <p className="fc-access-modal-note">Ask your Family Moderator to remove the restriction.</p>}{accessNotice.action === 'upgrade' && <p className="fc-access-modal-note">Upgrade your account to unlock this feature.</p>}{accessNotice.action === 'child' && <p className="fc-access-modal-note">Not quite — this one is keeping the grown-ups out. 😄</p>}<button className="fc-primary-button" type="button" onClick={() => setAccessNotice(null)}>{accessNotice.action === 'upgrade' ? 'View Plans' : 'Got it'}</button></section></div>}
 
@@ -1474,54 +1506,33 @@ function getCalendarCells(cursor: Date) {
   })
 }
 
-function CalendarPanel({ events, onAdd, onBack, onNav }: { events: FamilyEvent[]; todaysEvents?: FamilyEvent[]; onAdd: (title: string, date: string, time: string, location: string) => void; onBack: () => void; onNav: () => JSX.Element }) {
-  const today = todayKey()
-  const [selectedDate, setSelectedDate] = useState(today)
-  const [cursor, setCursor] = useState(() => {
-    const now = new Date()
-    return new Date(now.getFullYear(), now.getMonth(), 1)
-  })
-  const [title, setTitle] = useState('')
-  const [date, setDate] = useState(today)
-  const [time, setTime] = useState('19:00')
-  const [location, setLocation] = useState('At Home')
-
-  const cells = getCalendarCells(cursor)
-  const monthLabel = new Intl.DateTimeFormat('en-GB', { month: 'long', year: 'numeric' }).format(cursor)
-  const selectedEvents = events.filter((event) => event.date === selectedDate).sort((a, b) => a.time.localeCompare(b.time))
-
-  function changeMonth(amount: number) {
-    const next = new Date(cursor.getFullYear(), cursor.getMonth() + amount, 1)
-    setCursor(next)
-    const now = new Date()
-    const nextSelected = next.getFullYear() === now.getFullYear() && next.getMonth() === now.getMonth() ? todayKey() : `${next.getFullYear()}-${String(next.getMonth() + 1).padStart(2, '0')}-01`
-    setSelectedDate(nextSelected)
-    setDate(nextSelected)
-  }
-
-  function jumpToToday() {
-    const now = new Date()
-    setCursor(new Date(now.getFullYear(), now.getMonth(), 1))
-    setSelectedDate(today)
-    setDate(today)
-  }
-
-  function addEvent() {
-    if (!title.trim() || !date || !time) return
-    onAdd(title.trim(), date, time, location.trim())
-    setSelectedDate(date)
-    const added = new Date(`${date}T00:00:00`)
-    setCursor(new Date(added.getFullYear(), added.getMonth(), 1))
-    setTitle('')
-  }
-
-  function isPast(event: FamilyEvent) {
-    if (event.date < today) return true
-    if (event.date > today) return false
-    const [hours, minutes] = event.time.split(':').map(Number)
-    const now = new Date()
-    return new Date(now.getFullYear(), now.getMonth(), now.getDate(), hours, minutes).getTime() < now.getTime()
-  }
-
-  return <div className="fc-page"><FeatureHeader title="Family Calendar" description="Keep plans, appointments and family events visible in one place." onHome={onBack} /><div className="fc-calendar-layout"><div className="fc-panel fc-calendar-main"><div className="fc-calendar-toolbar"><button className="fc-calendar-nav" type="button" onClick={() => changeMonth(-1)} aria-label="Previous month">‹</button><div><small>Family plans</small><h2>{monthLabel}</h2></div><div className="fc-calendar-toolbar-actions"><button className="fc-today-button" type="button" onClick={jumpToToday}>Today</button><button className="fc-calendar-nav" type="button" onClick={() => changeMonth(1)} aria-label="Next month">›</button></div></div><div className="fc-calendar-weekdays">{['Mon','Tue','Wed','Thu','Fri','Sat','Sun'].map((day) => <span key={day}>{day}</span>)}</div><div className="fc-calendar-grid">{cells.map((dayNumber, index) => { if (dayNumber === null) return <div className="fc-calendar-cell empty" key={`empty-${index}`} />; const cellDate = new Date(cursor.getFullYear(), cursor.getMonth(), dayNumber); const key = `${cellDate.getFullYear()}-${String(cellDate.getMonth() + 1).padStart(2, '0')}-${String(cellDate.getDate()).padStart(2, '0')}`; const dayEvents = events.filter((event) => event.date === key); const isToday = key === today; const isSelected = key === selectedDate; return <button className={`fc-calendar-cell${isToday ? ' today' : ''}${isSelected ? ' selected' : ''}${key < today ? ' past' : ''}`} type="button" key={key} onClick={() => { setSelectedDate(key); setDate(key) }} aria-label={`${formatLongDate(key)}${dayEvents.length ? `, ${dayEvents.length} event${dayEvents.length === 1 ? '' : 's'}` : ''}`}><span className="fc-calendar-day-number">{dayNumber}</span>{dayEvents.length > 0 && <span className="fc-calendar-markers">{dayEvents.slice(0, 3).map((event) => <i key={event.id} />)}</span>}</button> })}</div><div className="fc-calendar-key"><span><i className="today-key" /> Today</span><span><i className="event-key" /> Family event</span><span><i className="selected-key" /> Selected</span></div></div><div className="fc-calendar-side"><div className="fc-panel"><div className="fc-panel-head"><div><small>Selected day</small><h2>{formatLongDate(selectedDate)}</h2></div><span className="fc-pill">{selectedEvents.length} event{selectedEvents.length === 1 ? '' : 's'}</span></div>{selectedEvents.length === 0 ? <div className="fc-calendar-empty"><span>♡</span><strong>No family events on this date.</strong><small>Choose another date or add an event below.</small></div> : <div className="fc-calendar-events">{selectedEvents.map((event) => <div className={isPast(event) ? 'fc-calendar-event past' : 'fc-calendar-event'} key={event.id}><span>📅</span><div><strong>{event.title}</strong><small>{event.time}{event.location ? ` · ${event.location}` : ''}</small></div>{isPast(event) && <b>✓</b>}</div>)}</div>}</div><div className="fc-panel"><div className="fc-panel-head"><div><small>Add to family calendar</small><h2>New family event</h2></div></div><div className="fc-form-grid"><label><span>Event name *</span><input value={title} onChange={(event) => setTitle(event.target.value)} placeholder="Family dinner" /></label><label><span>Date *</span><input type="date" min={today} value={date} onChange={(event) => { setDate(event.target.value); setSelectedDate(event.target.value) }} /></label><label><span>Time *</span><input type="time" value={time} onChange={(event) => setTime(event.target.value)} /></label><label><span>Location</span><input value={location} onChange={(event) => setLocation(event.target.value)} /></label><button className="fc-primary-button" type="button" onClick={addEvent}>Add Family Event</button></div></div></div></div>{onNav()}</div>
+function CalendarPanel({ events, personalEvents = [], onAdd, onAddPersonal, onBack, onNav, mode = 'family' }: { events: FamilyEvent[]; personalEvents?: PersonalEvent[]; onAdd: (title: string, date: string, time: string, location: string) => void; onAddPersonal?: (title: string, date: string, time: string, location: string) => void; onBack: () => void; onNav: () => JSX.Element; mode?: 'family' | 'personal' }) {
+  const today=todayKey()
+  const [selectedDate,setSelectedDate]=useState(today)
+  const [cursor,setCursor]=useState(()=>{const now=new Date();return new Date(now.getFullYear(),now.getMonth(),1)})
+  const [title,setTitle]=useState('')
+  const [date,setDate]=useState(today)
+  const [time,setTime]=useState('19:00')
+  const [location,setLocation]=useState('At Home')
+  const cells=getCalendarCells(cursor)
+  const monthLabel=new Intl.DateTimeFormat('en-GB',{month:'long',year:'numeric'}).format(cursor)
+  const familySelected=events.filter(e=>e.date===selectedDate).sort((a,b)=>a.time.localeCompare(b.time))
+  const personalSelected=personalEvents.filter(e=>e.date===selectedDate).sort((a,b)=>a.time.localeCompare(b.time))
+  const selectedCount=familySelected.length+personalSelected.length
+  function changeMonth(amount:number){const next=new Date(cursor.getFullYear(),cursor.getMonth()+amount,1);setCursor(next);const now=new Date();const nextSelected=next.getFullYear()===now.getFullYear()&&next.getMonth()===now.getMonth()?todayKey():`${next.getFullYear()}-${String(next.getMonth()+1).padStart(2,'0')}-01`;setSelectedDate(nextSelected);setDate(nextSelected)}
+  function jumpToToday(){const now=new Date();setCursor(new Date(now.getFullYear(),now.getMonth(),1));setSelectedDate(today);setDate(today)}
+  function addEvent(){if(!title.trim()||!date||!time)return;if(mode==='personal'&&onAddPersonal)onAddPersonal(title.trim(),date,time,location.trim());else onAdd(title.trim(),date,time,location.trim());setSelectedDate(date);const added=new Date(`${date}T00:00:00`);setCursor(new Date(added.getFullYear(),added.getMonth(),1));setTitle('')}
+  const allForCell=(key:string)=>[...events.filter(e=>e.date===key).map(e=>({...e,kind:'family' as const})),...personalEvents.filter(e=>e.date===key).map(e=>({...e,kind:'personal' as const}))].sort((a,b)=>a.time.localeCompare(b.time))
+  return <div className="fc-page">
+    <FeatureHeader title={mode==='personal'?'My Calendar':'Family Calendar'} description={mode==='personal'?'Your personal plans alongside the family events that matter to you.':'Keep plans, appointments and family events visible in one place.'} onHome={onBack}/>
+    <div className="fc-calendar-layout"><div className="fc-panel fc-calendar-main">
+      <div className="fc-calendar-toolbar"><button className="fc-calendar-nav" type="button" onClick={()=>changeMonth(-1)}>‹</button><div><small>{mode==='personal'?'Personal space':'Family plans'}</small><h2>{monthLabel}</h2></div><div className="fc-calendar-toolbar-actions"><button className="fc-today-button" type="button" onClick={jumpToToday}>Today</button><button className="fc-calendar-nav" type="button" onClick={()=>changeMonth(1)}>›</button></div></div>
+      <div className="fc-calendar-weekdays">{['Mon','Tue','Wed','Thu','Fri','Sat','Sun'].map(day=><span key={day}>{day}</span>)}</div>
+      <div className="fc-calendar-grid">{cells.map((dayNumber,index)=>{if(dayNumber===null)return <div className="fc-calendar-cell empty" key={`empty-${index}`}/>;const cellDate=new Date(cursor.getFullYear(),cursor.getMonth(),dayNumber);const key=`${cellDate.getFullYear()}-${String(cellDate.getMonth()+1).padStart(2,'0')}-${String(cellDate.getDate()).padStart(2,'0')}`;const dayEvents=allForCell(key);return <button className={`fc-calendar-cell${key===today?' today':''}${key===selectedDate?' selected':''}${key<today?' past':''}`} type="button" key={key} onClick={()=>{setSelectedDate(key);setDate(key)}} aria-label={`${formatLongDate(key)}${dayEvents.length?`, ${dayEvents.length} event${dayEvents.length===1?'':'s'}`:''}`}><span className="fc-calendar-day-number">{dayNumber}</span>{dayEvents.length>0&&<span className="fc-calendar-markers">{dayEvents.slice(0,3).map(event=><i className={event.kind} key={event.id}/>)}</span>}</button>})}</div>
+      <div className="fc-calendar-key"><span><i className="today-key"/> Today</span><span><i className="event-key"/> Family event</span>{mode==='personal'&&<span><i className="personal-key"/> Personal</span>}<span><i className="selected-key"/> Selected</span></div>
+    </div><div className="fc-calendar-side">
+      <div className="fc-panel"><div className="fc-panel-head"><div><small>Selected day</small><h2>{formatLongDate(selectedDate)}</h2></div><span className="fc-pill">{selectedCount} item{selectedCount===1?'':'s'}</span></div>{selectedCount===0?<div className="fc-calendar-empty"><span>♡</span><strong>{mode==='personal'?'Nothing planned for this day.':'No family events on this date.'}</strong><small>{mode==='personal'?'Add something personal below.':'Choose another date or add an event below.'}</small></div>:<div className="fc-calendar-events">{familySelected.map(event=><div className="fc-calendar-event family-event" key={event.id}><span>📅</span><div><strong>{event.title}</strong><small>{event.time}{event.location?` · ${event.location}`:''}</small></div><b>Family</b></div>)}{personalSelected.map(event=><div className="fc-calendar-event personal-event" key={event.id}><span>✦</span><div><strong>{event.title}</strong><small>{event.time}{event.location?` · ${event.location}`:''}</small></div><b>Personal</b></div>)}</div>}</div>
+      <div className="fc-panel"><div className="fc-panel-head"><div><small>{mode==='personal'?'Your private plans':'Add to family calendar'}</small><h2>{mode==='personal'?'Add personal event':'New family event'}</h2></div></div><div className="fc-form-grid"><label><span>Event name *</span><input value={title} onChange={event=>setTitle(event.target.value)} placeholder={mode==='personal'?'Dentist appointment':'Family dinner'}/></label><label><span>Date *</span><input type="date" min={today} value={date} onChange={event=>{setDate(event.target.value);setSelectedDate(event.target.value)}}/></label><label><span>Time *</span><input type="time" value={time} onChange={event=>setTime(event.target.value)}/></label><label><span>Location</span><input value={location} onChange={event=>setLocation(event.target.value)} placeholder={mode==='personal'?'Optional':'At Home'}/></label><button className="fc-primary-button" type="button" onClick={addEvent}>{mode==='personal'?'Add Personal Event':'Add Family Event'}</button></div></div>
+    </div></div>{onNav()}
+  </div>
 }
