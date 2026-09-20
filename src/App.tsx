@@ -751,7 +751,7 @@ export default function App() {
     setProfileStatus(target.status)
     setProfileSocials(target.socials)
     setProfileMessage('')
-    setProfileSavedView(false)
+    setProfileSavedView(memberId === selectedMember.id)
     setToolMode('profile')
     setActiveTab('home')
   }
@@ -1219,7 +1219,7 @@ export default function App() {
           </div>
           <div className="fc-profile-saved-photo-wrap">
             <button className="fc-profile-photo-view-button" type="button" onClick={() => profileTarget.photo && setProfilePhotoViewer(profileTarget.photo)} aria-label="View profile photo"><AppAvatar member={profileTarget} className="fc-profile-saved-photo" />{profileTarget.photo && <span>View photo</span>}</button>
-            <span className="fc-profile-saved-status">● {profileTarget.status}</span>
+            <span className="fc-profile-saved-status"><i className={`fc-online-dot${memberIsOnline(profileTarget.id) ? ' online' : ''}`} /> {memberIsOnline(profileTarget.id) ? 'Online' : 'Offline'} · {profileTarget.status}</span>
           </div>
           <div className="fc-profile-saved-copy">
             <p className="fc-kicker">Family Circle profile</p>
