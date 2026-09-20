@@ -32,3 +32,19 @@
 .fc-payment-placeholder p{max-width:390px;margin:0;color:#8f9ab6;font-size:.7rem;line-height:1.45}
 .fc-payment-continue{width:100%;margin-top:18px}
 @media (max-width:640px){.fc-payment-summary{grid-template-columns:1fr}}
+
+.fc-child-access-card{width:min(700px,100%);border-color:rgba(255,95,199,.44);box-shadow:0 0 0 1px rgba(255,95,199,.07),0 0 38px rgba(255,95,199,.14),0 30px 110px rgba(0,0,0,.42)}
+.fc-child-access-card h1{color:#ffb6e8;text-shadow:0 0 18px rgba(255,95,199,.20)}
+.fc-managed-note{display:flex;align-items:flex-start;gap:10px;margin-top:20px;padding:13px 14px;border:1px solid rgba(255,95,199,.20);border-radius:14px;background:rgba(255,95,199,.045)}
+.fc-managed-note>span:first-child{font-size:1.15rem}.fc-managed-note>span:last-child{display:grid;gap:3px}.fc-managed-note strong{font-size:.74rem}.fc-managed-note small{color:#929cb7;font-size:.66rem;line-height:1.4}
+.fc-child-access-list{display:grid;gap:8px;margin-top:14px}
+.fc-child-access-row{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 13px;border:1px solid rgba(138,114,255,.16);border-radius:14px;background:#0d142c}
+.fc-child-access-row.locked{opacity:.72;border-color:rgba(255,95,199,.20)}
+.fc-child-access-row>div{display:grid;gap:3px}.fc-child-access-row strong{font-size:.76rem}.fc-child-access-row small{color:#8f9ab6;font-size:.64rem;line-height:1.35}
+.fc-access-lock{padding:5px 9px;border:1px solid rgba(255,95,199,.28);border-radius:999px;color:#ff9fda;font-size:.61rem;font-weight:850;white-space:nowrap}
+.fc-access-switch{display:flex!important;align-items:center!important;gap:7px!important;color:#9fe9ff!important;font-size:.64rem!important;white-space:nowrap}
+.fc-access-switch input{width:17px!important;min-height:17px!important;accent-color:#7c5cff}
+.fc-emergency-note{display:grid;gap:4px;margin-top:14px;padding:12px 13px;border:1px solid rgba(255,61,117,.30);border-radius:14px;background:rgba(255,61,117,.055)}
+.fc-emergency-note strong{font-size:.72rem}.fc-emergency-note span{color:#929cb7;font-size:.64rem;line-height:1.4}
+.fc-child-access-continue{width:100%;margin-top:18px}
+@media (max-width:640px){.fc-child-access-row{align-items:flex-start}.fc-access-switch{padding-top:1px}}
