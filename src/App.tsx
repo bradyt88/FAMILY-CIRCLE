@@ -6,6 +6,7 @@ import './batch15.css'
 type ToolMode = 'emergency' | 'profile' | 'family' | 'games' | 'notifications' | 'settings' | 'map' | 'music'
 type HomeTab = 'home' | 'chat' | 'photos' | 'calendar' | 'tasks' | 'shopping'
 type AccountType = 'adult' | 'child'
+type Plan = 'free' | 'plus' | 'premium'
 type ChildPermissionKey = 'chat' | 'tasks' | 'photos' | 'games' | 'music' | 'youtube' | 'globalMultiplayer' | 'location'
 type ChildPermissions = Record<ChildPermissionKey, boolean>
 
