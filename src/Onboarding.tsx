@@ -4,7 +4,20 @@ import './onboarding.css'
 
 type EntryView = 'splash' | 'welcome' | 'signin' | 'signup' | 'account-type' | 'plan' | 'payment' | 'child-access' | 'family-choice' | 'create-family' | 'join-family' | 'families'
 type Plan = 'free' | 'plus' | 'premium'
+type ChildPermissionKey = 'chat' | 'tasks' | 'photos' | 'games' | 'music' | 'youtube' | 'globalMultiplayer' | 'location'
+type ChildPermissions = Record<ChildPermissionKey, boolean>
 type FamilyConnection = { id: string; name: string }
+
+const defaultChildPermissions: ChildPermissions = {
+  chat: true,
+  tasks: true,
+  photos: true,
+  games: true,
+  music: true,
+  youtube: false,
+  globalMultiplayer: false,
+  location: true,
+}
 
 const familyStorageKey = 'family-circle-families'
 
@@ -28,7 +41,7 @@ function makeFamilyId() {
   return 'FC-' + suffix
 }
 
-export default function Onboarding({ onComplete, initialView = 'splash' }: { onComplete: (family: FamilyConnection) => void; initialView?: EntryView }) {
+export default function Onboarding({ onComplete, initialView = 'splash' }: { onComplete: (family: FamilyConnection, setup: { accountType: 'adult' | 'child'; plan: Plan; childPermissions: ChildPermissions }) => void; initialView?: EntryView }) {
   const [view, setView] = useState<EntryView>(initialView)
   const [families, setFamilies] = useState<FamilyConnection[]>(loadFamilies)
   const [selectedFamilyId, setSelectedFamilyId] = useState<string | null>(families[0]?.id ?? null)
@@ -45,6 +58,7 @@ export default function Onboarding({ onComplete, initialView = 'splash' }: { onC
   const [accountType, setAccountType] = useState<'adult' | 'child' | null>(null)
   const [selectedPlan, setSelectedPlan] = useState<Plan | null>(null)
   const [testCardFilled, setTestCardFilled] = useState(false)
+  const [childPermissions, setChildPermissions] = useState<ChildPermissions>(defaultChildPermissions)
   const [error, setError] = useState('')
   const [splashDone, setSplashDone] = useState(initialView !== 'splash')
 
@@ -138,7 +152,11 @@ export default function Onboarding({ onComplete, initialView = 'splash' }: { onC
 
   function chooseFamily(family: FamilyConnection) {
     setSelectedFamilyId(family.id)
-    onComplete(family)
+    onComplete(family, {
+      accountType: accountType ?? 'adult',
+      plan: selectedPlan ?? 'free',
+      childPermissions,
+    })
   }
 
   if (view === 'splash' && !splashDone) {
@@ -178,17 +196,18 @@ export default function Onboarding({ onComplete, initialView = 'splash' }: { onC
 
   if (view === 'child-access') {
     const childControls = [
-      { name: 'Family Chat', description: 'Talk with approved family members.', locked: false, defaultOn: true },
-      { name: 'Family Tasks & Calendar', description: 'See family tasks, plans and events.', locked: false, defaultOn: true },
-      { name: 'Family Photos & Videos', description: 'View and share family memories.', locked: false, defaultOn: true },
-      { name: 'Games', description: 'Play Family Circle games available on this plan.', locked: false, defaultOn: true },
-      { name: 'Family Music', description: 'Listen to Family Circle music.', locked: false, defaultOn: true },
-      { name: 'YouTube', description: 'External video content.', locked: false, defaultOn: false },
-      { name: 'Global Multiplayer', description: 'Play with people outside their Family Circle.', locked: false, defaultOn: false },
+      { name: 'Family Chat', key: 'chat' as ChildPermissionKey, description: 'Talk with approved family members.', locked: false, defaultOn: childPermissions.chat },
+      { name: 'Family Tasks & Calendar', key: 'tasks' as ChildPermissionKey, description: 'See family tasks, plans and events.', locked: false, defaultOn: childPermissions.tasks },
+      { name: 'Family Photos & Videos', key: 'photos' as ChildPermissionKey, description: 'View and share family memories.', locked: false, defaultOn: childPermissions.photos },
+      { name: 'Games', key: 'games' as ChildPermissionKey, description: 'Play Family Circle games available on this plan.', locked: false, defaultOn: childPermissions.games },
+      { name: 'Family Music', key: 'music' as ChildPermissionKey, description: 'Listen to Family Circle music.', locked: false, defaultOn: childPermissions.music },
+      { name: 'YouTube', key: 'youtube' as ChildPermissionKey, description: 'External video content.', locked: false, defaultOn: childPermissions.youtube },
+      { name: 'Global Multiplayer', key: 'globalMultiplayer' as ChildPermissionKey, description: 'Play with people outside their Family Circle.', locked: false, defaultOn: childPermissions.globalMultiplayer },
+      { name: 'Location Sharing', key: 'location' as ChildPermissionKey, description: 'See family location features.', locked: false, defaultOn: childPermissions.location },
       { name: 'Music Community', description: 'Community music and interaction with other users.', locked: true, defaultOn: false },
     ]
 
-    return <main className="fc-onboarding-shell"><section className="fc-onboarding-card fc-child-access-card"><button className="fc-back-link" type="button" onClick={() => selectedPlan === 'free' ? go('plan') : go('payment')}>← Back</button><p className="fc-kicker">Child account · Step 4</p><h1>Set your child's access</h1><p className="fc-onboarding-copy">Choose the features your child can use. You can change these permissions later from Family Moderator settings.</p><div className="fc-managed-note"><span>🔒</span><span><strong>Managed by the Family Moderator</strong><small>Child safety restrictions stay in place even when a feature is included in the selected plan.</small></span></div><div className="fc-child-access-list">{childControls.map((control) => <div className={control.locked ? 'fc-child-access-row locked' : 'fc-child-access-row'} key={control.name}><div><strong>{control.name}</strong><small>{control.description}</small></div>{control.locked ? <span className="fc-access-lock">Locked</span> : <label className="fc-access-switch"><input type="checkbox" defaultChecked={control.defaultOn} disabled={control.locked} /><span>Allow</span></label>}</div>)}</div><div className="fc-emergency-note"><strong>🚨 Emergency access stays on</strong><span>Safety-critical emergency features cannot be turned off.</span></div><button className="fc-primary-button fc-child-access-continue" type="button" onClick={() => go('family-choice')}>Continue</button></section></main>
+    return <main className="fc-onboarding-shell"><section className="fc-onboarding-card fc-child-access-card"><button className="fc-back-link" type="button" onClick={() => selectedPlan === 'free' ? go('plan') : go('payment')}>← Back</button><p className="fc-kicker">Child account · Step 4</p><h1>Set your child's access</h1><p className="fc-onboarding-copy">Choose the features your child can use. You can change these permissions later from Family Moderator settings.</p><div className="fc-managed-note"><span>🔒</span><span><strong>Managed by the Family Moderator</strong><small>Child safety restrictions stay in place even when a feature is included in the selected plan.</small></span></div><div className="fc-child-access-list">{childControls.map((control) => <div className={control.locked ? 'fc-child-access-row locked' : 'fc-child-access-row'} key={control.name}><div><strong>{control.name}</strong><small>{control.description}</small></div>{control.locked ? <span className="fc-access-lock">Locked</span> : <label className="fc-access-switch"><input type="checkbox" checked={control.key ? childPermissions[control.key] : control.defaultOn} disabled={control.locked} onChange={(event) => control.key && setChildPermissions((current) => ({ ...current, [control.key]: event.target.checked }))} /><span>Allow</span></label>}</div>)}</div><div className="fc-emergency-note"><strong>🚨 Emergency access stays on</strong><span>Safety-critical emergency features cannot be turned off.</span></div><button className="fc-primary-button fc-child-access-continue" type="button" onClick={() => go('family-choice')}>Continue</button></section></main>
   }
 
   if (view === 'family-choice') {
