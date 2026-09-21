@@ -4132,3 +4132,64 @@
 .fc-court-punishments button:hover{transform:translateY(-1px);border-color:rgba(255,210,100,.55)}
 .fc-verdict-gavel{display:block;font-size:58px}.fc-verdict-gavel.strike{animation:fc-gavel-strike .65s cubic-bezier(.2,.8,.25,1) both}.fc-verdict-buttons{justify-content:center}
 @keyframes fc-gavel-strike{0%{transform:translateY(-42px) rotate(-18deg);opacity:0}55%{transform:translateY(8px) rotate(8deg);opacity:1}78%{transform:translateY(-3px) rotate(1deg)}100%{transform:translateY(0) rotate(0)}}
+
+
+/* Family Court — Review Previous Cases & Appeals */
+.fc-court-lobby-grid-refined{grid-template-columns:1fr 1fr}
+.fc-court-start-card{grid-column:1 / -1;min-height:128px}
+.fc-court-review-panel{max-width:980px;margin:0 auto;padding:26px;border:1px solid rgba(255,196,92,.24);border-radius:26px;background:linear-gradient(145deg,rgba(20,19,39,.98),rgba(8,12,28,.98));box-shadow:0 22px 70px rgba(0,0,0,.24)}
+.fc-court-review-heading{display:flex;align-items:center;gap:18px;margin-bottom:22px}
+.fc-court-review-heading h2{margin:3px 0 0;color:#fff1c9;font-size:clamp(1.45rem,3.4vw,2rem)}
+.fc-court-review-heading p{margin:7px 0 0;color:#aeb4ca;line-height:1.5}
+.fc-court-review-list{display:grid;gap:12px;margin-bottom:20px}
+.fc-court-review-row{width:100%;display:grid;grid-template-columns:auto 1fr auto;align-items:center;gap:15px;padding:16px;border:1px solid rgba(255,255,255,.09);border-radius:19px;background:linear-gradient(145deg,rgba(18,23,45,.98),rgba(9,13,29,.98));color:#fff;text-align:left;cursor:pointer;transition:transform .16s ease,border-color .16s ease,box-shadow .16s ease}
+.fc-court-review-row:hover{transform:translateY(-2px);border-color:rgba(255,196,92,.42);box-shadow:0 18px 50px rgba(0,0,0,.22)}
+.fc-court-review-row-icon{width:48px;height:48px;display:grid;place-items:center;border-radius:15px;background:rgba(255,196,92,.09);border:1px solid rgba(255,196,92,.22);font-size:1.35rem}
+.fc-court-review-row>div:nth-child(2){display:grid;gap:4px}
+.fc-court-review-row small{color:#8f96ae;font-size:.66rem;font-weight:800;letter-spacing:.08em}
+.fc-court-review-row strong{font-size:1rem}
+.fc-court-review-row span{color:#b8bdd0;font-size:.76rem}
+.fc-court-review-row em{width:max-content;padding:4px 7px;border-radius:8px;background:rgba(166,107,255,.12);color:#d8c8ff;font-style:normal;font-size:.64rem;font-weight:800}
+.fc-court-review-row>b{color:#ffe2a1;font-size:1.2rem}
+.fc-court-review-empty{display:grid;place-items:center;gap:8px;padding:55px 20px;border:1px dashed rgba(255,196,92,.22);border-radius:20px;text-align:center;background:rgba(255,255,255,.018)}
+.fc-court-review-empty span{font-size:2rem}.fc-court-review-empty strong{font-size:1rem}.fc-court-review-empty small{color:#8f96ae}
+.fc-court-review-summary{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:18px}
+.fc-court-review-summary>div{padding:15px;border:1px solid rgba(255,255,255,.08);border-radius:17px;background:rgba(255,255,255,.025)}
+.fc-court-review-summary small{display:block;color:#8f96ae;font-size:.62rem;font-weight:850;letter-spacing:.1em}
+.fc-court-review-summary strong{display:block;margin-top:6px;color:#fff1c9;font-size:.84rem}
+.fc-court-review-section{padding:18px;border:1px solid rgba(255,255,255,.08);border-radius:19px;background:rgba(255,255,255,.02);margin-bottom:14px}
+.fc-court-review-section p{margin:7px 0;color:#aeb4ca;line-height:1.5}
+.fc-court-file-tags{display:flex;flex-wrap:wrap;gap:7px;margin-top:12px}
+.fc-court-file-tags span{padding:6px 9px;border-radius:9px;background:rgba(255,196,92,.08);border:1px solid rgba(255,196,92,.15);color:#d7c99e;font-size:.65rem;font-weight:800}
+.fc-court-appeal-pack,.fc-court-appeal-vote,.fc-court-appeal-ready,.fc-court-appeal-final{padding:18px;border-radius:19px;margin-bottom:14px;border:1px solid rgba(166,107,255,.22);background:linear-gradient(145deg,rgba(41,28,69,.55),rgba(14,16,35,.7))}
+.fc-court-appeal-pack h3,.fc-court-appeal-vote h3{margin:5px 0;color:#fff}
+.fc-court-appeal-pack p,.fc-court-appeal-vote p,.fc-court-appeal-ready p,.fc-court-appeal-final p{margin:6px 0;color:#aeb4ca;line-height:1.5}
+.fc-court-appeal-action{display:flex;align-items:center;justify-content:space-between;gap:14px;padding:16px;margin-bottom:14px;border:1px solid rgba(255,196,92,.25);border-radius:18px;background:rgba(255,196,92,.045)}
+.fc-court-appeal-action>span{color:#ffe2a1;font-size:.75rem;font-weight:850}
+.fc-court-appeal-ready{border-color:rgba(116,231,170,.3);background:rgba(60,190,120,.06)}
+.fc-court-appeal-ready strong{color:#9ff0bf}
+.fc-court-appeal-final{border-color:rgba(255,255,255,.12)}
+.fc-court-appeal-final strong{color:#fff1c9}
+.fc-court-appeal-form{display:grid;gap:16px}
+.fc-court-appeal-form label{display:grid;gap:7px}
+.fc-court-appeal-form label>span{color:#d8dbea;font-size:.74rem;font-weight:800}
+.fc-court-appeal-form textarea,.fc-court-appeal-form select{width:100%;box-sizing:border-box;border:1px solid rgba(255,255,255,.12);border-radius:14px;background:#0d1124;color:#fff;padding:12px 13px;font:inherit}
+.fc-court-appeal-form textarea{min-height:125px;resize:vertical}
+.fc-court-appeal-upload{display:grid;gap:12px;padding:17px;border:1px dashed rgba(255,196,92,.25);border-radius:18px;background:rgba(255,196,92,.025)}
+.fc-court-appeal-upload>div:first-child{display:grid;gap:4px}
+.fc-court-appeal-upload strong{color:#fff}.fc-court-appeal-upload small{color:#8f96ae}
+.fc-court-evidence-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:9px}
+.fc-court-evidence-grid img{width:100%;aspect-ratio:1;object-fit:cover;border-radius:12px;border:1px solid rgba(255,255,255,.1)}
+.fc-court-appeal-pack-preview{padding:15px;border-radius:16px;background:rgba(138,114,255,.07);border:1px solid rgba(138,114,255,.18);display:grid;gap:5px}
+.fc-court-appeal-pack-preview strong{color:#fff}.fc-court-appeal-pack-preview small{color:#9fa6bf;line-height:1.4}
+@media(max-width:700px){
+  .fc-court-lobby-grid-refined{grid-template-columns:1fr}
+  .fc-court-start-card{grid-column:auto}
+  .fc-court-review-panel{padding:20px}
+  .fc-court-review-summary{grid-template-columns:1fr}
+  .fc-court-review-heading{align-items:flex-start}
+  .fc-court-review-row{grid-template-columns:auto 1fr}
+  .fc-court-review-row>b{display:none}
+  .fc-court-appeal-action{align-items:stretch;flex-direction:column}
+  .fc-court-evidence-grid{grid-template-columns:repeat(2,1fr)}
+}
