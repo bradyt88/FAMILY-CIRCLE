@@ -45,7 +45,7 @@ type FamilyPhoto = { id: string; src: string; name: string; time: string }
 type FamilyEvent = { id: string; title: string; date: string; time: string; location: string }
 type PersonalEvent = FamilyEvent
 type FamilyTask = { id: string; title: string; dueDate: string; assignedTo: string; completed: boolean }
-type FamilyCourtCase = { id: string; title: string; accuserId: string; accusedId: string; status: 'scheduled' | 'summoned' | 'ready'; createdAt: string; scheduledDate?: string; scheduledTime?: string; acceptedMemberIds?: string[]; judgeId?: string; courtStarted?: boolean; courtStage?: 'opening-writing' | 'opening-reading-accuser' | 'opening-reading-accused' | 'opening-complete'; courtStageStartedAt?: string; openingStatements?: Record<string, string> }
+type FamilyCourtCase = { id: string; title: string; accuserId: string; accusedId: string; status: 'scheduled' | 'summoned' | 'ready'; createdAt: string; scheduledDate?: string; scheduledTime?: string; acceptedMemberIds?: string[]; judgeId?: string; courtStarted?: boolean; courtStage?: 'opening-writing' | 'opening-reading-accuser' | 'opening-reading-accused' | 'evidence-upload' | 'evidence-review-accuser' | 'evidence-review-accused' | 'evidence-complete'; courtStageStartedAt?: string; openingStatements?: Record<string, string>; openingSubmittedBy?: string[]; evidence?: Record<string, string[]>; evidenceSubmittedBy?: string[] }
 type MoneyRequest = { id: string; requesterId: string; amount: string; purpose: string; dueDate: string; status: 'Pending' | 'Accepted'; lenderId?: string; taskId?: string; calendarEventId?: string }
 type MusicTrack = { id: string; title: string; artist: string; genres: string[]; audioSrc: string; artwork?: string; youtubeUrl?: string; explicit: boolean; kidsAllowed: boolean; visualStyle: 1 | 2 | 3 | 4 | 5 }
 type MusicCommunityProfile = {
@@ -466,17 +466,27 @@ export default function App() {
     setFamilyCourtCases((current) => current.map((item) => {
       if (item.id !== familyCourtOpenedCaseId || !item.courtStarted) return item
       if (!item.courtStage || !item.courtStageStartedAt) {
-        return { ...item, courtStage: 'opening-writing', courtStageStartedAt: new Date().toISOString(), openingStatements: item.openingStatements ?? {} }
+        return { ...item, courtStage: 'opening-writing', courtStageStartedAt: new Date().toISOString(), openingStatements: item.openingStatements ?? {}, openingSubmittedBy: item.openingSubmittedBy ?? [], evidence: item.evidence ?? {}, evidenceSubmittedBy: item.evidenceSubmittedBy ?? [] }
       }
       const elapsed = (familyCourtClock - new Date(item.courtStageStartedAt).getTime()) / 1000
-      if (item.courtStage === 'opening-writing' && elapsed >= 90) {
-        return { ...item, courtStage: 'opening-reading-accuser', courtStageStartedAt: new Date(familyCourtClock).toISOString() }
+      const parties = [item.accuserId, item.accusedId]
+      if (item.courtStage === 'opening-writing' && (elapsed >= 60 || parties.every((id) => (item.openingSubmittedBy ?? []).includes(id)))) {
+        return { ...item, courtStage: 'opening-reading-accuser', courtStageStartedAt: new Date(familyCourtClock).toISOString(), openingSubmittedBy: parties }
       }
-      if (item.courtStage === 'opening-reading-accuser' && elapsed >= 60) {
+      if (item.courtStage === 'opening-reading-accuser' && elapsed >= 30) {
         return { ...item, courtStage: 'opening-reading-accused', courtStageStartedAt: new Date(familyCourtClock).toISOString() }
       }
-      if (item.courtStage === 'opening-reading-accused' && elapsed >= 60) {
-        return { ...item, courtStage: 'opening-complete', courtStageStartedAt: new Date(familyCourtClock).toISOString() }
+      if (item.courtStage === 'opening-reading-accused' && elapsed >= 30) {
+        return { ...item, courtStage: 'evidence-upload', courtStageStartedAt: new Date(familyCourtClock).toISOString(), evidence: item.evidence ?? {}, evidenceSubmittedBy: [] }
+      }
+      if (item.courtStage === 'evidence-upload' && (elapsed >= 60 || parties.every((id) => (item.evidenceSubmittedBy ?? []).includes(id)))) {
+        return { ...item, courtStage: 'evidence-review-accuser', courtStageStartedAt: new Date(familyCourtClock).toISOString(), evidenceSubmittedBy: parties }
+      }
+      if (item.courtStage === 'evidence-review-accuser' && elapsed >= 30) {
+        return { ...item, courtStage: 'evidence-review-accused', courtStageStartedAt: new Date(familyCourtClock).toISOString() }
+      }
+      if (item.courtStage === 'evidence-review-accused' && elapsed >= 30) {
+        return { ...item, courtStage: 'evidence-complete', courtStageStartedAt: new Date(familyCourtClock).toISOString() }
       }
       return item
     }))
@@ -1548,6 +1558,30 @@ export default function App() {
     }))
   }
 
+  function submitOpeningStatement(caseId: string) {
+    setFamilyCourtCases((current) => current.map((item) => item.id === caseId ? { ...item, openingSubmittedBy: Array.from(new Set([...(item.openingSubmittedBy ?? []), selectedMember.id])) } : item))
+  }
+
+  function addCourtEvidence(caseId: string, file: File) {
+    if (!file.type.startsWith('image/')) return
+    const reader = new FileReader()
+    reader.onload = () => {
+      const src = typeof reader.result === 'string' ? reader.result : ''
+      if (!src) return
+      setFamilyCourtCases((current) => current.map((item) => {
+        if (item.id !== caseId) return item
+        const existing = item.evidence?.[selectedMember.id] ?? []
+        if (existing.length >= 4) return item
+        return { ...item, evidence: { ...(item.evidence ?? {}), [selectedMember.id]: [...existing, src] } }
+      }))
+    }
+    reader.readAsDataURL(file)
+  }
+
+  function submitCourtEvidence(caseId: string) {
+    setFamilyCourtCases((current) => current.map((item) => item.id === caseId ? { ...item, evidenceSubmittedBy: Array.from(new Set([...(item.evidenceSubmittedBy ?? []), selectedMember.id])) } : item))
+  }
+
   function resetFamilyCourtCaseSetup(view: 'hub' | 'form' = 'hub') {
     setFamilyCourtCaseTitle('')
     setFamilyCourtAccusedId('')
@@ -1675,14 +1709,18 @@ export default function App() {
               {!currentCourtCase.courtStarted ? <button className="fc-primary-button fc-court-begin-button" type="button" disabled={!judge} onClick={() => beginFamilyCourt(currentCourtCase.id)}>🔨 BEGIN COURT</button> : (() => {
                 const stage = currentCourtCase.courtStage ?? 'opening-writing'
                 const stageStartedAt = currentCourtCase.courtStageStartedAt ? new Date(currentCourtCase.courtStageStartedAt).getTime() : familyCourtClock
-                const stageLimit = stage === 'opening-writing' ? 90 : stage === 'opening-reading-accuser' || stage === 'opening-reading-accused' ? 60 : 0
+                const stageLimit = stage === 'opening-writing' || stage === 'evidence-upload' ? 60 : stage === 'opening-reading-accuser' || stage === 'opening-reading-accused' || stage === 'evidence-review-accuser' || stage === 'evidence-review-accused' ? 30 : 0
                 const stageRemaining = stageLimit ? Math.max(0, stageLimit - Math.floor((familyCourtClock - stageStartedAt) / 1000)) : 0
                 const isParty = selectedMember.id === currentCourtCase.accuserId || selectedMember.id === currentCourtCase.accusedId
                 const currentDraft = currentCourtCase.openingStatements?.[selectedMember.id] ?? ''
+                const openingSubmitted = currentCourtCase.openingSubmittedBy?.includes(selectedMember.id) ?? false
+                const currentEvidence = currentCourtCase.evidence?.[selectedMember.id] ?? []
+                const evidenceSubmitted = currentCourtCase.evidenceSubmittedBy?.includes(selectedMember.id) ?? false
                 const accuserStatement = currentCourtCase.openingStatements?.[currentCourtCase.accuserId] ?? ''
                 const accusedStatement = currentCourtCase.openingStatements?.[currentCourtCase.accusedId] ?? ''
                 const readingStatement = stage === 'opening-reading-accuser' ? accuserStatement : accusedStatement
-                const readingMember = stage === 'opening-reading-accuser' ? accuserMember : accusedMember
+                const readingMember = stage === 'opening-reading-accuser' || stage === 'evidence-review-accuser' ? accuserMember : accusedMember
+                const readingEvidence = stage === 'evidence-review-accuser' ? (currentCourtCase.evidence?.[currentCourtCase.accuserId] ?? []) : (currentCourtCase.evidence?.[currentCourtCase.accusedId] ?? [])
                 return <section className="fc-court-hearing-stage">
                   {stage === 'opening-writing' && <div className="fc-opening-writing">
                     <div className="fc-opening-kicker"><span>COURT IS NOW IN SESSION</span><strong>OPENING STATEMENTS</strong></div>
@@ -1691,22 +1729,45 @@ export default function App() {
                       <span>PRIVATE TO THE COURT</span>
                       <h3>Prepare your opening statement.</h3>
                       <p>Your statement is private while you write. The other side cannot see it.</p>
-                      <textarea value={currentDraft} onChange={(event) => saveOpeningStatement(currentCourtCase.id, event.target.value)} maxLength={1500} placeholder="Write your opening statement..." aria-label="Opening statement" />
+                      <textarea value={currentDraft} onChange={(event) => saveOpeningStatement(currentCourtCase.id, event.target.value)} maxLength={1500} placeholder="Write your opening statement..." aria-label="Opening statement" disabled={openingSubmitted} />
                       <small>{currentDraft.length}/1500</small>
+                      {openingSubmitted ? <strong>✓ Submitted — waiting for the other side.</strong> : <button className="fc-primary-button" type="button" onClick={() => submitOpeningStatement(currentCourtCase.id)}>Submit Opening Statement</button>}
                     </div> : <div className="fc-opening-waiting"><span>⚖️</span><strong>The parties are preparing their opening statements.</strong><p>The jury will see each statement when its reading stage begins.</p></div>}
                   </div>}
                   {stage === 'opening-reading-accuser' && <div className="fc-opening-reading">
                     <span className="fc-opening-kicker">ACCUSER'S OPENING STATEMENT</span>
-                    <div className="fc-opening-reading-header"><div><small>60 SECOND READING</small><strong>{readingMember.label}</strong></div><span>{stageRemaining}s</span></div>
+                    <div className="fc-opening-reading-header"><div><small>30 SECOND READING</small><strong>{readingMember.label}</strong></div><span>{stageRemaining}s</span></div>
                     <article>{readingStatement || <em>No statement was submitted.</em>}</article>
                   </div>}
                   {stage === 'opening-reading-accused' && <div className="fc-opening-reading accused-reading">
                     <span className="fc-opening-kicker">ACCUSED'S OPENING STATEMENT</span>
-                    <div className="fc-opening-reading-header"><div><small>60 SECOND READING</small><strong>{readingMember.label}</strong></div><span>{stageRemaining}s</span></div>
+                    <div className="fc-opening-reading-header"><div><small>30 SECOND READING</small><strong>{readingMember.label}</strong></div><span>{stageRemaining}s</span></div>
                     <article>{readingStatement || <em>No statement was submitted.</em>}</article>
                   </div>}
-                  {stage === 'opening-complete' && <div className="fc-opening-complete">
-                    <span>⚖️</span><small>OPENING STATEMENTS COMPLETE</small><h3>The court has heard both sides.</h3><p>The next stage is Evidence.</p>
+                  {stage === 'evidence-upload' && <div className="fc-opening-writing">
+                    <div className="fc-opening-kicker"><span>OPENING STATEMENTS COMPLETE</span><strong>EVIDENCE</strong></div>
+                    <div className="fc-opening-timer"><span>{stageRemaining}</span><small>SECONDS</small></div>
+                    {isParty ? <div className="fc-opening-private">
+                      <span>PRIVATE TO THE COURT</span>
+                      <h3>Upload your evidence.</h3>
+                      <p>Both sides upload at the same time. Add up to 4 photos, screenshots or pictures, then submit when finished.</p>
+                      <label className="fc-primary-button">＋ Add Evidence<input className="fc-hidden" type="file" accept="image/*" disabled={evidenceSubmitted || currentEvidence.length >= 4} onChange={(event) => { const file = event.target.files?.[0]; if (file) addCourtEvidence(currentCourtCase.id, file); event.currentTarget.value = '' }} /></label>
+                      {currentEvidence.length > 0 && <div><strong>{currentEvidence.length}/4 exhibits added</strong>{currentEvidence.map((src, index) => <img key={index} src={src} alt={'Exhibit ' + String.fromCharCode(65 + index)} style={{ width: 64, height: 64, objectFit: 'cover', borderRadius: 10, margin: 4 }} />)}</div>}
+                      {evidenceSubmitted ? <strong>✓ Submitted — waiting for the other side.</strong> : <button className="fc-primary-button" type="button" onClick={() => submitCourtEvidence(currentCourtCase.id)}>Submit Evidence</button>}
+                    </div> : <div className="fc-opening-waiting"><span>⚖️</span><strong>The parties are uploading evidence.</strong><p>Both sides have up to 60 seconds. The court will review each side separately.</p></div>}
+                  </div>}
+                  {stage === 'evidence-review-accuser' && <div className="fc-opening-reading">
+                    <span className="fc-opening-kicker">ACCUSER'S EVIDENCE</span>
+                    <div className="fc-opening-reading-header"><div><small>30 SECOND REVIEW</small><strong>{readingMember.label}</strong></div><span>{stageRemaining}s</span></div>
+                    {readingEvidence.length > 0 ? <div>{readingEvidence.map((src, index) => <figure key={index}><img src={src} alt={'Exhibit ' + String.fromCharCode(65 + index)} style={{ maxWidth: '100%', maxHeight: 280, objectFit: 'contain', borderRadius: 12, margin: 6 }} /><figcaption>Exhibit {String.fromCharCode(65 + index)}</figcaption></figure>)}</div> : <article><em>No evidence submitted.</em></article>}
+                  </div>}
+                  {stage === 'evidence-review-accused' && <div className="fc-opening-reading accused-reading">
+                    <span className="fc-opening-kicker">ACCUSED'S EVIDENCE</span>
+                    <div className="fc-opening-reading-header"><div><small>30 SECOND REVIEW</small><strong>{readingMember.label}</strong></div><span>{stageRemaining}s</span></div>
+                    {readingEvidence.length > 0 ? <div>{readingEvidence.map((src, index) => <figure key={index}><img src={src} alt={'Exhibit ' + String.fromCharCode(65 + index)} style={{ maxWidth: '100%', maxHeight: 280, objectFit: 'contain', borderRadius: 12, margin: 6 }} /><figcaption>Exhibit {String.fromCharCode(65 + index)}</figcaption></figure>)}</div> : <article><em>No evidence submitted.</em></article>}
+                  </div>}
+                  {stage === 'evidence-complete' && <div className="fc-opening-complete">
+                    <span>⚖️</span><small>EVIDENCE COMPLETE</small><h3>The court has reviewed both sides' evidence.</h3><p>The next stage is the Judge's Question.</p>
                   </div>}
                 </section>
               })()}
