@@ -45,7 +45,7 @@ type FamilyPhoto = { id: string; src: string; name: string; time: string }
 type FamilyEvent = { id: string; title: string; date: string; time: string; location: string }
 type PersonalEvent = FamilyEvent
 type FamilyTask = { id: string; title: string; dueDate: string; assignedTo: string; completed: boolean }
-type FamilyCourtCase = { id: string; title: string; accuserId: string; accusedId: string; status: 'scheduled' | 'summoned' | 'ready'; createdAt: string; scheduledDate?: string; scheduledTime?: string; acceptedMemberIds?: string[]; judgeId?: string; courtStarted?: boolean; courtStage?: 'opening-writing' | 'opening-reading-accuser' | 'opening-reading-accused' | 'evidence-upload' | 'evidence-review-accuser' | 'evidence-review-accused' | 'evidence-complete'; courtStageStartedAt?: string; openingStatements?: Record<string, string>; openingSubmittedBy?: string[]; evidence?: Record<string, string[]>; evidenceSubmittedBy?: string[] }
+type FamilyCourtCase = { id: string; title: string; accuserId: string; accusedId: string; status: 'scheduled' | 'summoned' | 'ready'; createdAt: string; scheduledDate?: string; scheduledTime?: string; acceptedMemberIds?: string[]; judgeId?: string; courtStarted?: boolean; courtStage?: 'opening-writing' | 'opening-reading-accuser' | 'opening-reading-accused' | 'evidence-upload' | 'evidence-review-accuser' | 'evidence-review-accused' | 'evidence-complete' | 'judge-question-writing' | 'answer-writing' | 'jury-vote' | 'verdict' | 'punishment' | 'case-closed'; courtStageStartedAt?: string; openingStatements?: Record<string, string>; openingSubmittedBy?: string[]; evidence?: Record<string, string[]>; evidenceSubmittedBy?: string[]; judgeQuestions?: Record<string, string>; judgeQuestionsSubmitted?: boolean; answers?: Record<string, string>; answersSubmittedBy?: string[]; juryVotes?: Record<string, 'guilty' | 'not-guilty'>; verdict?: 'guilty' | 'not-guilty'; punishment?: string }
 type MoneyRequest = { id: string; requesterId: string; amount: string; purpose: string; dueDate: string; status: 'Pending' | 'Accepted'; lenderId?: string; taskId?: string; calendarEventId?: string }
 type MusicTrack = { id: string; title: string; artist: string; genres: string[]; audioSrc: string; artwork?: string; youtubeUrl?: string; explicit: boolean; kidsAllowed: boolean; visualStyle: 1 | 2 | 3 | 4 | 5 }
 type MusicCommunityProfile = {
@@ -486,7 +486,21 @@ export default function App() {
         return { ...item, courtStage: 'evidence-review-accused', courtStageStartedAt: new Date(familyCourtClock).toISOString() }
       }
       if (item.courtStage === 'evidence-review-accused' && elapsed >= 30) {
-        return { ...item, courtStage: 'evidence-complete', courtStageStartedAt: new Date(familyCourtClock).toISOString() }
+        return { ...item, courtStage: 'judge-question-writing', courtStageStartedAt: new Date(familyCourtClock).toISOString(), judgeQuestions: item.judgeQuestions ?? {} }
+      }
+      if (item.courtStage === 'judge-question-writing' && (elapsed >= 60 || item.judgeQuestionsSubmitted)) {
+        return { ...item, courtStage: 'answer-writing', courtStageStartedAt: new Date(familyCourtClock).toISOString(), answers: item.answers ?? {}, answersSubmittedBy: [] }
+      }
+      if (item.courtStage === 'answer-writing' && (elapsed >= 20 || parties.every((id) => (item.answersSubmittedBy ?? []).includes(id)))) {
+        const juryIds = members.filter((member) => !parties.includes(member.id) && member.id !== item.judgeId).map((member) => member.id)
+        return { ...item, courtStage: juryIds.length > 0 ? 'jury-vote' : 'verdict', courtStageStartedAt: new Date(familyCourtClock).toISOString(), answersSubmittedBy: parties, juryVotes: item.juryVotes ?? {} }
+      }
+      if (item.courtStage === 'jury-vote' && elapsed >= 30) {
+        const juryIds = members.filter((member) => !parties.includes(member.id) && member.id !== item.judgeId).map((member) => member.id)
+        const votes = juryIds.map((id) => (item.juryVotes ?? {})[id]).filter(Boolean) as Array<'guilty' | 'not-guilty'>
+        const guilty = votes.filter((vote) => vote === 'guilty').length
+        const notGuilty = votes.filter((vote) => vote === 'not-guilty').length
+        return { ...item, courtStage: 'verdict', courtStageStartedAt: new Date(familyCourtClock).toISOString(), verdict: guilty > notGuilty ? 'guilty' : 'not-guilty' }
       }
       return item
     }))
@@ -1582,6 +1596,36 @@ export default function App() {
     setFamilyCourtCases((current) => current.map((item) => item.id === caseId ? { ...item, evidenceSubmittedBy: Array.from(new Set([...(item.evidenceSubmittedBy ?? []), selectedMember.id])) } : item))
   }
 
+  function saveJudgeQuestion(caseId: string, memberId: string, text: string) {
+    setFamilyCourtCases((current) => current.map((item) => item.id === caseId ? { ...item, judgeQuestions: { ...(item.judgeQuestions ?? {}), [memberId]: text } } : item))
+  }
+
+  function submitJudgeQuestions(caseId: string) {
+    setFamilyCourtCases((current) => current.map((item) => item.id === caseId ? { ...item, judgeQuestionsSubmitted: true } : item))
+  }
+
+  function saveCourtAnswer(caseId: string, text: string) {
+    setFamilyCourtCases((current) => current.map((item) => item.id === caseId ? { ...item, answers: { ...(item.answers ?? {}), [selectedMember.id]: text } } : item))
+  }
+
+  function submitCourtAnswer(caseId: string) {
+    setFamilyCourtCases((current) => current.map((item) => item.id === caseId ? { ...item, answersSubmittedBy: Array.from(new Set([...(item.answersSubmittedBy ?? []), selectedMember.id])) } : item))
+  }
+
+  function castJuryVote(caseId: string, vote: 'guilty' | 'not-guilty') {
+    setFamilyCourtCases((current) => current.map((item) => item.id === caseId ? { ...item, juryVotes: { ...(item.juryVotes ?? {}), [selectedMember.id]: vote } } : item))
+  }
+
+  function judgeSetVerdict(caseId: string, verdict: 'guilty' | 'not-guilty') {
+    setFamilyCourtCases((current) => current.map((item) => item.id === caseId ? { ...item, verdict, courtStage: verdict === 'guilty' ? 'punishment' : 'case-closed', courtStageStartedAt: new Date().toISOString() } : item))
+  }
+
+  function judgeSetPunishment(caseId: string, punishment: string) {
+    const value = punishment.trim()
+    if (!value) return
+    setFamilyCourtCases((current) => current.map((item) => item.id === caseId ? { ...item, punishment: value, courtStage: 'case-closed', courtStageStartedAt: new Date().toISOString() } : item))
+  }
+
   function resetFamilyCourtCaseSetup(view: 'hub' | 'form' = 'hub') {
     setFamilyCourtCaseTitle('')
     setFamilyCourtAccusedId('')
@@ -1709,13 +1753,18 @@ export default function App() {
               {!currentCourtCase.courtStarted ? <button className="fc-primary-button fc-court-begin-button" type="button" disabled={!judge} onClick={() => beginFamilyCourt(currentCourtCase.id)}>🔨 BEGIN COURT</button> : (() => {
                 const stage = currentCourtCase.courtStage ?? 'opening-writing'
                 const stageStartedAt = currentCourtCase.courtStageStartedAt ? new Date(currentCourtCase.courtStageStartedAt).getTime() : familyCourtClock
-                const stageLimit = stage === 'opening-writing' || stage === 'evidence-upload' ? 60 : stage === 'opening-reading-accuser' || stage === 'opening-reading-accused' || stage === 'evidence-review-accuser' || stage === 'evidence-review-accused' ? 30 : 0
+                const stageLimit = stage === 'opening-writing' || stage === 'evidence-upload' || stage === 'judge-question-writing' ? 60 : stage === 'opening-reading-accuser' || stage === 'opening-reading-accused' || stage === 'evidence-review-accuser' || stage === 'evidence-review-accused' ? 30 : stage === 'answer-writing' ? 20 : stage === 'jury-vote' ? 30 : 0
                 const stageRemaining = stageLimit ? Math.max(0, stageLimit - Math.floor((familyCourtClock - stageStartedAt) / 1000)) : 0
                 const isParty = selectedMember.id === currentCourtCase.accuserId || selectedMember.id === currentCourtCase.accusedId
                 const currentDraft = currentCourtCase.openingStatements?.[selectedMember.id] ?? ''
                 const openingSubmitted = currentCourtCase.openingSubmittedBy?.includes(selectedMember.id) ?? false
                 const currentEvidence = currentCourtCase.evidence?.[selectedMember.id] ?? []
                 const evidenceSubmitted = currentCourtCase.evidenceSubmittedBy?.includes(selectedMember.id) ?? false
+                const currentAnswer = currentCourtCase.answers?.[selectedMember.id] ?? ''
+                const answerSubmitted = currentCourtCase.answersSubmittedBy?.includes(selectedMember.id) ?? false
+                const currentQuestions = currentCourtCase.judgeQuestions ?? {}
+                const questionsSubmitted = currentCourtCase.judgeQuestionsSubmitted ?? false
+                const currentJuryVote = currentCourtCase.juryVotes?.[selectedMember.id]
                 const accuserStatement = currentCourtCase.openingStatements?.[currentCourtCase.accuserId] ?? ''
                 const accusedStatement = currentCourtCase.openingStatements?.[currentCourtCase.accusedId] ?? ''
                 const readingStatement = stage === 'opening-reading-accuser' ? accuserStatement : accusedStatement
@@ -1766,9 +1815,13 @@ export default function App() {
                     <div className="fc-opening-reading-header"><div><small>30 SECOND REVIEW</small><strong>{readingMember.label}</strong></div><span>{stageRemaining}s</span></div>
                     {readingEvidence.length > 0 ? <div>{readingEvidence.map((src, index) => <figure key={index}><img src={src} alt={'Exhibit ' + String.fromCharCode(65 + index)} style={{ maxWidth: '100%', maxHeight: 280, objectFit: 'contain', borderRadius: 12, margin: 6 }} /><figcaption>Exhibit {String.fromCharCode(65 + index)}</figcaption></figure>)}</div> : <article><em>No evidence submitted.</em></article>}
                   </div>}
-                  {stage === 'evidence-complete' && <div className="fc-opening-complete">
-                    <span>⚖️</span><small>EVIDENCE COMPLETE</small><h3>The court has reviewed both sides' evidence.</h3><p>The next stage is the Judge's Question.</p>
-                  </div>}
+                  {stage === 'evidence-complete' && <div className="fc-opening-complete"><span>⚖️</span><small>EVIDENCE COMPLETE</small><h3>The court has reviewed both sides' evidence.</h3><p>The next stage is the Judge's Question.</p></div>}
+                  {stage === 'judge-question-writing' && <div className="fc-opening-writing"><div className="fc-opening-kicker"><span>BACK TO THE JUDGE</span><strong>JUDGE'S QUESTIONS</strong></div><div className="fc-opening-timer"><span>{stageRemaining}</span><small>SECONDS</small></div>{selectedMember.id === currentCourtCase.judgeId ? <div className="fc-opening-private"><span>JUDGE ONLY</span><h3>Write one question for each side.</h3><p>Your questions stay private until you submit both.</p>{[currentCourtCase.accuserId,currentCourtCase.accusedId].map((id) => <label key={id}><strong>{id === currentCourtCase.accuserId ? 'Question for the Accuser' : 'Question for the Accused'}</strong><textarea value={currentQuestions[id] ?? ''} onChange={(event) => saveJudgeQuestion(currentCourtCase.id,id,event.target.value)} maxLength={500} disabled={questionsSubmitted} placeholder="Write your question..." /></label>)}{questionsSubmitted ? <strong>✓ Questions submitted — waiting for answers.</strong> : <button className="fc-primary-button" type="button" onClick={() => submitJudgeQuestions(currentCourtCase.id)}>Submit Both Questions</button>}</div> : <div className="fc-opening-waiting"><span>⚖️</span><strong>The judge is preparing two questions.</strong><p>The questions will appear when the answer stage begins.</p></div>}</div>}
+                  {stage === 'answer-writing' && <div className="fc-opening-writing"><div className="fc-opening-kicker"><span>THE COURT ASKS</span><strong>ANSWERS</strong></div><div className="fc-opening-timer"><span>{stageRemaining}</span><small>SECONDS</small></div>{isParty ? <div className="fc-opening-private"><span>PRIVATE ANSWER</span><h3>{selectedMember.id === currentCourtCase.accuserId ? 'Answer the judge.' : 'Answer the judge.'}</h3><p>{currentCourtCase.judgeQuestions?.[selectedMember.id] || 'The judge has not submitted a question.'}</p><textarea value={currentAnswer} onChange={(event) => saveCourtAnswer(currentCourtCase.id,event.target.value)} maxLength={1000} disabled={answerSubmitted} placeholder="Write your answer..." />{answerSubmitted ? <strong>✓ Answer submitted — waiting for the other side.</strong> : <button className="fc-primary-button" type="button" onClick={() => submitCourtAnswer(currentCourtCase.id)}>Submit Answer</button>}</div> : <div className="fc-opening-waiting"><span>⚖️</span><strong>The parties are answering the judge.</strong><p>Both answers will be shown to everyone when the answer stage ends.</p></div>}</div>}
+                  {stage === 'jury-vote' && <div className="fc-opening-writing"><div className="fc-opening-kicker"><span>ANSWERS HEARD</span><strong>JURY DECISION</strong></div><div className="fc-opening-timer"><span>{stageRemaining}</span><small>SECONDS</small></div><article className="fc-opening-reading"><strong>Both answers are now before the court.</strong><p><b>{accuserMember.label}:</b> {currentCourtCase.answers?.[currentCourtCase.accuserId] || 'No answer submitted.'}</p><p><b>{accusedMember.label}:</b> {currentCourtCase.answers?.[currentCourtCase.accusedId] || 'No answer submitted.'}</p></article>{juryMembers.length > 0 && <div className="fc-court-form-actions">{juryMembers.some((member) => member.id === selectedMember.id) ? <><button className="fc-primary-button" type="button" onClick={() => castJuryVote(currentCourtCase.id,'guilty')}>{currentJuryVote === 'guilty' ? '✓ GUILTY' : 'GUILTY'}</button><button className="fc-ghost-button" type="button" onClick={() => castJuryVote(currentCourtCase.id,'not-guilty')}>{currentJuryVote === 'not-guilty' ? '✓ NOT GUILTY' : 'NOT GUILTY'}</button></> : <span className="fc-court-entry-pending">Jury is voting.</span>}</div>}</div>}
+                  {stage === 'verdict' && <div className="fc-opening-complete"><span className="fc-verdict-gavel">🔨</span><small>VERDICT</small><h3>{currentCourtCase.verdict === 'guilty' ? 'GUILTY' : 'NOT GUILTY'}</h3><p>{juryMembers.length > 0 ? 'The jury has delivered its decision.' : 'The judge has delivered the decision.'}</p>{juryMembers.length === 0 && selectedMember.id === currentCourtCase.judgeId && <div className="fc-court-form-actions"><button className="fc-primary-button" type="button" onClick={() => judgeSetVerdict(currentCourtCase.id,'guilty')}>GUILTY</button><button className="fc-ghost-button" type="button" onClick={() => judgeSetVerdict(currentCourtCase.id,'not-guilty')}>NOT GUILTY</button></div>}</div>}
+                  {stage === 'punishment' && <div className="fc-opening-writing"><div className="fc-opening-kicker"><span>GUILTY VERDICT</span><strong>JUDGE'S PUNISHMENT</strong></div><h3>Choose the punishment.</h3><div className="fc-court-punishments">{['Make everyone a cup of tea.','Do the family washing up.','Take the bins out for three days.','Choose the next family film.'].map((punishment) => <button key={punishment} type="button" onClick={() => judgeSetPunishment(currentCourtCase.id,punishment)}>{punishment}</button>)}</div><label className="fc-court-case-input"><span>Or write your own</span><input id="court-punishment" defaultValue="" placeholder="Write a punishment..." /></label><button className="fc-primary-button" type="button" onClick={() => { const input=document.getElementById('court-punishment') as HTMLInputElement | null; if(input) judgeSetPunishment(currentCourtCase.id,input.value) }}>Give Punishment</button></div>}
+                  {stage === 'case-closed' && <div className="fc-opening-complete"><span>{currentCourtCase.verdict === 'guilty' ? '⚖️' : '🕊️'}</span><small>CASE CLOSED</small><h3>{currentCourtCase.verdict === 'guilty' ? 'FOUND GUILTY' : 'NOT GUILTY'}</h3>{currentCourtCase.verdict === 'guilty' && <p>{accusedMember.label} has been found guilty. Punishment: {currentCourtCase.punishment}</p>}{currentCourtCase.verdict === 'not-guilty' && <p>The case is closed. No punishment was given.</p>}<button className="fc-primary-button" type="button" onClick={() => resetFamilyCourtCaseSetup('hub')}>Close Case</button></div>}
                 </section>
               })()}
             </>
