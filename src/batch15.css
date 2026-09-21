@@ -3400,3 +3400,6 @@
   .fc-courtroom-bench{top:45px}
   .fc-courtroom-juror{min-width:calc(50% - 5px)}
 }
+
+
+.fc-notification-item{width:100%;display:grid;grid-template-columns:auto 1fr auto;gap:12px;align-items:center;text-align:left;padding:14px 15px;border:1px solid rgba(255,255,255,.08);border-radius:16px;background:rgba(255,255,255,.025);color:inherit;cursor:pointer;margin-bottom:10px}.fc-notification-item:hover{border-color:rgba(255,211,91,.35);background:rgba(255,255,255,.05)}.fc-notification-item>div{min-width:0}.fc-notification-item>div strong,.fc-notification-item>div p,.fc-notification-item>div small{display:block}.fc-notification-item>div p{margin:3px 0;font-size:12px;color:rgba(255,255,255,.65)}.fc-notification-item>div small{font-size:10px;color:rgba(255,255,255,.42)}.fc-notification-item>b{font-size:20px;opacity:.6}
