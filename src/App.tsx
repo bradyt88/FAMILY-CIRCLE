@@ -45,7 +45,7 @@ type FamilyPhoto = { id: string; src: string; name: string; time: string }
 type FamilyEvent = { id: string; title: string; date: string; time: string; location: string }
 type PersonalEvent = FamilyEvent
 type FamilyTask = { id: string; title: string; dueDate: string; assignedTo: string; completed: boolean }
-type FamilyCourtCase = { id: string; title: string; accuserId: string; accusedId: string; status: 'scheduled' | 'summoned'; createdAt: string; scheduledDate?: string; scheduledTime?: string }
+type FamilyCourtCase = { id: string; title: string; accuserId: string; accusedId: string; status: 'scheduled' | 'summoned' | 'ready'; createdAt: string; scheduledDate?: string; scheduledTime?: string; acceptedMemberIds?: string[] }
 type MoneyRequest = { id: string; requesterId: string; amount: string; purpose: string; dueDate: string; status: 'Pending' | 'Accepted'; lenderId?: string; taskId?: string; calendarEventId?: string }
 type MusicTrack = { id: string; title: string; artist: string; genres: string[]; audioSrc: string; artwork?: string; youtubeUrl?: string; explicit: boolean; kidsAllowed: boolean; visualStyle: 1 | 2 | 3 | 4 | 5 }
 type MusicCommunityProfile = {
@@ -363,7 +363,7 @@ export default function App() {
   const [familyCourtTiming, setFamilyCourtTiming] = useState<'now' | 'scheduled'>('now')
   const [familyCourtDate, setFamilyCourtDate] = useState(todayKey())
   const [familyCourtTime, setFamilyCourtTime] = useState('19:00')
-  const [familyCourtSetupView, setFamilyCourtSetupView] = useState<'hub' | 'form' | 'review' | 'opened'>('hub')
+  const [familyCourtSetupView, setFamilyCourtSetupView] = useState<'hub' | 'form' | 'review' | 'opened' | 'courtroom'>('hub')
   const [familyCourtOpenedCaseId, setFamilyCourtOpenedCaseId] = useState<string | null>(null)
   const [messages, setMessages] = useState<ChatMessage[]>(initialMessages)
   const [weeklyRecognition, setWeeklyRecognition] = useState<WeeklyRecognition>(() => loadWeeklyRecognition())
@@ -1013,6 +1013,8 @@ export default function App() {
         <time className="fc-banner-date">{(() => { const date = formatBannerDate(todayKey()); return <><strong>{date.weekday}</strong><span>{date.dayMonth}</span><small>{date.year}</small><b>{formatTime()}</b></> })()}</time>
       </section>
 
+      {readyCourtCase && <section className="fc-home-courtroom-alert"><button type="button" onClick={() => enterFamilyCourtroom(readyCourtCase.id)}><span className="fc-home-courtroom-alert-icon">⚖️</span><span><small>FAMILY COURT</small><strong>ENTER COURTROOM</strong><em>{readyCourtCase.title} · Everyone has accepted</em></span><b>→</b></button></section>}
+
       <section className="fc-home-emergency-feature">
         <button className="fc-home-emergency-card" type="button" onClick={() => openTool('emergency')}>
           <span className="fc-home-emergency-icon">🚨</span>
@@ -1457,6 +1459,23 @@ export default function App() {
     </div>
   }
 
+  function acceptFamilyCourtCase(caseId: string) {
+    setFamilyCourtCases((current) => current.map((item) => {
+      if (item.id !== caseId) return item
+      const acceptedMemberIds = Array.from(new Set([...(item.acceptedMemberIds ?? []), selectedMember.id]))
+      const allAccepted = members.every((member) => acceptedMemberIds.includes(member.id))
+      return { ...item, acceptedMemberIds, status: allAccepted ? 'ready' : item.status }
+    }))
+    setNotifications((current) => [{ id: 'court-accepted-' + caseId + '-' + selectedMember.id, kind: 'Calendar', title: selectedMember.label + ' accepted the Family Court summons', detail: 'The courtroom will open when everyone has accepted.', time: 'Just now' }, ...current])
+  }
+
+  function enterFamilyCourtroom(caseId: string) {
+    setFamilyCourtOpenedCaseId(caseId)
+    setFamilyCourtSetupView('courtroom')
+    setToolMode('familyCourt')
+    setActiveTab('home')
+  }
+
   function resetFamilyCourtCaseSetup(view: 'hub' | 'form' = 'hub') {
     setFamilyCourtCaseTitle('')
     setFamilyCourtAccusedId('')
@@ -1479,6 +1498,7 @@ export default function App() {
       accusedId: familyCourtAccusedId,
       status: familyCourtTiming === 'scheduled' ? 'scheduled' : 'summoned',
       createdAt: new Date().toISOString(),
+      acceptedMemberIds: [selectedMember.id],
       ...(familyCourtTiming === 'scheduled' ? { scheduledDate: familyCourtDate, scheduledTime: familyCourtTime } : {}),
     }
     setFamilyCourtCases((current) => [newCase, ...current])
@@ -1498,19 +1518,40 @@ export default function App() {
     if (toolMode === 'musicCommunity') return renderMusicCommunity()
     if (toolMode === 'familyCourt') {
       const openedCase = familyCourtCases.find((item) => item.id === familyCourtOpenedCaseId)
-      const accused = members.find((member) => member.id === familyCourtAccusedId)
+      const activeCourtCase = [...familyCourtCases].find((item) => item.status === 'ready' || item.status === 'summoned')
+      const readyCourtCase = activeCourtCase?.status === 'ready' ? activeCourtCase : null
+      const currentCourtCase = openedCase ?? activeCourtCase
+      const currentMemberAccepted = currentCourtCase?.acceptedMemberIds?.includes(selectedMember.id) ?? false
+      const acceptedCount = currentCourtCase?.acceptedMemberIds?.length ?? 0
+      const accused = members.find((member) => member.id === (openedCase?.accusedId ?? familyCourtAccusedId)) members.find((member) => member.id === familyCourtAccusedId)
       const scheduledLabel = familyCourtDate && familyCourtTime ? formatLongDate(familyCourtDate) + ' at ' + familyCourtTime : 'Not scheduled'
       return <div className="fc-page">
         <FeatureHeader title="Family Court" description="Settle family disputes in a fun, private courtroom." onHome={() => goToTab('home')} />
         {familyCourtSetupView === 'hub' ? <>
           <section className="fc-court-lobby-hero"><div className="fc-court-lobby-emblem">⚖️<i>🔨</i></div><div><span className="fc-kicker">Family Circle · Private courtroom</span><h2>Welcome to Family Court</h2><p>Bring it to court, choose when the hearing happens, and let the family decide.</p></div></section>
+          {activeCourtCase && <section className={readyCourtCase ? 'fc-court-entry-ready' : 'fc-court-entry-waiting'}>
+            <div className="fc-court-entry-icon">{readyCourtCase ? '⚖️' : '⏳'}</div>
+            <div><span>{readyCourtCase ? 'EVERYONE HAS ACCEPTED' : 'COURT SUMMONS'}</span><strong>{readyCourtCase ? 'ENTER COURTROOM' : currentMemberAccepted ? 'WAITING FOR THE FAMILY' : 'ACCEPT YOUR SUMMONS'}</strong><p>{readyCourtCase ? readyCourtCase.title + ' is ready. The family is waiting in the courtroom.' : acceptedCount + ' of ' + members.length + ' family members have accepted this case.'}</p></div>
+            {readyCourtCase ? <button className="fc-court-entry-button" type="button" onClick={() => enterFamilyCourtroom(readyCourtCase.id)}>⚖️ ENTER COURTROOM →</button> : !currentMemberAccepted ? <button className="fc-court-entry-button" type="button" onClick={() => acceptFamilyCourtCase(currentCourtCase!.id)}>✓ ACCEPT &amp; JOIN</button> : <span className="fc-court-entry-pending">✓ Accepted</span>}
+          </section>}
           <section className="fc-court-lobby-grid">
             <button className="fc-court-lobby-card primary" type="button" onClick={() => setFamilyCourtSetupView('form')}><span>⚖️</span><div><small>Start here</small><strong>Start a New Case</strong><p>Bring a family member before the family court.</p></div><b>→</b></button>
             <button className="fc-court-lobby-card" type="button" onClick={() => window.alert('Previous cases and appeals will be available here once the case lifecycle is built.') }><span>📂</span><div><small>Case history</small><strong>Review Previous Cases</strong><p>Look over recent cases, verdicts and available appeals.</p></div><b>→</b></button>
             <button className="fc-court-lobby-card" type="button" onClick={() => window.alert('Scheduled Courts will show upcoming hearings here once scheduling is connected to the Family Calendar.') }><span>🗓️</span><div><small>Upcoming</small><strong>Upcoming Courts</strong><p>See scheduled hearings and when the family needs to attend.</p></div><b>→</b></button>
             <button className="fc-court-lobby-card" type="button" onClick={() => window.alert('Active Cases will show live cases here once the courtroom lifecycle is built.') }><span>🔴</span><div><small>Live cases</small><strong>Active Cases</strong><p>Return to a case that is waiting or currently in session.</p></div><b>→</b></button>
           </section>
-        </> : familyCourtSetupView === 'opened' && openedCase ? <section className="fc-court-case-opened">
+        </> : familyCourtSetupView === 'courtroom' && currentCourtCase ? <section className="fc-courtroom-shell">
+          <div className="fc-courtroom-top"><div><span className="fc-kicker">Family Circle · Private courtroom</span><h2>⚖️ Court is in session</h2><p>{currentCourtCase.title}</p></div><span className="fc-courtroom-status">LIVE CASE</span></div>
+          <div className="fc-courtroom-stage"><div className="fc-courtroom-backdrop"><div className="fc-courtroom-columns"><i/><i/><i/><i/><i/></div><div className="fc-courtroom-bench"><span>⚖️</span><strong>FAMILY COURT</strong><small>Justice starts with the family.</small></div></div>
+            <div className="fc-courtroom-people">
+              <article className="fc-courtroom-seat accuser"><span>ACCUSER</span><AppAvatar member={members.find((member) => member.id === currentCourtCase.accuserId) ?? selectedMember}/><strong>{members.find((member) => member.id === currentCourtCase.accuserId)?.label}</strong><small>Bringing the case</small></article>
+              <div className="fc-courtroom-judge"><span>JUDGE</span><div>⚖️</div><strong>Judge to be selected</strong><small>The family will choose the judge next.</small></div>
+              <article className="fc-courtroom-seat accused"><span>ACCUSED</span><AppAvatar member={members.find((member) => member.id === currentCourtCase.accusedId) ?? selectedMember}/><strong>{members.find((member) => member.id === currentCourtCase.accusedId)?.label}</strong><small>Answering the case</small></article>
+            </div>
+          </div>
+          <section className="fc-courtroom-jury"><div><span>THE JURY</span><strong>Family members ready for court</strong></div><div className="fc-courtroom-jury-grid">{members.filter((member) => member.id !== currentCourtCase.accuserId && member.id !== currentCourtCase.accusedId).map((member) => <div className="fc-courtroom-juror" key={member.id}><AppAvatar member={member}/><span>{member.label}</span><small>✓ Ready</small></div>)}</div></section>
+          <div className="fc-courtroom-notice">🔒 This is the courtroom waiting area. No verdict or evidence is being processed yet.</div>
+        </section> : familyCourtSetupView === 'opened' && openedCase ? <section className="fc-court-case-opened">
           <div className="fc-court-success-icon">⚖️</div>
           <span className="fc-kicker">{openedCase.status === 'scheduled' ? 'COURT SCHEDULED' : 'SUMMONS SENT'}</span>
           <h2>{openedCase.status === 'scheduled' ? 'Family Court has been scheduled.' : 'Family Court is ready to begin.'}</h2>
