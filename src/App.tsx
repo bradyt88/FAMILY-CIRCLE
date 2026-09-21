@@ -45,7 +45,9 @@ type FamilyPhoto = { id: string; src: string; name: string; time: string }
 type FamilyEvent = { id: string; title: string; date: string; time: string; location: string }
 type PersonalEvent = FamilyEvent
 type FamilyTask = { id: string; title: string; dueDate: string; assignedTo: string; completed: boolean }
-type FamilyCourtCase = { id: string; title: string; accuserId: string; accusedId: string; status: 'scheduled' | 'summoned' | 'ready' | 'closed'; createdAt: string; scheduledDate?: string; scheduledTime?: string; acceptedMemberIds?: string[]; judgeId?: string; courtStarted?: boolean; courtStage?: 'opening-writing' | 'opening-reading-accuser' | 'opening-reading-accused' | 'evidence-upload' | 'evidence-review-accuser' | 'evidence-review-accused' | 'evidence-complete' | 'judge-question-writing' | 'answer-writing' | 'jury-vote' | 'verdict' | 'punishment' | 'case-closed'; courtStageStartedAt?: string; openingStatements?: Record<string, string>; openingSubmittedBy?: string[]; evidence?: Record<string, string[]>; evidenceSubmittedBy?: string[]; judgeQuestions?: Record<string, string>; judgeQuestionsSubmitted?: boolean; answers?: Record<string, string>; answersSubmittedBy?: string[]; juryVotes?: Record<string, 'guilty' | 'not-guilty'>; verdict?: 'guilty' | 'not-guilty'; punishment?: string }
+type FamilyCourtTrialData = { judgeId?: string; courtStarted?: boolean; courtStage?: 'opening-writing' | 'opening-reading-accuser' | 'opening-reading-accused' | 'evidence-upload' | 'evidence-review-accuser' | 'evidence-review-accused' | 'evidence-complete' | 'judge-question-writing' | 'answer-writing' | 'jury-vote' | 'verdict' | 'punishment' | 'case-closed'; courtStageStartedAt?: string; verdictAt?: string; openingStatements?: Record<string, string>; openingSubmittedBy?: string[]; evidence?: Record<string, string[]>; evidenceSubmittedBy?: string[]; judgeQuestions?: Record<string, string>; judgeQuestionsSubmitted?: boolean; answers?: Record<string, string>; answersSubmittedBy?: string[]; juryVotes?: Record<string, 'guilty' | 'not-guilty'>; verdict?: 'guilty' | 'not-guilty'; punishment?: string } 
+type FamilyCourtAppeal = { id: string; appellantId: string; submittedAt: string; reason: string; explanation: string; newEvidence: string[]; status: 'pending' | 'approved' | 'denied' | 'closed'; familyVotes: Record<string, 'allow' | 'deny'>; votedAt?: string; approvedAt?: string; closedAt?: string; finalVerdict?: 'guilty' | 'not-guilty'; finalPunishment?: string }
+type FamilyCourtCase = { id: string; title: string; accuserId: string; accusedId: string; status: 'scheduled' | 'summoned' | 'ready' | 'closed'; createdAt: string; scheduledDate?: string; scheduledTime?: string; acceptedMemberIds?: string[]; judgeId?: string; courtStarted?: boolean; courtStage?: FamilyCourtTrialData['courtStage']; courtStageStartedAt?: string; verdictAt?: string; openingStatements?: Record<string, string>; openingSubmittedBy?: string[]; evidence?: Record<string, string[]>; evidenceSubmittedBy?: string[]; judgeQuestions?: Record<string, string>; judgeQuestionsSubmitted?: boolean; answers?: Record<string, string>; answersSubmittedBy?: string[]; juryVotes?: Record<string, 'guilty' | 'not-guilty'>; verdict?: 'guilty' | 'not-guilty'; punishment?: string; originalTrial?: FamilyCourtTrialData; appeal?: FamilyCourtAppeal }
 type MoneyRequest = { id: string; requesterId: string; amount: string; purpose: string; dueDate: string; status: 'Pending' | 'Accepted'; lenderId?: string; taskId?: string; calendarEventId?: string }
 type MusicTrack = { id: string; title: string; artist: string; genres: string[]; audioSrc: string; artwork?: string; youtubeUrl?: string; explicit: boolean; kidsAllowed: boolean; visualStyle: 1 | 2 | 3 | 4 | 5 }
 type MusicCommunityProfile = {
@@ -363,8 +365,11 @@ export default function App() {
   const [familyCourtTiming, setFamilyCourtTiming] = useState<'now' | 'scheduled'>('now')
   const [familyCourtDate, setFamilyCourtDate] = useState(todayKey())
   const [familyCourtTime, setFamilyCourtTime] = useState('19:00')
-  const [familyCourtSetupView, setFamilyCourtSetupView] = useState<'hub' | 'form' | 'review' | 'opened' | 'courtroom'>('hub')
+  const [familyCourtSetupView, setFamilyCourtSetupView] = useState<'hub' | 'form' | 'review' | 'opened' | 'courtroom' | 'reviewCases' | 'reviewCase' | 'appeal'>('hub')
   const [familyCourtOpenedCaseId, setFamilyCourtOpenedCaseId] = useState<string | null>(null)
+  const [familyCourtReviewCaseId, setFamilyCourtReviewCaseId] = useState<string | null>(null)
+  const [familyCourtAppealReason, setFamilyCourtAppealReason] = useState('New evidence')
+  const [familyCourtAppealExplanation, setFamilyCourtAppealExplanation] = useState('')
   const [familyCourtClock, setFamilyCourtClock] = useState(Date.now())
   const [messages, setMessages] = useState<ChatMessage[]>(initialMessages)
   const [weeklyRecognition, setWeeklyRecognition] = useState<WeeklyRecognition>(() => loadWeeklyRecognition())
@@ -453,7 +458,20 @@ export default function App() {
   }, [subscription])
 
   useEffect(() => { persistWeeklyRecognition(weeklyRecognition) }, [weeklyRecognition])
-  useEffect(() => { localStorage.setItem('family-circle-court-cases', JSON.stringify(familyCourtCases)) }, [familyCourtCases])
+  useEffect(() => {
+    const now = Date.now()
+    const retentionMs = 5 * 24 * 60 * 60 * 1000
+    const retained = familyCourtCases.filter((item) => {
+      if (item.status !== 'closed') return true
+      const closedAt = item.appeal?.closedAt ?? item.courtStageStartedAt ?? item.createdAt
+      return now - new Date(closedAt).getTime() < retentionMs
+    })
+    if (retained.length !== familyCourtCases.length) {
+      setFamilyCourtCases(retained)
+      return
+    }
+    localStorage.setItem('family-circle-court-cases', JSON.stringify(familyCourtCases))
+  }, [familyCourtCases])
   useEffect(() => { localStorage.setItem('family-circle-notifications', JSON.stringify(notifications)) }, [notifications])
   useEffect(() => {
     if (familyCourtSetupView !== 'courtroom') return
@@ -1620,7 +1638,8 @@ export default function App() {
   }
 
   function judgeSetVerdict(caseId: string, verdict: 'guilty' | 'not-guilty') {
-    setFamilyCourtCases((current) => current.map((item) => item.id === caseId ? { ...item, verdict, courtStage: 'verdict', courtStageStartedAt: new Date().toISOString() } : item))
+    const now = new Date().toISOString()
+    setFamilyCourtCases((current) => current.map((item) => item.id === caseId ? { ...item, verdict, verdictAt: now, courtStage: 'verdict', courtStageStartedAt: now } : item))
   }
 
   function closeFamilyCourtCase(caseId: string) {
@@ -1635,6 +1654,122 @@ export default function App() {
     setFamilyCourtCases((current) => current.map((item) => item.id === caseId ? { ...item, punishment: value, courtStage: 'case-closed', courtStageStartedAt: new Date().toISOString() } : item))
   }
 
+  function appealWindow(caseItem: FamilyCourtCase) {
+    if (caseItem.verdict !== 'guilty') return 0
+    const started = new Date(caseItem.verdictAt ?? caseItem.courtStageStartedAt ?? caseItem.createdAt).getTime()
+    return Math.max(0, (started + 5 * 24 * 60 * 60 * 1000) - Date.now())
+  }
+
+  function appealWindowLabel(caseItem: FamilyCourtCase) {
+    const remaining = appealWindow(caseItem)
+    if (remaining <= 0) return 'Appeal period expired'
+    const days = Math.floor(remaining / 86400000)
+    const hours = Math.floor((remaining % 86400000) / 3600000)
+    return days > 0 ? days + ' day' + (days === 1 ? '' : 's') + ' remaining' : hours + ' hour' + (hours === 1 ? '' : 's') + ' remaining'
+  }
+
+  function openFamilyCourtReview(caseId: string) {
+    setFamilyCourtReviewCaseId(caseId)
+    setFamilyCourtSetupView('reviewCase')
+  }
+
+  function openFamilyCourtReviews() {
+    setFamilyCourtReviewCaseId(null)
+    setFamilyCourtSetupView('reviewCases')
+  }
+
+  function startFamilyCourtAppeal(caseId: string) {
+    const caseItem = familyCourtCases.find((item) => item.id === caseId)
+    if (!caseItem || caseItem.verdict !== 'guilty' || caseItem.accusedId !== selectedMember.id || caseItem.appeal || appealWindow(caseItem) <= 0) return
+    setFamilyCourtReviewCaseId(caseId)
+    setFamilyCourtAppealReason('New evidence')
+    setFamilyCourtAppealExplanation('')
+    setFamilyCourtSetupView('appeal')
+  }
+
+  function addFamilyCourtAppealEvidence(caseId: string, file: File) {
+    if (!file.type.startsWith('image/')) return
+    const reader = new FileReader()
+    reader.onload = () => {
+      const src = typeof reader.result === 'string' ? reader.result : ''
+      if (!src) return
+      setFamilyCourtCases((current) => current.map((item) => {
+        if (item.id !== caseId) return item
+        const existing = item.appeal?.newEvidence ?? []
+        if (existing.length >= 4) return item
+        return { ...item, appeal: item.appeal ? { ...item.appeal, newEvidence: [...existing, src] } : undefined }
+      }))
+    }
+    reader.readAsDataURL(file)
+  }
+
+  function submitFamilyCourtAppeal(caseId: string) {
+    const caseItem = familyCourtCases.find((item) => item.id === caseId)
+    if (!caseItem || caseItem.accusedId !== selectedMember.id || caseItem.verdict !== 'guilty' || caseItem.appeal || appealWindow(caseItem) <= 0) return
+    const appeal: FamilyCourtAppeal = {
+      id: 'appeal-' + Date.now().toString(36),
+      appellantId: selectedMember.id,
+      submittedAt: new Date().toISOString(),
+      reason: familyCourtAppealReason,
+      explanation: familyCourtAppealExplanation.trim(),
+      newEvidence: [],
+      status: 'pending',
+      familyVotes: {},
+    }
+    setFamilyCourtCases((current) => current.map((item) => item.id === caseId ? { ...item, appeal } : item))
+    setNotifications((current) => [
+      { id: 'court-appeal-' + caseId, kind: 'Calendar' as const, title: 'Family Court appeal submitted', detail: selectedMember.label + ' has appealed ' + caseItem.title + '. The family can now vote on the appeal.', time: 'Just now', target: 'familyCourt' as const, targetCaseId: caseId },
+      ...current,
+    ])
+    setMessages((current) => [
+      { id: 'chat-appeal-' + caseId, memberId: selectedMember.id, name: selectedMember.label, initials: selectedMember.initials, accent: selectedMember.accent, time: formatTime(), text: '⚖️ I have appealed the Family Court case “' + caseItem.title + '”. The appeal is ready for the family vote.' },
+      ...current,
+    ])
+    setFamilyCourtSetupView('reviewCase')
+  }
+
+  function castFamilyCourtAppealVote(caseId: string, vote: 'allow' | 'deny') {
+    const caseItem = familyCourtCases.find((item) => item.id === caseId)
+    if (!caseItem?.appeal || caseItem.appeal.status !== 'pending' || caseItem.appeal.appellantId === selectedMember.id) return
+    const eligibleVoters = members.filter((member) => member.id !== caseItem.appeal!.appellantId)
+    const votes = { ...caseItem.appeal.familyVotes, [selectedMember.id]: vote }
+    const allVoted = eligibleVoters.every((member) => votes[member.id])
+    const allowCount = eligibleVoters.filter((member) => votes[member.id] === 'allow').length
+    const denyCount = eligibleVoters.filter((member) => votes[member.id] === 'deny').length
+    const decided = allVoted
+    const approved = decided && allowCount > denyCount
+    const appealStatus: FamilyCourtAppeal['status'] = decided ? (approved ? 'approved' : 'denied') : 'pending'
+    const now = new Date().toISOString()
+    setFamilyCourtCases((current) => current.map((item) => {
+      if (item.id !== caseId || !item.appeal) return item
+      if (appealStatus === 'approved') {
+        const originalTrial: FamilyCourtTrialData = {
+          judgeId: item.judgeId, courtStarted: item.courtStarted, courtStage: item.courtStage, courtStageStartedAt: item.courtStageStartedAt, verdictAt: item.verdictAt,
+          openingStatements: item.openingStatements, openingSubmittedBy: item.openingSubmittedBy, evidence: item.evidence, evidenceSubmittedBy: item.evidenceSubmittedBy,
+          judgeQuestions: item.judgeQuestions, judgeQuestionsSubmitted: item.judgeQuestionsSubmitted, answers: item.answers, answersSubmittedBy: item.answersSubmittedBy,
+          juryVotes: item.juryVotes, verdict: item.verdict, punishment: item.punishment,
+        }
+        return {
+          ...item, originalTrial, appeal: { ...item.appeal, familyVotes: votes, status: 'approved', votedAt: now, approvedAt: now },
+          status: 'summoned', acceptedMemberIds: [item.appeal.appellantId], judgeId: undefined, courtStarted: false, courtStage: undefined, courtStageStartedAt: undefined,
+          verdictAt: undefined, openingStatements: {}, openingSubmittedBy: [], evidence: {}, evidenceSubmittedBy: [], judgeQuestions: {}, judgeQuestionsSubmitted: false,
+          answers: {}, answersSubmittedBy: [], juryVotes: {}, verdict: undefined, punishment: undefined,
+        }
+      }
+      return { ...item, appeal: { ...item.appeal, familyVotes: votes, status: 'denied', votedAt: now, closedAt: now }, status: 'closed', courtStage: 'case-closed', courtStageStartedAt: now }
+    }))
+    if (decided) {
+      setNotifications((current) => [{ id: 'court-appeal-decision-' + caseId + '-' + Date.now().toString(36), kind: 'Calendar' as const, title: approved ? 'Family Court appeal approved' : 'Family Court appeal denied', detail: approved ? 'The case has been reopened for a new Family Court trial.' : 'The original verdict is now final and cannot be appealed again.', time: 'Just now', target: 'familyCourt' as const, targetCaseId: caseId }, ...current])
+    }
+  }
+
+  function closeFamilyCourtAppeal(caseId: string) {
+    setFamilyCourtCases((current) => current.map((item) => item.id === caseId && item.appeal?.status === 'approved' ? { ...item, appeal: { ...item.appeal!, status: 'closed', closedAt: new Date().toISOString(), finalVerdict: item.verdict, finalPunishment: item.punishment }, status: 'closed', courtStage: 'case-closed', courtStageStartedAt: new Date().toISOString() } : item))
+    setFamilyCourtOpenedCaseId(null)
+    setFamilyCourtReviewCaseId(caseId)
+    setFamilyCourtSetupView('reviewCase')
+  }
+
   function resetFamilyCourtCaseSetup(view: 'hub' | 'form' = 'hub') {
     setFamilyCourtCaseTitle('')
     setFamilyCourtAccusedId('')
@@ -1643,6 +1778,9 @@ export default function App() {
     setFamilyCourtTime('19:00')
     setFamilyCourtSetupView(view)
     setFamilyCourtOpenedCaseId(null)
+    setFamilyCourtReviewCaseId(null)
+    setFamilyCourtAppealReason('New evidence')
+    setFamilyCourtAppealExplanation('')
   }
 
   function openFamilyCourtCase() {
@@ -1693,13 +1831,63 @@ export default function App() {
             <div><span>{readyCourtCase ? 'EVERYONE HAS ACCEPTED' : 'COURT SUMMONS'}</span><strong>{readyCourtCase ? 'ENTER COURTROOM' : currentMemberAccepted ? 'WAITING FOR THE FAMILY' : 'ACCEPT YOUR SUMMONS'}</strong><p>{readyCourtCase ? readyCourtCase.title + ' is ready. The family is waiting in the courtroom.' : acceptedCount + ' of ' + members.length + ' family members have accepted this case.'}</p></div>
             {readyCourtCase ? <button className="fc-court-entry-button" type="button" onClick={() => enterFamilyCourtroom(readyCourtCase.id)}>⚖️ ENTER COURTROOM →</button> : !currentMemberAccepted ? <button className="fc-court-entry-button" type="button" onClick={() => acceptFamilyCourtCase(currentCourtCase!.id)}>✓ ACCEPT &amp; JOIN</button> : <span className="fc-court-entry-pending">✓ Accepted</span>}
           </section>}
-          <section className="fc-court-lobby-grid">
-            <button className="fc-court-lobby-card primary" type="button" onClick={() => setFamilyCourtSetupView('form')}><span>⚖️</span><div><small>Start here</small><strong>Start a New Case</strong><p>Bring a family member before the family court.</p></div><b>→</b></button>
-            <button className="fc-court-lobby-card" type="button" onClick={() => window.alert('Previous cases and appeals will be available here once the case lifecycle is built.') }><span>📂</span><div><small>Case history</small><strong>Review Previous Cases</strong><p>Look over recent cases, verdicts and available appeals.</p></div><b>→</b></button>
-            <button className="fc-court-lobby-card" type="button" onClick={() => window.alert('Scheduled Courts will show upcoming hearings here once scheduling is connected to the Family Calendar.') }><span>🗓️</span><div><small>Upcoming</small><strong>Upcoming Courts</strong><p>See scheduled hearings and when the family needs to attend.</p></div><b>→</b></button>
-            <button className="fc-court-lobby-card" type="button" onClick={() => window.alert('Active Cases will show live cases here once the courtroom lifecycle is built.') }><span>🔴</span><div><small>Live cases</small><strong>Active Cases</strong><p>Return to a case that is waiting or currently in session.</p></div><b>→</b></button>
+          <section className="fc-court-lobby-grid fc-court-lobby-grid-refined">
+            <button className="fc-court-lobby-card primary fc-court-start-card" type="button" onClick={() => setFamilyCourtSetupView('form')}><span>⚖️</span><div><small>Start here</small><strong>Start a New Case</strong><p>Bring a family member before the family court.</p></div><b>→</b></button>
+            <button className="fc-court-lobby-card fc-court-review-card" type="button" onClick={openFamilyCourtReviews}><span>📂</span><div><small>Case history</small><strong>Review Previous Cases</strong><p>Review closed cases and available appeals.</p></div><b>→</b></button>
+            <button className="fc-court-lobby-card fc-court-upcoming-card" type="button" onClick={() => window.alert('Upcoming Courts will show scheduled hearings here.')}><span>🗓️</span><div><small>Upcoming</small><strong>Upcoming Courts</strong><p>See scheduled hearings and when the family needs to attend.</p></div><b>→</b></button>
           </section>
-        </> : familyCourtSetupView === 'courtroom' && currentCourtCase ? <section className="fc-courtroom-shell">
+        </> : familyCourtSetupView === 'reviewCases' ? <section className="fc-court-review-panel">
+          <div className="fc-court-review-heading"><div className="fc-court-review-icon">📂</div><div><span className="fc-kicker">Case history</span><h2>Review Previous Cases</h2><p>Review closed cases and manage any appeal still within the five-day window.</p></div></div>
+          <div className="fc-court-review-list">
+            {familyCourtCases.filter((item) => item.status === 'closed').length === 0 ? <div className="fc-court-review-empty"><span>⚖️</span><strong>No previous cases yet.</strong><small>Completed Family Court cases will appear here for five days.</small></div> : familyCourtCases.filter((item) => item.status === 'closed').map((item) => {
+              const verdictLabel = item.appeal?.finalVerdict ?? item.verdict
+              const appealLabel = item.appeal?.status === 'approved' ? 'Appeal approved' : item.appeal?.status === 'denied' ? 'Appeal denied' : item.appeal?.status === 'closed' ? 'Appeal closed' : item.appeal?.status === 'pending' ? 'Appeal pending' : ''
+              return <button className="fc-court-review-row" type="button" key={item.id} onClick={() => openFamilyCourtReview(item.id)}>
+                <div className="fc-court-review-row-icon">{verdictLabel === 'guilty' ? '⚠️' : '🕊️'}</div>
+                <div><small>{new Date(item.createdAt).toLocaleDateString('en-GB')}</small><strong>{item.title}</strong><span>Original verdict: {item.verdict === 'guilty' ? 'GUILTY' : item.verdict === 'not-guilty' ? 'NOT GUILTY' : 'Pending'}</span>{appealLabel && <em>{appealLabel}</em>}</div>
+                <b>→</b>
+              </button>
+            })}
+          </div>
+          <button className="fc-ghost-button" type="button" onClick={() => setFamilyCourtSetupView('hub')}>← Back to Family Court</button>
+        </section> : familyCourtSetupView === 'reviewCase' && familyCourtReviewCaseId ? (() => {
+          const reviewCase = familyCourtCases.find((item) => item.id === familyCourtReviewCaseId)
+          if (!reviewCase) return <section className="fc-court-review-panel"><strong>Case no longer available.</strong></section>
+          const canAppeal = reviewCase.status === 'closed' && reviewCase.verdict === 'guilty' && reviewCase.accusedId === selectedMember.id && !reviewCase.appeal && appealWindow(reviewCase) > 0
+          const appealRemaining = appealWindowLabel(reviewCase)
+          const originalTrial = reviewCase.originalTrial
+          return <section className="fc-court-review-panel">
+            <div className="fc-court-review-heading"><div className="fc-court-review-icon">⚖️</div><div><span className="fc-kicker">Case file</span><h2>{reviewCase.title}</h2><p>Original trial and any linked appeal remain preserved separately.</p></div></div>
+            <div className="fc-court-review-summary">
+              <div><small>ORIGINAL VERDICT</small><strong>{reviewCase.verdict === 'guilty' ? 'GUILTY' : 'NOT GUILTY'}</strong></div>
+              <div><small>PUNISHMENT</small><strong>{reviewCase.punishment ?? 'None'}</strong></div>
+              <div><small>APPEAL STATUS</small><strong>{reviewCase.appeal ? reviewCase.appeal.status.toUpperCase() : 'NONE'}</strong></div>
+            </div>
+            <div className="fc-court-review-section"><span className="fc-kicker">Original trial</span><p>{reviewCase.openingStatements ? 'Opening statements recorded.' : 'Original trial record available.'}</p>{reviewCase.evidence && <p>{Object.values(reviewCase.evidence).flat().length} original evidence item(s).</p>}<div className="fc-court-file-tags"><span>Original verdict: {reviewCase.verdict?.toUpperCase()}</span><span>{reviewCase.punishment ? 'Punishment recorded' : 'No punishment'}</span></div></div>
+            {originalTrial && <div className="fc-court-review-section"><span className="fc-kicker">Original trial archive</span><p>The original hearing has been preserved while the appeal trial is recorded separately.</p><div className="fc-court-file-tags"><span>Original judge recorded</span><span>Original evidence preserved</span></div></div>}
+            {reviewCase.appeal && <div className="fc-court-appeal-pack"><div><span className="fc-kicker">Appeal pack</span><h3>{reviewCase.appeal.reason}</h3><p>{reviewCase.appeal.explanation || 'No additional explanation provided.'}</p></div><div className="fc-court-file-tags"><span>{reviewCase.appeal.newEvidence.length} new evidence item(s)</span><span>{Object.keys(reviewCase.appeal.familyVotes).length} family vote(s)</span></div></div>}
+            {reviewCase.appeal?.status === 'pending' && reviewCase.appeal.appellantId !== selectedMember.id && <div className="fc-court-appeal-vote"><span className="fc-kicker">Family vote</span><h3>Allow this appeal?</h3><p>Your vote is private until the family vote is complete.</p><div className="fc-court-form-actions"><button className="fc-ghost-button" type="button" onClick={() => castFamilyCourtAppealVote(reviewCase.id,'deny')}>DENY APPEAL</button><button className="fc-primary-button" type="button" onClick={() => castFamilyCourtAppealVote(reviewCase.id,'allow')}>ALLOW APPEAL</button></div></div>}
+            {canAppeal && <div className="fc-court-appeal-action"><span>⏳ {appealRemaining}</span><button className="fc-primary-button" type="button" onClick={() => startFamilyCourtAppeal(reviewCase.id)}>⚖️ APPEAL THIS CASE</button></div>}
+            {reviewCase.appeal?.status === 'approved' && <div className="fc-court-appeal-ready"><strong>⚖️ APPEAL APPROVED</strong><p>The original case is preserved. The appeal is now a brand-new trial using the same courtroom flow.</p></div>}
+            {reviewCase.appeal?.status === 'denied' && <div className="fc-court-appeal-final"><strong>🔒 APPEAL DENIED — CASE FINAL</strong><p>This case cannot be appealed again.</p></div>}
+            {reviewCase.appeal?.status === 'closed' && <div className="fc-court-appeal-final"><strong>🔒 APPEAL CLOSED — NO FURTHER APPEAL</strong><p>The original and appeal trials remain connected in the case history.</p></div>}
+            <div className="fc-court-form-actions"><button className="fc-ghost-button" type="button" onClick={openFamilyCourtReviews}>← Review Previous Cases</button></div>
+          </section>
+        })() : familyCourtSetupView === 'appeal' && familyCourtReviewCaseId ? (() => {
+          const appealCase = familyCourtCases.find((item) => item.id === familyCourtReviewCaseId)
+          if (!appealCase) return <section className="fc-court-review-panel"><strong>Case no longer available.</strong></section>
+          const appealDraft = appealCase.appeal
+          return <section className="fc-court-review-panel">
+            <div className="fc-court-review-heading"><div className="fc-court-review-icon">⚖️</div><div><span className="fc-kicker">Appeal request</span><h2>Appeal {appealCase.title}</h2><p>Your original case stays untouched. This creates a linked appeal trial.</p></div></div>
+            <div className="fc-court-appeal-form">
+              <label><span>Why do you want to appeal?</span><select value={familyCourtAppealReason} onChange={(event) => setFamilyCourtAppealReason(event.target.value)}><option>New evidence</option><option>Evidence misunderstood</option><option>Unfair procedure</option><option>Other</option></select></label>
+              <label><span>Tell the family why you are appealing</span><textarea value={familyCourtAppealExplanation} onChange={(event) => setFamilyCourtAppealExplanation(event.target.value)} maxLength={600} placeholder="Explain what you want the family to reconsider." /></label>
+              <div className="fc-court-appeal-upload"><div><span className="fc-kicker">New evidence</span><strong>Upload up to 4 images</strong><small>Photos, screenshots or pictures only.</small></div><label className="fc-primary-button">+ Add Evidence<input type="file" accept="image/*" multiple hidden onChange={(event) => Array.from(event.target.files ?? []).slice(0,4).forEach((file) => addFamilyCourtAppealEvidence(appealCase.id,file))} /></label>{appealDraft?.newEvidence?.length ? <div className="fc-court-evidence-grid">{appealDraft.newEvidence.map((src,index) => <img key={src.slice(0,40)+index} src={src} alt={'Appeal evidence '+String.fromCharCode(65+index)} />)}</div> : <small>No new evidence added yet.</small>}</div>
+              <div className="fc-court-appeal-pack-preview"><span className="fc-kicker">Appeal pack</span><strong>Original case + appeal reason + explanation + new evidence</strong><small>The original case will remain preserved and the family will receive the appeal for a vote.</small></div>
+              <div className="fc-court-form-actions"><button className="fc-ghost-button" type="button" onClick={() => setFamilyCourtSetupView('reviewCase')}>Cancel</button><button className="fc-primary-button" type="button" disabled={!familyCourtAppealExplanation.trim()} onClick={() => submitFamilyCourtAppeal(appealCase.id)}>⚖️ SUBMIT APPEAL</button></div>
+            </div>
+          </section>
+        })() : familyCourtSetupView === 'courtroom' && currentCourtCase ? <section className="fc-courtroom-shell">
           {(() => {
             const judgeId = currentCourtCase.judgeId ?? members.find((member) => member.id !== currentCourtCase.accuserId && member.id !== currentCourtCase.accusedId)?.id
             const judge = members.find((member) => member.id === judgeId)
