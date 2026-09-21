@@ -45,6 +45,7 @@ type FamilyPhoto = { id: string; src: string; name: string; time: string }
 type FamilyEvent = { id: string; title: string; date: string; time: string; location: string }
 type PersonalEvent = FamilyEvent
 type FamilyTask = { id: string; title: string; dueDate: string; assignedTo: string; completed: boolean }
+type FamilyCourtCase = { id: string; title: string; accuserId: string; accusedId: string; status: 'summoned'; createdAt: string }
 type MoneyRequest = { id: string; requesterId: string; amount: string; purpose: string; dueDate: string; status: 'Pending' | 'Accepted'; lenderId?: string; taskId?: string; calendarEventId?: string }
 type MusicTrack = { id: string; title: string; artist: string; genres: string[]; audioSrc: string; artwork?: string; youtubeUrl?: string; explicit: boolean; kidsAllowed: boolean; visualStyle: 1 | 2 | 3 | 4 | 5 }
 type MusicCommunityProfile = {
@@ -351,6 +352,16 @@ export default function App() {
   const [pinError, setPinError] = useState('')
   const [activeTab, setActiveTab] = useState<HomeTab>('home')
   const [toolMode, setToolMode] = useState<ToolMode | null>(null)
+  const [familyCourtCases, setFamilyCourtCases] = useState<FamilyCourtCase[]>(() => {
+    try {
+      const saved = localStorage.getItem('family-circle-court-cases')
+      return saved ? JSON.parse(saved) as FamilyCourtCase[] : []
+    } catch { return [] }
+  })
+  const [familyCourtCaseTitle, setFamilyCourtCaseTitle] = useState('')
+  const [familyCourtAccusedId, setFamilyCourtAccusedId] = useState('')
+  const [familyCourtSetupView, setFamilyCourtSetupView] = useState<'form' | 'review' | 'opened'>('form')
+  const [familyCourtOpenedCaseId, setFamilyCourtOpenedCaseId] = useState<string | null>(null)
   const [messages, setMessages] = useState<ChatMessage[]>(initialMessages)
   const [weeklyRecognition, setWeeklyRecognition] = useState<WeeklyRecognition>(() => loadWeeklyRecognition())
   const [photos, setPhotos] = useState<FamilyPhoto[]>([])
@@ -433,6 +444,7 @@ export default function App() {
   }, [subscription])
 
   useEffect(() => { persistWeeklyRecognition(weeklyRecognition) }, [weeklyRecognition])
+  useEffect(() => { localStorage.setItem('family-circle-court-cases', JSON.stringify(familyCourtCases)) }, [familyCourtCases])
   useEffect(() => {
     const refreshRecognition = () => {
       const key = recognitionWeekKey()
@@ -1442,9 +1454,76 @@ export default function App() {
     </div>
   }
 
+  function resetFamilyCourtCaseSetup() {
+    setFamilyCourtCaseTitle('')
+    setFamilyCourtAccusedId('')
+    setFamilyCourtSetupView('form')
+    setFamilyCourtOpenedCaseId(null)
+  }
+
+  function openFamilyCourtCase() {
+    const title = familyCourtCaseTitle.trim()
+    if (!title || !familyCourtAccusedId || familyCourtAccusedId === selectedMember.id) return
+    const id = 'court-' + Date.now().toString(36)
+    const newCase: FamilyCourtCase = { id, title, accuserId: selectedMember.id, accusedId: familyCourtAccusedId, status: 'summoned', createdAt: new Date().toISOString() }
+    setFamilyCourtCases((current) => [newCase, ...current])
+    const accused = members.find((member) => member.id === familyCourtAccusedId)
+    const accusedName = accused?.label ?? 'a family member'
+    const familyNotifications: Notification[] = members
+      .filter((member) => member.id !== selectedMember.id)
+      .map((member) => member.id === familyCourtAccusedId
+        ? { id: 'court-summons-' + id, kind: 'Calendar' as const, title: 'You have been summoned to Family Court', detail: selectedMember.label + ' has opened a case against you: ' + title, time: 'Just now' }
+        : { id: 'court-jury-' + id + '-' + member.id, kind: 'Calendar' as const, title: 'A Family Court case has been opened', detail: selectedMember.label + ' has brought ' + accusedName + ' before Family Court: ' + title, time: 'Just now' })
+    setNotifications((current) => [...familyNotifications, ...current])
+    setFamilyCourtOpenedCaseId(id)
+    setFamilyCourtSetupView('opened')
+  }
+
   function renderTool() {
     if (toolMode === 'musicCommunity') return renderMusicCommunity()
-    if (toolMode === 'familyCourt') return <div className="fc-page"><FeatureHeader title="Family Court" description="Settle family disputes in a fun, private courtroom." onHome={() => goToTab('home')} /><section className="fc-court-lobby-hero"><div className="fc-court-lobby-emblem">⚖️<i>🔨</i></div><div><span className="fc-kicker">Family Circle · Private courtroom</span><h2>Welcome to Family Court</h2><p>Bring a family dispute to the table, invite the family jury, and let the case unfold.</p></div></section><section className="fc-court-lobby-grid"><button className="fc-court-lobby-card primary" type="button" onClick={() => window.alert('New Family Court cases will open here in the next stage.') }><span>⚖️</span><div><small>Start here</small><strong>Start New Case</strong><p>Choose who is bringing the case and who is being summoned.</p></div><b>→</b></button><button className="fc-court-lobby-card" type="button" onClick={() => window.alert('Scheduled Courts will open here once court scheduling is added.') }><span>🗓️</span><div><small>Coming next</small><strong>Scheduled Courts</strong><p>See upcoming family court sessions and scheduled hearings.</p></div><b>→</b></button><button className="fc-court-lobby-card" type="button" onClick={() => window.alert('Active Cases will open here once a case is created.') }><span>📂</span><div><small>Live cases</small><strong>Active Cases</strong><p>Return to a court case that is currently in progress.</p></div><b>→</b></button><button className="fc-court-lobby-card" type="button" onClick={() => window.alert('Court Records will open here once the first case is closed.') }><span>📜</span><div><small>Family history</small><strong>Court Records</strong><p>Keep the family’s closed cases, verdicts and memorable rulings.</p></div><b>→</b></button></section>{renderBottomNav()}</div>
+    if (toolMode === 'familyCourt') {
+      const openedCase = familyCourtCases.find((item) => item.id === familyCourtOpenedCaseId)
+      const accused = members.find((member) => member.id === familyCourtAccusedId)
+      return <div className="fc-page">
+        <FeatureHeader title="Family Court" description="Settle family disputes in a fun, private courtroom." onHome={() => goToTab('home')} />
+        {familyCourtSetupView === 'opened' && openedCase ? <section className="fc-court-case-opened">
+          <div className="fc-court-success-icon">⚖️</div>
+          <span className="fc-kicker">CASE OPENED</span>
+          <h2>Family Court is now in session.</h2>
+          <p>Your case has been opened and the family has been notified.</p>
+          <div className="fc-court-notice-grid">
+            <div><small>Case</small><strong>{openedCase.title}</strong></div>
+            <div><small>Accused</small><strong>{members.find((member) => member.id === openedCase.accusedId)?.label}</strong></div>
+            <div><small>Status</small><strong>SUMMONED</strong></div>
+          </div>
+          <div className="fc-court-notice-cards">
+            <article><span>🚨</span><div><small>SUMMONS SENT</small><strong>{accused?.label} has been summoned.</strong><p>They have been notified that a Family Court case has been opened against them.</p></div></article>
+            <article><span>👨‍👩‍👧‍👦</span><div><small>JURY NOTIFIED</small><strong>The rest of the family has been invited.</strong><p>The family has been notified of the case and can attend as the jury.</p></div></article>
+          </div>
+          <button className="fc-primary-button fc-court-wide-button" type="button" onClick={resetFamilyCourtCaseSetup}>Return to Family Court</button>
+        </section> : familyCourtSetupView === 'review' ? <section className="fc-court-setup-panel">
+          <div className="fc-court-step"><span>STEP 2 OF 2</span><strong>Review &amp; open case</strong></div>
+          <div className="fc-court-review-icon">⚖️</div>
+          <h2>Ready to bring this case to court?</h2>
+          <p className="fc-muted">Check the details before the summons is sent.</p>
+          <div className="fc-court-review-list">
+            <div><small>Bringing the case</small><strong>{selectedMember.label}</strong></div>
+            <div><small>Accused</small><strong>{accused?.label}</strong></div>
+            <div><small>Case</small><strong>{familyCourtCaseTitle.trim()}</strong></div>
+          </div>
+          <div className="fc-court-review-warning">🚨 Opening the case will summon the accused and notify the rest of the family jury.</div>
+          <div className="fc-court-form-actions"><button className="fc-ghost-button" type="button" onClick={() => setFamilyCourtSetupView('form')}>← Edit Case</button><button className="fc-primary-button" type="button" onClick={openFamilyCourtCase}>⚖️ OPEN FAMILY COURT CASE</button></div>
+        </section> : <section className="fc-court-setup-panel">
+          <div className="fc-court-step"><span>STEP 1 OF 2</span><strong>Start a new case</strong></div>
+          <div className="fc-court-setup-heading"><div className="fc-court-setup-icon">⚖️</div><div><span className="fc-kicker">Private family courtroom</span><h2>Who are you bringing to court?</h2><p>Choose a family member and give the case a short title.</p></div></div>
+          <div className="fc-court-member-grid">{members.filter((member) => member.id !== selectedMember.id).map((member) => <button className={'fc-court-member-choice' + (familyCourtAccusedId === member.id ? ' selected' : '')} type="button" key={member.id} onClick={() => setFamilyCourtAccusedId(member.id)}><AppAvatar member={member}/><span><strong>{member.label}</strong><small>{familyCourtAccusedId === member.id ? 'Selected as accused' : 'Select this family member'}</small></span><b>{familyCourtAccusedId === member.id ? '✓' : '○'}</b></button>)}</div>
+          <label className="fc-court-case-input"><span>What is this case about?</span><input value={familyCourtCaseTitle} maxLength={80} onChange={(event) => setFamilyCourtCaseTitle(event.target.value)} placeholder="e.g. Who ate the last slice?" /><small>{familyCourtCaseTitle.length}/80</small></label>
+          <div className="fc-court-form-actions"><button className="fc-ghost-button" type="button" onClick={() => goToTab('home')}>Cancel</button><button className="fc-primary-button" type="button" disabled={!familyCourtAccusedId || !familyCourtCaseTitle.trim()} onClick={() => setFamilyCourtSetupView('review')}>Review Case →</button></div>
+        </section>}
+        {familyCourtSetupView !== 'opened' && <div className="fc-court-lobby-back"><button type="button" onClick={() => { resetFamilyCourtCaseSetup(); setToolMode(null) }}>← Back to Family Court</button></div>}
+        {renderBottomNav()}
+      </div>
+    }
     if (toolMode === 'music') return renderMusic()
     if (toolMode === 'profile') return renderProfile()
     if (toolMode === 'family') return renderFamily()
