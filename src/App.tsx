@@ -1595,7 +1595,7 @@ export default function App() {
               </section>}
 
               <div className="fc-courtroom-stage">
-                <div className="fc-courtroom-wall"><div className="fc-courtroom-columns"><i/><i/><i/><i/><i/></div><div className="fc-courtroom-wall-sign"><span>⚖️</span><strong>FAMILY COURT</strong><small>Justice starts with the family.</small></div></div>
+                <div className="fc-courtroom-wall"><div className="fc-courtroom-columns"><i/><i/><i/><i/><i/></div><div className="fc-courtroom-wall-sign"><img src={logoUrl} alt="Family Circle" /><strong>FAMILY COURT</strong><small>Justice starts with the family.</small></div></div>
                 <div className="fc-courtroom-floor">
                   <div className="fc-courtroom-floor-line one"/><div className="fc-courtroom-floor-line two"/><div className="fc-courtroom-floor-line three"/>
                   <div className="fc-courtroom-aisle-mark">FAMILY COURT</div>
@@ -1607,6 +1607,7 @@ export default function App() {
                     <div className="fc-judge-avatar-wrap">
                       <span className="fc-judge-wig" aria-hidden="true"/>
                       <AppAvatar member={judge ?? accuserMember}/>
+                      <span className="fc-judge-gavel" aria-hidden="true"><i/><b/></span>
                     </div>
                   </div>
                   <span className="fc-courtroom-bench-scale">⚖️</span>
