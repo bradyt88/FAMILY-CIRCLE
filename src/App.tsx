@@ -39,7 +39,7 @@ type RecognitionTie = { candidates: string[]; votes: Record<string, string>; sta
 type WeeklyRecognition = { weekKey: string; famVotes: Record<string, string>; clownVotes: Record<string, string>; famWinner: string | null; clownWinner: string | null; famTie: RecognitionTie | null; clownTie: RecognitionTie | null; famAnnounced: boolean; clownAnnounced: boolean }
 type FamilyMember = { id: string; label: string; initials: string; accent: string; phone: string; bio: string; status: StatusOption; locationLabel: string; lastUpdated: string; mapX: number; mapY: number; photo?: string | null; socials: Record<SocialName, string>; recognition?: MemberRecognition; coverPhoto?: string | null }
 type ChatMessage = { id: string; memberId: string; name: string; initials: string; accent: string; time: string; text: string; image?: string; moneyRequestId?: string }
-type Notification = { id: string; kind: 'Chat' | 'Task' | 'Calendar' | 'Emergency' | 'Profile' | 'Money'; title: string; detail: string; time: string; target?: 'familyCourt' }
+type Notification = { id: string; kind: 'Chat' | 'Task' | 'Calendar' | 'Emergency' | 'Profile' | 'Money'; title: string; detail: string; time: string; target?: 'familyCourt'; targetCaseId?: string; recipientMemberId?: string }
 type NotificationPreferences = { Chat: boolean; Task: boolean; Calendar: boolean; Profile: boolean; Money: boolean; Emergency: true }
 type FamilyPhoto = { id: string; src: string; name: string; time: string }
 type FamilyEvent = { id: string; title: string; date: string; time: string; location: string }
@@ -370,7 +370,7 @@ export default function App() {
   const [photos, setPhotos] = useState<FamilyPhoto[]>([])
   const [pendingChatPhoto, setPendingChatPhoto] = useState<string | null>(null)
   const [chatDraft, setChatDraft] = useState('')
-  const [notifications, setNotifications] = useState<Notification[]>(initialNotifications)
+  const [notifications, setNotifications] = useState<Notification[]>(() => {\n    try {\n      const saved = localStorage.getItem('family-circle-notifications')\n      return saved ? JSON.parse(saved) as Notification[] : initialNotifications\n    } catch { return initialNotifications }\n  })
   const [notificationPreferences, setNotificationPreferences] = useState<NotificationPreferences>(() => loadNotificationPreferences())
   const [events, setEvents] = useState<FamilyEvent[]>([
     { id: 'event-1', title: 'Family Dinner', date: todayKey(), time: '19:00', location: 'At Home' },
@@ -447,7 +447,7 @@ export default function App() {
   }, [subscription])
 
   useEffect(() => { persistWeeklyRecognition(weeklyRecognition) }, [weeklyRecognition])
-  useEffect(() => { localStorage.setItem('family-circle-court-cases', JSON.stringify(familyCourtCases)) }, [familyCourtCases])
+  useEffect(() => { localStorage.setItem('family-circle-court-cases', JSON.stringify(familyCourtCases)) }, [familyCourtCases])\n  useEffect(() => { localStorage.setItem('family-circle-notifications', JSON.stringify(notifications)) }, [notifications])
   useEffect(() => {
     const refreshRecognition = () => {
       const key = recognitionWeekKey()
@@ -1004,7 +1004,7 @@ export default function App() {
         </button>
         <div className="fc-home-brand-row">
           <div className="fc-home-logo"><img src={logoUrl} alt="Family Circle" /></div>
-          <div className="fc-home-actions"><button className="fc-round-button" type="button" onClick={() => openTool('notifications')} aria-label="Notifications">🔔{notifications.length > 0 && <b>{notifications.length}</b>}</button><button className="fc-round-button" type="button" onClick={() => openTool('settings')} aria-label="Settings">⚙️</button></div>
+          <div className="fc-home-actions"><button className="fc-round-button" type="button" onClick={() => openTool('notifications')} aria-label="Notifications">🔔{notifications.filter((item) => !item.recipientMemberId || item.recipientMemberId === selectedMember.id).length > 0 && <b>{notifications.filter((item) => !item.recipientMemberId || item.recipientMemberId === selectedMember.id).length}</b>}</button><button className="fc-round-button" type="button" onClick={() => openTool('settings')} aria-label="Settings">⚙️</button></div>
         </div>
       </header>
 
@@ -1483,7 +1483,7 @@ export default function App() {
       const allAccepted = members.every((member) => acceptedMemberIds.includes(member.id))
       return { ...item, acceptedMemberIds, status: allAccepted ? 'ready' : item.status }
     }))
-    setNotifications((current) => [{ id: 'court-accepted-' + caseId + '-' + selectedMember.id, kind: 'Calendar', title: selectedMember.label + ' accepted the Family Court summons', detail: 'The courtroom will open when everyone has accepted.', time: 'Just now' }, ...current])
+    setNotifications((current) => [{ id: 'court-accepted-' + caseId + '-' + selectedMember.id, kind: 'Calendar', title: selectedMember.label + ' accepted the Family Court summons', detail: 'The courtroom will open when everyone has accepted.', time: 'Just now', target: 'familyCourt', targetCaseId: caseId, recipientMemberId: undefined }, ...current.filter((notification) => !(notification.target === 'familyCourt' && notification.targetCaseId === caseId && notification.recipientMemberId === selectedMember.id))])
   }
 
   function enterFamilyCourtroom(caseId: string) {
