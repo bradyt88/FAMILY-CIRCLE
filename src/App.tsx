@@ -45,7 +45,7 @@ type FamilyPhoto = { id: string; src: string; name: string; time: string }
 type FamilyEvent = { id: string; title: string; date: string; time: string; location: string }
 type PersonalEvent = FamilyEvent
 type FamilyTask = { id: string; title: string; dueDate: string; assignedTo: string; completed: boolean }
-type FamilyCourtCase = { id: string; title: string; accuserId: string; accusedId: string; status: 'scheduled' | 'summoned' | 'ready'; createdAt: string; scheduledDate?: string; scheduledTime?: string; acceptedMemberIds?: string[]; judgeId?: string; courtStarted?: boolean }
+type FamilyCourtCase = { id: string; title: string; accuserId: string; accusedId: string; status: 'scheduled' | 'summoned' | 'ready'; createdAt: string; scheduledDate?: string; scheduledTime?: string; acceptedMemberIds?: string[]; judgeId?: string; courtStarted?: boolean; courtStage?: 'opening-writing' | 'opening-reading-accuser' | 'opening-reading-accused' | 'opening-complete'; courtStageStartedAt?: string; openingStatements?: Record<string, string> }
 type MoneyRequest = { id: string; requesterId: string; amount: string; purpose: string; dueDate: string; status: 'Pending' | 'Accepted'; lenderId?: string; taskId?: string; calendarEventId?: string }
 type MusicTrack = { id: string; title: string; artist: string; genres: string[]; audioSrc: string; artwork?: string; youtubeUrl?: string; explicit: boolean; kidsAllowed: boolean; visualStyle: 1 | 2 | 3 | 4 | 5 }
 type MusicCommunityProfile = {
@@ -365,6 +365,7 @@ export default function App() {
   const [familyCourtTime, setFamilyCourtTime] = useState('19:00')
   const [familyCourtSetupView, setFamilyCourtSetupView] = useState<'hub' | 'form' | 'review' | 'opened' | 'courtroom'>('hub')
   const [familyCourtOpenedCaseId, setFamilyCourtOpenedCaseId] = useState<string | null>(null)
+  const [familyCourtClock, setFamilyCourtClock] = useState(Date.now())
   const [messages, setMessages] = useState<ChatMessage[]>(initialMessages)
   const [weeklyRecognition, setWeeklyRecognition] = useState<WeeklyRecognition>(() => loadWeeklyRecognition())
   const [photos, setPhotos] = useState<FamilyPhoto[]>([])
@@ -454,6 +455,32 @@ export default function App() {
   useEffect(() => { persistWeeklyRecognition(weeklyRecognition) }, [weeklyRecognition])
   useEffect(() => { localStorage.setItem('family-circle-court-cases', JSON.stringify(familyCourtCases)) }, [familyCourtCases])
   useEffect(() => { localStorage.setItem('family-circle-notifications', JSON.stringify(notifications)) }, [notifications])
+  useEffect(() => {
+    if (familyCourtSetupView !== 'courtroom') return
+    const timer = window.setInterval(() => setFamilyCourtClock(Date.now()), 1000)
+    return () => window.clearInterval(timer)
+  }, [familyCourtSetupView])
+
+  useEffect(() => {
+    if (familyCourtSetupView !== 'courtroom' || !familyCourtOpenedCaseId) return
+    setFamilyCourtCases((current) => current.map((item) => {
+      if (item.id !== familyCourtOpenedCaseId || !item.courtStarted) return item
+      if (!item.courtStage || !item.courtStageStartedAt) {
+        return { ...item, courtStage: 'opening-writing', courtStageStartedAt: new Date().toISOString(), openingStatements: item.openingStatements ?? {} }
+      }
+      const elapsed = (familyCourtClock - new Date(item.courtStageStartedAt).getTime()) / 1000
+      if (item.courtStage === 'opening-writing' && elapsed >= 90) {
+        return { ...item, courtStage: 'opening-reading-accuser', courtStageStartedAt: new Date(familyCourtClock).toISOString() }
+      }
+      if (item.courtStage === 'opening-reading-accuser' && elapsed >= 60) {
+        return { ...item, courtStage: 'opening-reading-accused', courtStageStartedAt: new Date(familyCourtClock).toISOString() }
+      }
+      if (item.courtStage === 'opening-reading-accused' && elapsed >= 60) {
+        return { ...item, courtStage: 'opening-complete', courtStageStartedAt: new Date(familyCourtClock).toISOString() }
+      }
+      return item
+    }))
+  }, [familyCourtClock, familyCourtOpenedCaseId, familyCourtSetupView])
   useEffect(() => {
     const refreshRecognition = () => {
       const key = recognitionWeekKey()
@@ -1505,7 +1532,20 @@ export default function App() {
   }
 
   function beginFamilyCourt(caseId: string) {
-    setFamilyCourtCases((current) => current.map((item) => item.id === caseId ? { ...item, courtStarted: true } : item))
+    setFamilyCourtCases((current) => current.map((item) => item.id === caseId ? {
+      ...item,
+      courtStarted: true,
+      courtStage: 'opening-writing',
+      courtStageStartedAt: new Date().toISOString(),
+      openingStatements: {},
+    } : item))
+  }
+
+  function saveOpeningStatement(caseId: string, text: string) {
+    setFamilyCourtCases((current) => current.map((item) => {
+      if (item.id !== caseId) return item
+      return { ...item, openingStatements: { ...(item.openingStatements ?? {}), [selectedMember.id]: text } }
+    }))
   }
 
   function resetFamilyCourtCaseSetup(view: 'hub' | 'form' = 'hub') {
@@ -1632,8 +1672,44 @@ export default function App() {
                 </div>
               </div>
 
-              {!currentCourtCase.courtStarted ? <button className="fc-primary-button fc-court-begin-button" type="button" disabled={!judge} onClick={() => beginFamilyCourt(currentCourtCase.id)}>🔨 BEGIN COURT</button> :
-                <section className="fc-court-session-banner"><span>🔨</span><div><small>COURT IS NOW IN SESSION</small><strong>The Family Court hearing has officially begun.</strong><p>The next stage is Opening Statements. The two parties will receive their private writing window before both statements are revealed together.</p></div></section>}
+              {!currentCourtCase.courtStarted ? <button className="fc-primary-button fc-court-begin-button" type="button" disabled={!judge} onClick={() => beginFamilyCourt(currentCourtCase.id)}>🔨 BEGIN COURT</button> : (() => {
+                const stage = currentCourtCase.courtStage ?? 'opening-writing'
+                const stageStartedAt = currentCourtCase.courtStageStartedAt ? new Date(currentCourtCase.courtStageStartedAt).getTime() : familyCourtClock
+                const stageLimit = stage === 'opening-writing' ? 90 : stage === 'opening-reading-accuser' || stage === 'opening-reading-accused' ? 60 : 0
+                const stageRemaining = stageLimit ? Math.max(0, stageLimit - Math.floor((familyCourtClock - stageStartedAt) / 1000)) : 0
+                const isParty = selectedMember.id === currentCourtCase.accuserId || selectedMember.id === currentCourtCase.accusedId
+                const currentDraft = currentCourtCase.openingStatements?.[selectedMember.id] ?? ''
+                const accuserStatement = currentCourtCase.openingStatements?.[currentCourtCase.accuserId] ?? ''
+                const accusedStatement = currentCourtCase.openingStatements?.[currentCourtCase.accusedId] ?? ''
+                const readingStatement = stage === 'opening-reading-accuser' ? accuserStatement : accusedStatement
+                const readingMember = stage === 'opening-reading-accuser' ? accuserMember : accusedMember
+                return <section className="fc-court-hearing-stage">
+                  {stage === 'opening-writing' && <div className="fc-opening-writing">
+                    <div className="fc-opening-kicker"><span>COURT IS NOW IN SESSION</span><strong>OPENING STATEMENTS</strong></div>
+                    <div className="fc-opening-timer"><span>{stageRemaining}</span><small>SECONDS</small></div>
+                    {isParty ? <div className="fc-opening-private">
+                      <span>PRIVATE TO THE COURT</span>
+                      <h3>Prepare your opening statement.</h3>
+                      <p>Your statement is private while you write. The other side cannot see it.</p>
+                      <textarea value={currentDraft} onChange={(event) => saveOpeningStatement(currentCourtCase.id, event.target.value)} maxLength={1500} placeholder="Write your opening statement..." aria-label="Opening statement" />
+                      <small>{currentDraft.length}/1500</small>
+                    </div> : <div className="fc-opening-waiting"><span>⚖️</span><strong>The parties are preparing their opening statements.</strong><p>The jury will see each statement when its reading stage begins.</p></div>}
+                  </div>}
+                  {stage === 'opening-reading-accuser' && <div className="fc-opening-reading">
+                    <span className="fc-opening-kicker">ACCUSER'S OPENING STATEMENT</span>
+                    <div className="fc-opening-reading-header"><div><small>60 SECOND READING</small><strong>{readingMember.label}</strong></div><span>{stageRemaining}s</span></div>
+                    <article>{readingStatement || <em>No statement was submitted.</em>}</article>
+                  </div>}
+                  {stage === 'opening-reading-accused' && <div className="fc-opening-reading accused-reading">
+                    <span className="fc-opening-kicker">ACCUSED'S OPENING STATEMENT</span>
+                    <div className="fc-opening-reading-header"><div><small>60 SECOND READING</small><strong>{readingMember.label}</strong></div><span>{stageRemaining}s</span></div>
+                    <article>{readingStatement || <em>No statement was submitted.</em>}</article>
+                  </div>}
+                  {stage === 'opening-complete' && <div className="fc-opening-complete">
+                    <span>⚖️</span><small>OPENING STATEMENTS COMPLETE</small><h3>The court has heard both sides.</h3><p>The next stage is Evidence.</p>
+                  </div>}
+                </section>
+              })()}
             </>
           })()}
         </section> : familyCourtSetupView === 'opened' && openedCase ? <section className="fc-court-case-opened">
