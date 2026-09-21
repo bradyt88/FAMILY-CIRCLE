@@ -142,7 +142,6 @@ function persistNotificationPreferences(value: NotificationPreferences) {
 }
 
 const DEMO_WEEKLY_RECOGNITION_ENABLED = true
-const DEMO_WEEKLY_RECOGNITION_NOTE = 'DEMO DATA — remove this block before production.'
 
 function recognitionWeekKey(now = new Date()) {
   const date = new Date(now)
@@ -354,7 +353,6 @@ export default function App() {
   const [toolMode, setToolMode] = useState<ToolMode | null>(null)
   const [messages, setMessages] = useState<ChatMessage[]>(initialMessages)
   const [weeklyRecognition, setWeeklyRecognition] = useState<WeeklyRecognition>(() => loadWeeklyRecognition())
-  const [tieStatementDrafts, setTieStatementDrafts] = useState<Record<string, string>>({})
   const [photos, setPhotos] = useState<FamilyPhoto[]>([])
   const [pendingChatPhoto, setPendingChatPhoto] = useState<string | null>(null)
   const [chatDraft, setChatDraft] = useState('')
@@ -611,20 +609,6 @@ export default function App() {
   function castWeeklyVote(type: 'fam' | 'clown', candidateId: string) {
     if (!isRecognitionVotingOpen() || !members.some((member) => member.id === candidateId)) return
     setWeeklyRecognition((current) => current.weekKey === recognitionWeekKey() ? { ...current, [type === 'fam' ? 'famVotes' : 'clownVotes']: { ...(type === 'fam' ? current.famVotes : current.clownVotes), [selectedMember.id]: candidateId } } : current)
-  }
-  function submitTieStatement(type: 'fam' | 'clown', candidateId: string) {
-    const tie = type === 'fam' ? weeklyRecognition.famTie : weeklyRecognition.clownTie
-    if (!tie?.candidates.includes(candidateId) || selectedMember.id !== candidateId) return
-    const statement = (tieStatementDrafts[candidateId] ?? '').trim().slice(0, 240)
-    if (!statement) return
-    setWeeklyRecognition((current) => { const target = type === 'fam' ? current.famTie : current.clownTie; if (!target) return current; const nextTie = { ...target, statements: { ...target.statements, [candidateId]: statement } }; return { ...current, [type === 'fam' ? 'famTie' : 'clownTie']: nextTie } })
-    setTieStatementDrafts((current) => ({ ...current, [candidateId]: '' }))
-  }
-  function castTieBreakVote(type: 'fam' | 'clown', candidateId: string) {
-    if (!isRecognitionTieBreakOpen()) return
-    const tie = type === 'fam' ? weeklyRecognition.famTie : weeklyRecognition.clownTie
-    if (!tie?.candidates.includes(candidateId)) return
-    setWeeklyRecognition((current) => { const target = type === 'fam' ? current.famTie : current.clownTie; if (!target) return current; const nextTie = { ...target, votes: { ...target.votes, [selectedMember.id]: candidateId } }; return { ...current, [type === 'fam' ? 'famTie' : 'clownTie']: nextTie } })
   }
   function finaliseWeeklyRecognition() {
     const now = new Date()
