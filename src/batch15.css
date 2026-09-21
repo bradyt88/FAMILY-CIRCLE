@@ -4193,3 +4193,6 @@
   .fc-court-appeal-action{align-items:stretch;flex-direction:column}
   .fc-court-evidence-grid{grid-template-columns:repeat(2,1fr)}
 }
+
+.fc-court-upcoming-row{border-color:rgba(114,170,255,.14)}
+.fc-court-upcoming-row:hover{border-color:rgba(114,170,255,.42)}
