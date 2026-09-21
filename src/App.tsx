@@ -1489,7 +1489,7 @@ export default function App() {
       const allAccepted = members.every((member) => acceptedMemberIds.includes(member.id))
       return { ...item, acceptedMemberIds, status: allAccepted ? 'ready' : item.status }
     }))
-    setNotifications((current) => [{ id: 'court-accepted-' + caseId + '-' + selectedMember.id, kind: 'Calendar', title: selectedMember.label + ' accepted the Family Court summons', detail: 'The courtroom will open when everyone has accepted.', time: 'Just now', target: 'familyCourt', targetCaseId: caseId, recipientMemberId: undefined }, ...current.filter((notification) => !(notification.target === 'familyCourt' && notification.targetCaseId === caseId && notification.recipientMemberId === selectedMember.id))])
+    setNotifications((current) => { const targetCase = familyCourtCases.find((item) => item.id === caseId); return [{ id: 'court-accepted-' + caseId + '-' + selectedMember.id, kind: 'Calendar' as const, title: selectedMember.label + ' accepted the Family Court summons', detail: 'The courtroom will open when everyone has accepted.', time: 'Just now', target: 'familyCourt' as const, targetCaseId: caseId, recipientMemberId: targetCase?.accuserId }, ...current.filter((notification) => !(notification.target === 'familyCourt' && notification.targetCaseId === caseId && notification.recipientMemberId === selectedMember.id))] })
   }
 
   function enterFamilyCourtroom(caseId: string) {
