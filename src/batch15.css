@@ -4130,5 +4130,5 @@
 .fc-court-punishments{display:grid;gap:10px;margin:18px 0}
 .fc-court-punishments button{border:1px solid rgba(255,210,100,.28);background:rgba(255,255,255,.06);color:inherit;border-radius:14px;padding:14px 16px;text-align:left;cursor:pointer}
 .fc-court-punishments button:hover{transform:translateY(-1px);border-color:rgba(255,210,100,.55)}
-.fc-verdict-gavel{display:block;font-size:58px;animation:fc-gavel-strike .65s cubic-bezier(.2,.8,.25,1) both}
+.fc-verdict-gavel{display:block;font-size:58px}.fc-verdict-gavel.strike{animation:fc-gavel-strike .65s cubic-bezier(.2,.8,.25,1) both}.fc-verdict-buttons{justify-content:center}
 @keyframes fc-gavel-strike{0%{transform:translateY(-42px) rotate(-18deg);opacity:0}55%{transform:translateY(8px) rotate(8deg);opacity:1}78%{transform:translateY(-3px) rotate(1deg)}100%{transform:translateY(0) rotate(0)}}
