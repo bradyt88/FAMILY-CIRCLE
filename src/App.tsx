@@ -1767,13 +1767,6 @@ export default function App() {
     }
   }
 
-  function closeFamilyCourtAppeal(caseId: string) {
-    setFamilyCourtCases((current) => current.map((item) => item.id === caseId && item.appeal?.status === 'approved' ? { ...item, appeal: { ...item.appeal!, status: 'closed', closedAt: new Date().toISOString(), finalVerdict: item.verdict, finalPunishment: item.punishment }, status: 'closed', courtStage: 'case-closed', courtStageStartedAt: new Date().toISOString() } : item))
-    setFamilyCourtOpenedCaseId(null)
-    setFamilyCourtReviewCaseId(caseId)
-    setFamilyCourtSetupView('reviewCase')
-  }
-
   function resetFamilyCourtCaseSetup(view: 'hub' | 'form' = 'hub') {
     setFamilyCourtCaseTitle('')
     setFamilyCourtAccusedId('')
