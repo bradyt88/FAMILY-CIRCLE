@@ -370,7 +370,12 @@ export default function App() {
   const [photos, setPhotos] = useState<FamilyPhoto[]>([])
   const [pendingChatPhoto, setPendingChatPhoto] = useState<string | null>(null)
   const [chatDraft, setChatDraft] = useState('')
-  const [notifications, setNotifications] = useState<Notification[]>(() => {\n    try {\n      const saved = localStorage.getItem('family-circle-notifications')\n      return saved ? JSON.parse(saved) as Notification[] : initialNotifications\n    } catch { return initialNotifications }\n  })
+  const [notifications, setNotifications] = useState<Notification[]>(() => {
+    try {
+      const saved = localStorage.getItem('family-circle-notifications')
+      return saved ? JSON.parse(saved) as Notification[] : initialNotifications
+    } catch { return initialNotifications }
+  })
   const [notificationPreferences, setNotificationPreferences] = useState<NotificationPreferences>(() => loadNotificationPreferences())
   const [events, setEvents] = useState<FamilyEvent[]>([
     { id: 'event-1', title: 'Family Dinner', date: todayKey(), time: '19:00', location: 'At Home' },
@@ -447,7 +452,8 @@ export default function App() {
   }, [subscription])
 
   useEffect(() => { persistWeeklyRecognition(weeklyRecognition) }, [weeklyRecognition])
-  useEffect(() => { localStorage.setItem('family-circle-court-cases', JSON.stringify(familyCourtCases)) }, [familyCourtCases])\n  useEffect(() => { localStorage.setItem('family-circle-notifications', JSON.stringify(notifications)) }, [notifications])
+  useEffect(() => { localStorage.setItem('family-circle-court-cases', JSON.stringify(familyCourtCases)) }, [familyCourtCases])
+  useEffect(() => { localStorage.setItem('family-circle-notifications', JSON.stringify(notifications)) }, [notifications])
   useEffect(() => {
     const refreshRecognition = () => {
       const key = recognitionWeekKey()
