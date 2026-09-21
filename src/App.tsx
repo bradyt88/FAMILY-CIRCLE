@@ -45,7 +45,7 @@ type FamilyPhoto = { id: string; src: string; name: string; time: string }
 type FamilyEvent = { id: string; title: string; date: string; time: string; location: string }
 type PersonalEvent = FamilyEvent
 type FamilyTask = { id: string; title: string; dueDate: string; assignedTo: string; completed: boolean }
-type FamilyCourtCase = { id: string; title: string; accuserId: string; accusedId: string; status: 'scheduled' | 'summoned' | 'ready'; createdAt: string; scheduledDate?: string; scheduledTime?: string; acceptedMemberIds?: string[] }
+type FamilyCourtCase = { id: string; title: string; accuserId: string; accusedId: string; status: 'scheduled' | 'summoned' | 'ready'; createdAt: string; scheduledDate?: string; scheduledTime?: string; acceptedMemberIds?: string[]; judgeId?: string; courtStarted?: boolean }
 type MoneyRequest = { id: string; requesterId: string; amount: string; purpose: string; dueDate: string; status: 'Pending' | 'Accepted'; lenderId?: string; taskId?: string; calendarEventId?: string }
 type MusicTrack = { id: string; title: string; artist: string; genres: string[]; audioSrc: string; artwork?: string; youtubeUrl?: string; explicit: boolean; kidsAllowed: boolean; visualStyle: 1 | 2 | 3 | 4 | 5 }
 type MusicCommunityProfile = {
@@ -1487,10 +1487,19 @@ export default function App() {
   }
 
   function enterFamilyCourtroom(caseId: string) {
+    const targetCase = familyCourtCases.find((item) => item.id === caseId)
+    if (!targetCase) return
+    const eligibleJudges = members.filter((member) => member.id !== targetCase.accuserId && member.id !== targetCase.accusedId)
+    const automaticJudgeId = eligibleJudges.length === 1 ? eligibleJudges[0].id : targetCase.judgeId
+    setFamilyCourtCases((current) => current.map((item) => item.id === caseId ? { ...item, judgeId: automaticJudgeId } : item))
     setFamilyCourtOpenedCaseId(caseId)
     setFamilyCourtSetupView('courtroom')
     setToolMode('familyCourt')
     setActiveTab('home')
+  }
+
+  function beginFamilyCourt(caseId: string) {
+    setFamilyCourtCases((current) => current.map((item) => item.id === caseId ? { ...item, courtStarted: true } : item))
   }
 
   function resetFamilyCourtCaseSetup(view: 'hub' | 'form' = 'hub') {
@@ -1540,7 +1549,7 @@ export default function App() {
       const currentCourtCase = openedCase ?? activeCourtCase
       const currentMemberAccepted = currentCourtCase?.acceptedMemberIds?.includes(selectedMember.id) ?? false
       const acceptedCount = currentCourtCase?.acceptedMemberIds?.length ?? 0
-      const accused = members.find((member) => member.id === (openedCase?.accusedId ?? familyCourtAccusedId)) members.find((member) => member.id === familyCourtAccusedId)
+      const accused = members.find((member) => member.id === (openedCase?.accusedId ?? familyCourtAccusedId))
       const scheduledLabel = familyCourtDate && familyCourtTime ? formatLongDate(familyCourtDate) + ' at ' + familyCourtTime : 'Not scheduled'
       return <div className="fc-page">
         <FeatureHeader title="Family Court" description="Settle family disputes in a fun, private courtroom." onHome={() => goToTab('home')} />
@@ -1558,16 +1567,47 @@ export default function App() {
             <button className="fc-court-lobby-card" type="button" onClick={() => window.alert('Active Cases will show live cases here once the courtroom lifecycle is built.') }><span>🔴</span><div><small>Live cases</small><strong>Active Cases</strong><p>Return to a case that is waiting or currently in session.</p></div><b>→</b></button>
           </section>
         </> : familyCourtSetupView === 'courtroom' && currentCourtCase ? <section className="fc-courtroom-shell">
-          <div className="fc-courtroom-top"><div><span className="fc-kicker">Family Circle · Private courtroom</span><h2>⚖️ Court is in session</h2><p>{currentCourtCase.title}</p></div><span className="fc-courtroom-status">LIVE CASE</span></div>
-          <div className="fc-courtroom-stage"><div className="fc-courtroom-backdrop"><div className="fc-courtroom-columns"><i/><i/><i/><i/><i/></div><div className="fc-courtroom-bench"><span>⚖️</span><strong>FAMILY COURT</strong><small>Justice starts with the family.</small></div></div>
-            <div className="fc-courtroom-people">
-              <article className="fc-courtroom-seat accuser"><span>ACCUSER</span><AppAvatar member={members.find((member) => member.id === currentCourtCase.accuserId) ?? selectedMember}/><strong>{members.find((member) => member.id === currentCourtCase.accuserId)?.label}</strong><small>Bringing the case</small></article>
-              <div className="fc-courtroom-judge"><span>JUDGE</span><div>⚖️</div><strong>Judge to be selected</strong><small>The family will choose the judge next.</small></div>
-              <article className="fc-courtroom-seat accused"><span>ACCUSED</span><AppAvatar member={members.find((member) => member.id === currentCourtCase.accusedId) ?? selectedMember}/><strong>{members.find((member) => member.id === currentCourtCase.accusedId)?.label}</strong><small>Answering the case</small></article>
-            </div>
-          </div>
-          <section className="fc-courtroom-jury"><div><span>THE JURY</span><strong>Family members ready for court</strong></div><div className="fc-courtroom-jury-grid">{members.filter((member) => member.id !== currentCourtCase.accuserId && member.id !== currentCourtCase.accusedId).map((member) => <div className="fc-courtroom-juror" key={member.id}><AppAvatar member={member}/><span>{member.label}</span><small>✓ Ready</small></div>)}</div></section>
-          <div className="fc-courtroom-notice">🔒 This is the courtroom waiting area. No verdict or evidence is being processed yet.</div>
+          {(() => {
+            const judgeId = currentCourtCase.judgeId ?? members.find((member) => member.id !== currentCourtCase.accuserId && member.id !== currentCourtCase.accusedId)?.id
+            const judge = members.find((member) => member.id === judgeId)
+            const accuserMember = members.find((member) => member.id === currentCourtCase.accuserId) ?? selectedMember
+            const accusedMember = members.find((member) => member.id === currentCourtCase.accusedId) ?? selectedMember
+            const juryMembers = members.filter((member) => member.id !== currentCourtCase.accuserId && member.id !== currentCourtCase.accusedId && member.id !== judgeId)
+            return <>
+              <div className="fc-courtroom-top">
+                <div><span className="fc-kicker">Family Circle · Private courtroom</span><h2>{currentCourtCase.courtStarted ? '⚖️ Court is now in session' : '⚖️ Courtroom ready'}</h2><p>{currentCourtCase.title}</p></div>
+                <span className="fc-courtroom-status">{currentCourtCase.courtStarted ? 'IN SESSION' : 'READY'}</span>
+              </div>
+
+              {!currentCourtCase.courtStarted && <section className="fc-court-role-banner">
+                <div><span>ROLES CONFIRMED</span><strong>Everyone is in position.</strong><p>The judge has been assigned automatically because this family has three members.</p></div>
+                <div className="fc-court-role-strip">
+                  <span>ACCUSER <b>{accuserMember.label}</b></span>
+                  <span>JUDGE <b>{judge?.label ?? 'Selecting…'}</b></span>
+                  <span>ACCUSED <b>{accusedMember.label}</b></span>
+                </div>
+              </section>}
+
+              <div className="fc-courtroom-stage">
+                <div className="fc-courtroom-wall"><div className="fc-courtroom-columns"><i/><i/><i/><i/><i/></div><div className="fc-courtroom-wall-sign"><span>⚖️</span><strong>FAMILY COURT</strong><small>Justice starts with the family.</small></div></div>
+                <div className="fc-courtroom-floor">
+                  <div className="fc-courtroom-floor-line one"/><div className="fc-courtroom-floor-line two"/><div className="fc-courtroom-floor-line three"/>
+                </div>
+                <div className="fc-courtroom-bench"><span>⚖️</span><strong>JUDGE'S BENCH</strong><small>{judge?.label ?? 'Judge'}</small></div>
+                <div className="fc-courtroom-people">
+                  <article className="fc-courtroom-seat accuser"><span>ACCUSER</span><AppAvatar member={accuserMember}/><strong>{accuserMember.label}</strong><small>Bringing the case</small></article>
+                  <div className="fc-courtroom-judge"><span>JUDGE</span><div>⚖️</div><strong>{judge?.label ?? 'Judge'}</strong><small>{judge ? 'Presiding over the case' : 'Judge to be selected'}</small></div>
+                  <article className="fc-courtroom-seat accused"><span>ACCUSED</span><AppAvatar member={accusedMember}/><strong>{accusedMember.label}</strong><small>Answering the case</small></article>
+                </div>
+                <div className="fc-courtroom-table-labels"><span>ACCUSER'S TABLE</span><span>JUDGE'S BENCH</span><span>ACCUSED'S TABLE</span></div>
+              </div>
+
+              {juryMembers.length > 0 && <section className="fc-courtroom-jury"><div><span>THE JURY</span><strong>Family members ready for court</strong></div><div className="fc-courtroom-jury-grid">{juryMembers.map((member) => <div className="fc-courtroom-juror" key={member.id}><AppAvatar member={member}/><span>{member.label}</span><small>✓ Ready</small></div>)}</div></section>}
+
+              {!currentCourtCase.courtStarted ? <button className="fc-primary-button fc-court-begin-button" type="button" disabled={!judge} onClick={() => beginFamilyCourt(currentCourtCase.id)}>🔨 BEGIN COURT</button> :
+                <section className="fc-court-session-banner"><span>🔨</span><div><small>COURT IS NOW IN SESSION</small><strong>The Family Court hearing has officially begun.</strong><p>The next stage is Opening Statements. The two parties will receive their private writing window before both statements are revealed together.</p></div></section>}
+            </>
+          })()}
         </section> : familyCourtSetupView === 'opened' && openedCase ? <section className="fc-court-case-opened">
           <div className="fc-court-success-icon">⚖️</div>
           <span className="fc-kicker">{openedCase.status === 'scheduled' ? 'COURT SCHEDULED' : 'SUMMONS SENT'}</span>
