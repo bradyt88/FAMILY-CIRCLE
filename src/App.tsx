@@ -3,7 +3,7 @@ import logoUrl from '../design/brand/family-circle-logo.png'
 import Onboarding from './Onboarding'
 import './batch15.css'
 
-type ToolMode = 'emergency' | 'profile' | 'family' | 'games' | 'notifications' | 'settings' | 'map' | 'music' | 'musicCommunity'
+type ToolMode = 'emergency' | 'profile' | 'family' | 'games' | 'notifications' | 'settings' | 'map' | 'music' | 'musicCommunity' | 'familyCourt'
 type HomeTab = 'home' | 'chat' | 'photos' | 'calendar' | 'tasks' | 'shopping'
 type AccountType = 'adult' | 'child'
 type Plan = 'free' | 'plus' | 'premium'
@@ -1036,6 +1036,18 @@ export default function App() {
         </button>
       </section>
 
+      <section className="fc-home-family-court">
+        <button className="fc-home-family-court-card" type="button" onClick={() => openTool('familyCourt')}>
+          <div className="fc-home-family-court-emblem" aria-hidden="true"><span>⚖️</span><i>🔨</i></div>
+          <div className="fc-home-family-court-copy">
+            <span className="fc-home-family-court-kicker">⚖️ Family Circle</span>
+            <strong>FAMILY COURT</strong>
+            <p>Bring it to court. Let the family decide.</p>
+            <span className="fc-home-family-court-action">Enter Family Court →</span>
+          </div>
+          <div className="fc-home-family-court-badge"><span>New</span><strong>⚖️</strong></div>
+        </button>
+      </section>
 
       <section className="fc-dashboard-grid">
         <article className="fc-dashboard-card cyan"><div className="fc-card-head"><div><small>Family Chat</small><h2>Latest conversation</h2></div><div className="fc-card-head-actions">{unreadMessageCount > 0 && <span className="fc-unread-count">{unreadMessageCount} new</span>}<button type="button" onClick={() => goToTab('chat')}>→</button></div></div>{firstThreeMessages.map((message) => <div className={isMessageUnread(message.id) ? "fc-mini-row fc-unread-row" : "fc-mini-row"} key={message.id}><AppAvatar member={members.find((m) => m.id === message.memberId) ?? selectedMember} /><div><strong>{message.name}</strong><span>{message.text}</span></div><time>{message.time}</time></div>)}<button className="fc-outline-button" type="button" onClick={() => goToTab('chat')}>View All Messages →</button></article>
@@ -1444,6 +1456,7 @@ export default function App() {
 
   function renderTool() {
     if (toolMode === 'musicCommunity') return renderMusicCommunity()
+    if (toolMode === 'familyCourt') return <div className="fc-page"><FeatureHeader title="Family Court" description="Settle family disputes in a fun, private courtroom." onHome={() => goToTab('home')} /><div className="fc-panel"><div className="fc-confirm"><div className="fc-confirm-icon">⚖️</div><h2>Family Court</h2><p className="fc-muted">Court is coming together. The full case flow will be added in the next stages.</p></div></div>{renderBottomNav()}</div>
     if (toolMode === 'music') return renderMusic()
     if (toolMode === 'profile') return renderProfile()
     if (toolMode === 'family') return renderFamily()
