@@ -1660,7 +1660,7 @@ export default function App() {
   function judgeSetPunishment(caseId: string, punishment: string) {
     const value = punishment.trim()
     if (!value) return
-    setFamilyCourtCases((current) => current.map((item) => item.id === caseId ? { ...item, punishment: value, courtStage: 'case-closed', courtStageStartedAt: new Date().toISOString() } : item))
+    setFamilyCourtCases((current) => current.map((item) => item.id === caseId ? { ...item, status: 'closed', punishment: value, courtStage: 'case-closed', courtStageStartedAt: new Date().toISOString() } : item))
   }
 
   function appealWindow(caseItem: FamilyCourtCase) {
