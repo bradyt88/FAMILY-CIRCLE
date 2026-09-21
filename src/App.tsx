@@ -1598,16 +1598,32 @@ export default function App() {
                 <div className="fc-courtroom-wall"><div className="fc-courtroom-columns"><i/><i/><i/><i/><i/></div><div className="fc-courtroom-wall-sign"><span>⚖️</span><strong>FAMILY COURT</strong><small>Justice starts with the family.</small></div></div>
                 <div className="fc-courtroom-floor">
                   <div className="fc-courtroom-floor-line one"/><div className="fc-courtroom-floor-line two"/><div className="fc-courtroom-floor-line three"/>
+                  <div className="fc-courtroom-aisle-mark">FAMILY COURT</div>
                 </div>
 
                 <div className="fc-courtroom-bench">
-                  <span>⚖️</span>
-                  <div className="fc-courtroom-bench-judge"><AppAvatar member={judge ?? accuserMember}/><div><strong>JUDGE'S BENCH</strong><small>{judge?.label ?? 'Judge'}</small></div></div>
+                  <div className="fc-judge-chair" aria-label="Judge's chair">
+                    <div className="fc-judge-chair-back"/>
+                    <div className="fc-judge-avatar-wrap">
+                      <span className="fc-judge-wig" aria-hidden="true"/>
+                      <AppAvatar member={judge ?? accuserMember}/>
+                    </div>
+                  </div>
+                  <span className="fc-courtroom-bench-scale">⚖️</span>
+                  <div className="fc-courtroom-bench-judge"><div><strong>JUDGE'S BENCH</strong><small>{judge?.label ?? 'Judge'}</small></div></div>
                 </div>
 
                 <div className="fc-courtroom-people">
-                  <article className="fc-courtroom-seat accuser"><span>ACCUSER</span><AppAvatar member={accuserMember}/><strong>{accuserMember.label}</strong><small>Bringing the case</small><em>ACCUSER'S TABLE</em></article>
-                  <article className="fc-courtroom-seat accused"><span>ACCUSED</span><AppAvatar member={accusedMember}/><strong>{accusedMember.label}</strong><small>Answering the case</small><em>ACCUSED'S TABLE</em></article>
+                  <article className="fc-courtroom-seat accuser">
+                    <div className="fc-court-person-label"><span>ACCUSER</span><small>Bringing the case</small></div>
+                    <div className="fc-court-person-avatar"><AppAvatar member={accuserMember}/></div>
+                    <div className="fc-courtroom-desk"><strong>{accuserMember.label}</strong><span>ACCUSER'S TABLE</span></div>
+                  </article>
+                  <article className="fc-courtroom-seat accused">
+                    <div className="fc-court-person-label"><span>ACCUSED</span><small>Answering the case</small></div>
+                    <div className="fc-court-person-avatar"><AppAvatar member={accusedMember}/></div>
+                    <div className="fc-courtroom-dock"><div className="fc-dock-rail left"/><div className="fc-dock-rail right"/><div className="fc-dock-front"><strong>{accusedMember.label}</strong><span>ACCUSED'S DOCK</span></div></div>
+                  </article>
                 </div>
 
                 <div className="fc-courtroom-jury">
