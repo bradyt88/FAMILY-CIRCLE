@@ -3403,3 +3403,48 @@
 
 
 .fc-notification-item{width:100%;display:grid;grid-template-columns:auto 1fr auto;gap:12px;align-items:center;text-align:left;padding:14px 15px;border:1px solid rgba(255,255,255,.08);border-radius:16px;background:rgba(255,255,255,.025);color:inherit;cursor:pointer;margin-bottom:10px}.fc-notification-item:hover{border-color:rgba(255,211,91,.35);background:rgba(255,255,255,.05)}.fc-notification-item>div{min-width:0}.fc-notification-item>div strong,.fc-notification-item>div p,.fc-notification-item>div small{display:block}.fc-notification-item>div p{margin:3px 0;font-size:12px;color:rgba(255,255,255,.65)}.fc-notification-item>div small{font-size:10px;color:rgba(255,255,255,.42)}.fc-notification-item>b{font-size:20px;opacity:.6}
+
+/* Family Court — courtroom floor, assigned roles and session state */
+.fc-court-role-banner{display:grid;gap:12px;margin:0 0 16px;padding:16px 18px;border:1px solid rgba(255,214,104,.28);border-radius:20px;background:linear-gradient(135deg,rgba(43,30,70,.96),rgba(12,16,35,.98));box-shadow:0 16px 44px rgba(0,0,0,.2)}
+.fc-court-role-banner>div:first-child span{display:block;color:#ffe2a1;font-size:9px;font-weight:900;letter-spacing:.17em}
+.fc-court-role-banner>div:first-child strong{display:block;margin-top:4px;font-size:17px}
+.fc-court-role-banner>div:first-child p{margin:4px 0 0;color:#9fa6bf;font-size:11px}
+.fc-court-role-strip{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.fc-court-role-strip span{padding:10px 12px;border-radius:13px;background:rgba(255,255,255,.035);border:1px solid rgba(255,255,255,.07);color:#9fa6bf;font-size:8px;font-weight:900;letter-spacing:.12em}
+.fc-court-role-strip b{display:block;margin-top:4px;color:#fff;font-size:11px;letter-spacing:0}
+.fc-courtroom-stage{min-height:560px;background:linear-gradient(180deg,#11132d 0%,#171326 42%,#080a18 100%)}
+.fc-courtroom-wall{position:absolute;inset:0 0 auto;height:245px;padding:26px 8%;background:radial-gradient(circle at 50% 28%,rgba(164,104,229,.22),transparent 35%),linear-gradient(180deg,rgba(16,17,42,.98),rgba(30,22,40,.9))}
+.fc-courtroom-columns{height:190px}
+.fc-courtroom-wall-sign{position:absolute;left:50%;top:27px;transform:translateX(-50%);display:grid;justify-items:center;gap:3px;text-align:center}
+.fc-courtroom-wall-sign span{font-size:38px;filter:drop-shadow(0 0 12px rgba(255,211,91,.3))}
+.fc-courtroom-wall-sign strong{font-size:12px;letter-spacing:.2em;color:#fff1c9}
+.fc-courtroom-wall-sign small{font-size:9px;color:rgba(255,255,255,.4)}
+.fc-courtroom-floor{position:absolute;left:0;right:0;top:225px;bottom:0;background:repeating-linear-gradient(90deg,rgba(255,255,255,.018) 0,rgba(255,255,255,.018) 2px,transparent 2px,transparent 76px),linear-gradient(180deg,rgba(72,43,75,.72),rgba(7,9,19,.98));transform:perspective(500px) rotateX(2deg);transform-origin:top}
+.fc-courtroom-floor-line{position:absolute;height:1px;left:7%;right:7%;background:rgba(255,205,103,.12)}
+.fc-courtroom-floor-line.one{top:28%}.fc-courtroom-floor-line.two{top:54%}.fc-courtroom-floor-line.three{top:79%}
+.fc-courtroom-bench{top:160px;z-index:3;padding:11px 28px 13px;min-width:210px;border:1px solid rgba(255,214,104,.34);border-radius:16px 16px 8px 8px;background:linear-gradient(180deg,rgba(74,49,85,.98),rgba(24,19,38,.98));box-shadow:0 10px 30px rgba(0,0,0,.32)}
+.fc-courtroom-bench span{font-size:27px}
+.fc-courtroom-bench strong{font-size:10px}
+.fc-courtroom-bench small{font-size:9px;color:#ffe2a1}
+.fc-courtroom-people{z-index:4;bottom:74px;left:7%;right:7%;grid-template-columns:1fr 1.1fr 1fr;align-items:end}
+.fc-courtroom-seat,.fc-courtroom-judge{min-height:190px;box-shadow:0 14px 34px rgba(0,0,0,.3)}
+.fc-courtroom-seat{background:linear-gradient(180deg,rgba(15,17,37,.94),rgba(7,9,20,.94))}
+.fc-courtroom-judge{min-height:225px}
+.fc-courtroom-table-labels{position:absolute;left:7%;right:7%;bottom:26px;z-index:5;display:grid;grid-template-columns:1fr 1.1fr 1fr;gap:18px;text-align:center;color:rgba(255,214,104,.48);font-size:8px;font-weight:900;letter-spacing:.16em}
+.fc-court-begin-button{width:100%;margin-top:16px;min-height:54px;font-size:14px;letter-spacing:.08em;box-shadow:0 0 30px rgba(255,196,92,.16)}
+.fc-court-session-banner{display:grid;grid-template-columns:auto 1fr;gap:14px;align-items:center;margin-top:16px;padding:18px 20px;border:1px solid rgba(255,216,104,.52);border-radius:20px;background:linear-gradient(135deg,rgba(69,43,101,.98),rgba(14,16,37,.98));box-shadow:0 0 30px rgba(255,196,92,.12)}
+.fc-court-session-banner>span{width:52px;height:52px;display:grid;place-items:center;border-radius:16px;background:rgba(255,211,91,.12);font-size:27px}
+.fc-court-session-banner small{display:block;color:#ffe2a1;font-size:9px;font-weight:900;letter-spacing:.17em}
+.fc-court-session-banner strong{display:block;margin-top:4px;font-size:17px}
+.fc-court-session-banner p{margin:4px 0 0;color:#9fa6bf;font-size:11px;line-height:1.45}
+@media(max-width:720px){
+  .fc-court-role-strip{grid-template-columns:1fr}
+  .fc-courtroom-stage{min-height:760px}
+  .fc-courtroom-wall{height:250px;padding:22px 6%}
+  .fc-courtroom-floor{top:230px}
+  .fc-courtroom-people{left:4%;right:4%;bottom:70px}
+  .fc-courtroom-seat,.fc-courtroom-judge{min-height:120px}
+  .fc-courtroom-judge{min-height:140px}
+  .fc-courtroom-table-labels{left:4%;right:4%;grid-template-columns:1fr;bottom:18px;gap:4px}
+  .fc-courtroom-table-labels span:nth-child(2){display:none}
+}
