@@ -1595,7 +1595,7 @@ export default function App() {
               </section>}
 
               <div className="fc-courtroom-stage">
-                <div className="fc-courtroom-wall"><div className="fc-courtroom-columns"><i/><i/><i/><i/><i/></div><div className="fc-courtroom-wall-sign"><img src={logoUrl} alt="Family Circle" /><strong>FAMILY COURT</strong><small>Justice starts with the family.</small></div></div>
+                <div className="fc-courtroom-wall"><div className="fc-courtroom-columns"><i/><i/><i/><i/><i/></div><div className="fc-courtroom-banner left"><span>HEAR</span><span>RESPECT</span><span>DECIDE</span><b>⚖️</b></div><div className="fc-courtroom-banner right"><span>DIFFERENT</span><span>VIEWS</span><span>ONE FAMILY</span><b>⚖️</b></div><div className="fc-courtroom-wall-sign"><img src={logoUrl} alt="Family Circle" /><strong>FAMILY COURT</strong><small>Justice starts with the family.</small></div></div>
                 <div className="fc-courtroom-floor">
                   <div className="fc-courtroom-floor-line one"/><div className="fc-courtroom-floor-line two"/><div className="fc-courtroom-floor-line three"/>
                   <div className="fc-courtroom-aisle-mark">FAMILY COURT</div>
@@ -1605,9 +1605,7 @@ export default function App() {
                   <div className="fc-judge-chair" aria-label="Judge's chair">
                     <div className="fc-judge-chair-back"/>
                     <div className="fc-judge-avatar-wrap">
-                      <span className="fc-judge-wig" aria-hidden="true"/>
                       <AppAvatar member={judge ?? accuserMember}/>
-                      <span className="fc-judge-gavel" aria-hidden="true"><i/><b/></span>
                     </div>
                   </div>
                   <span className="fc-courtroom-bench-scale">⚖️</span>
@@ -1617,13 +1615,13 @@ export default function App() {
                 <div className="fc-courtroom-people">
                   <article className="fc-courtroom-seat accuser">
                     <div className="fc-court-person-label"><span>ACCUSER</span><small>Bringing the case</small></div>
-                    <div className="fc-court-person-avatar"><AppAvatar member={accuserMember}/></div>
                     <div className="fc-courtroom-desk"><strong>{accuserMember.label}</strong><span>ACCUSER'S TABLE</span></div>
+                    <div className="fc-court-person-avatar"><AppAvatar member={accuserMember}/></div>
                   </article>
                   <article className="fc-courtroom-seat accused">
                     <div className="fc-court-person-label"><span>ACCUSED</span><small>Answering the case</small></div>
-                    <div className="fc-court-person-avatar"><AppAvatar member={accusedMember}/></div>
                     <div className="fc-courtroom-dock"><div className="fc-dock-rail left"/><div className="fc-dock-rail right"/><div className="fc-dock-front"><strong>{accusedMember.label}</strong><span>ACCUSED'S DOCK</span></div></div>
+                    <div className="fc-court-person-avatar"><AppAvatar member={accusedMember}/></div>
                   </article>
                 </div>
 
