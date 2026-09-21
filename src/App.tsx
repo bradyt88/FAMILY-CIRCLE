@@ -1081,7 +1081,7 @@ export default function App() {
   }
 
   function renderCalendar() {
-    return <CalendarPanel events={events} personalEvents={personalEvents} onAdd={addEvent} onBack={() => goToTab('home')} onNav={renderBottomNav} mode="family" />
+    return <CalendarPanel events={events} onAdd={addEvent} onBack={() => goToTab('home')} onNav={renderBottomNav} mode="family" />
   }
 
   function renderTasks() {
