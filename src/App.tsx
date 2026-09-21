@@ -992,6 +992,7 @@ export default function App() {
   }
 
   function renderHome() {
+    const readyCourtCase = familyCourtCases.find((item) => item.status === 'ready')
     const firstThreeMessages = messages.slice(0, 3)
     const firstThreeTasks = tasks.slice(0, 3)
     return <div className="fc-page">
