@@ -365,12 +365,13 @@ export default function App() {
   const [familyCourtTiming, setFamilyCourtTiming] = useState<'now' | 'scheduled'>('now')
   const [familyCourtDate, setFamilyCourtDate] = useState(todayKey())
   const [familyCourtTime, setFamilyCourtTime] = useState('19:00')
-  const [familyCourtSetupView, setFamilyCourtSetupView] = useState<'hub' | 'form' | 'review' | 'opened' | 'courtroom' | 'reviewCases' | 'reviewCase' | 'appeal'>('hub')
+  const [familyCourtSetupView, setFamilyCourtSetupView] = useState<'hub' | 'form' | 'review' | 'opened' | 'courtroom' | 'reviewCases' | 'reviewCase' | 'upcomingCases' | 'upcomingCase' | 'appeal'>('hub')
   const [familyCourtOpenedCaseId, setFamilyCourtOpenedCaseId] = useState<string | null>(null)
   const [familyCourtReviewCaseId, setFamilyCourtReviewCaseId] = useState<string | null>(null)
   const [familyCourtAppealReason, setFamilyCourtAppealReason] = useState('New evidence')
   const [familyCourtAppealExplanation, setFamilyCourtAppealExplanation] = useState('')
   const [familyCourtAppealEvidence, setFamilyCourtAppealEvidence] = useState<string[]>([])
+  const [familyCourtUpcomingCaseId, setFamilyCourtUpcomingCaseId] = useState<string | null>(null)
   const [familyCourtClock, setFamilyCourtClock] = useState(Date.now())
   const [messages, setMessages] = useState<ChatMessage[]>(initialMessages)
   const [weeklyRecognition, setWeeklyRecognition] = useState<WeeklyRecognition>(() => loadWeeklyRecognition())
@@ -1676,6 +1677,16 @@ export default function App() {
     return days > 0 ? days + ' day' + (days === 1 ? '' : 's') + ' remaining' : hours + ' hour' + (hours === 1 ? '' : 's') + ' remaining'
   }
 
+  function openFamilyCourtUpcomingCases() {
+    setFamilyCourtUpcomingCaseId(null)
+    setFamilyCourtSetupView('upcomingCases')
+  }
+
+  function openFamilyCourtUpcomingCase(caseId: string) {
+    setFamilyCourtUpcomingCaseId(caseId)
+    setFamilyCourtSetupView('upcomingCase')
+  }
+
   function openFamilyCourtReview(caseId: string) {
     setFamilyCourtReviewCaseId(caseId)
     setFamilyCourtSetupView('reviewCase')
@@ -1776,6 +1787,7 @@ export default function App() {
     setFamilyCourtSetupView(view)
     setFamilyCourtOpenedCaseId(null)
     setFamilyCourtReviewCaseId(null)
+    setFamilyCourtUpcomingCaseId(null)
     setFamilyCourtAppealReason('New evidence')
     setFamilyCourtAppealExplanation('')
     setFamilyCourtAppealEvidence([])
@@ -1832,9 +1844,31 @@ export default function App() {
           <section className="fc-court-lobby-grid fc-court-lobby-grid-refined">
             <button className="fc-court-lobby-card primary fc-court-start-card" type="button" onClick={() => setFamilyCourtSetupView('form')}><span>⚖️</span><div><small>Start here</small><strong>Start a New Case</strong><p>Bring a family member before the family court.</p></div><b>→</b></button>
             <button className="fc-court-lobby-card fc-court-review-card" type="button" onClick={openFamilyCourtReviews}><span>📂</span><div><small>Case history</small><strong>Review Previous Cases</strong><p>Review closed cases and available appeals.</p></div><b>→</b></button>
-            <button className="fc-court-lobby-card fc-court-upcoming-card" type="button" onClick={() => window.alert('Upcoming Courts will show scheduled hearings here.')}><span>🗓️</span><div><small>Upcoming</small><strong>Upcoming Courts</strong><p>See scheduled hearings and when the family needs to attend.</p></div><b>→</b></button>
+            <button className="fc-court-lobby-card fc-court-upcoming-card" type="button" onClick={openFamilyCourtUpcomingCases}><span>🗓️</span><div><small>Upcoming</small><strong>Upcoming Courts</strong><p>See scheduled hearings and when the family needs to attend.</p></div><b>→</b></button>
           </section>
-        </> : familyCourtSetupView === 'reviewCases' ? <section className="fc-court-review-panel">
+        </> : familyCourtSetupView === 'upcomingCases' ? <section className="fc-court-review-panel">
+          <div className="fc-court-review-heading"><div className="fc-court-review-icon">🗓️</div><div><span className="fc-kicker">Upcoming</span><h2>Upcoming Courts</h2><p>Scheduled hearings are listed here. The same date and time are already part of the Family Calendar.</p></div></div>
+          <div className="fc-court-review-list">
+            {familyCourtCases.filter((item) => item.status === 'scheduled' && item.scheduledDate && item.scheduledTime).sort((a,b) => ((a.scheduledDate ?? '') + (a.scheduledTime ?? '')).localeCompare((b.scheduledDate ?? '') + (b.scheduledTime ?? ''))).map((item) => {
+              const accuser = members.find((member) => member.id === item.accuserId)?.label ?? 'Family member'
+              const accused = members.find((member) => member.id === item.accusedId)?.label ?? 'Family member'
+              return <button className="fc-court-review-row fc-court-upcoming-row" type="button" key={item.id} onClick={() => openFamilyCourtUpcomingCase(item.id)}><div className="fc-court-review-row-icon">⚖️</div><div><small>{new Date(item.scheduledDate + 'T12:00:00').toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' })}</small><strong>{item.title}</strong><span>{item.scheduledTime} · {accuser} vs {accused}</span></div><b>→</b></button>
+            })}
+            {familyCourtCases.filter((item) => item.status === 'scheduled' && item.scheduledDate && item.scheduledTime).length === 0 && <div className="fc-court-review-empty"><span>🗓️</span><strong>No upcoming courts.</strong><small>Scheduled hearings will appear here automatically.</small></div>}
+          </div>
+          <button className="fc-ghost-button" type="button" onClick={() => setFamilyCourtSetupView('hub')}>← Back to Family Court</button>
+        </section> : familyCourtSetupView === 'upcomingCase' && familyCourtUpcomingCaseId ? (() => {
+          const upcomingCase = familyCourtCases.find((item) => item.id === familyCourtUpcomingCaseId)
+          if (!upcomingCase) return <section className="fc-court-review-panel"><strong>This scheduled case is no longer available.</strong></section>
+          const accuser = members.find((member) => member.id === upcomingCase.accuserId)?.label ?? 'Family member'
+          const accused = members.find((member) => member.id === upcomingCase.accusedId)?.label ?? 'Family member'
+          return <section className="fc-court-review-panel">
+            <div className="fc-court-review-heading"><div className="fc-court-review-icon">⚖️</div><div><span className="fc-kicker">Scheduled hearing</span><h2>{upcomingCase.title}</h2><p>This hearing is already listed in the Family Calendar.</p></div></div>
+            <div className="fc-court-review-summary"><div><small>DATE</small><strong>{upcomingCase.scheduledDate ? new Date(upcomingCase.scheduledDate + 'T12:00:00').toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }) : 'Not set'}</strong></div><div><small>TIME</small><strong>{upcomingCase.scheduledTime ?? 'Not set'}</strong></div><div><small>PARTIES</small><strong>{accuser} vs {accused}</strong></div></div>
+            <div className="fc-court-review-section"><span className="fc-kicker">Case information</span><p>{upcomingCase.title}</p><div className="fc-court-file-tags"><span>⚖️ Family Court</span><span>🗓️ Added to Family Calendar</span></div></div>
+            <div className="fc-court-form-actions"><button className="fc-ghost-button" type="button" onClick={openFamilyCourtUpcomingCases}>← Upcoming Courts</button><button className="fc-primary-button" type="button" onClick={() => setFamilyCourtSetupView('hub')}>Back to Family Court</button></div>
+          </section>
+        })() : familyCourtSetupView === 'reviewCases' ? <section className="fc-court-review-panel">
           <div className="fc-court-review-heading"><div className="fc-court-review-icon">📂</div><div><span className="fc-kicker">Case history</span><h2>Review Previous Cases</h2><p>Review closed cases and manage any appeal still within the five-day window.</p></div></div>
           <div className="fc-court-review-list">
             {familyCourtCases.filter((item) => item.status === 'closed').length === 0 ? <div className="fc-court-review-empty"><span>⚖️</span><strong>No previous cases yet.</strong><small>Completed Family Court cases will appear here for five days.</small></div> : familyCourtCases.filter((item) => item.status === 'closed').map((item) => {
