@@ -3177,3 +3177,113 @@
 .fc-tree-branches:before{background:linear-gradient(90deg,rgba(255,95,199,.28),rgba(82,217,255,.34),rgba(138,114,255,.28))!important}
 .fc-profile-saved-status{padding:7px 11px;border:1px solid rgba(82,217,255,.25);border-radius:999px;background:rgba(82,217,255,.05)}
 .fc-profile-saved-hero{border-color:rgba(138,114,255,.58)!important;box-shadow:0 24px 90px rgba(65,42,145,.20),inset 0 0 40px rgba(138,114,255,.035)!important}
+
+
+/* Family Court — Stage 1 homepage feature */
+.fc-home-family-court { margin-top: 12px; }
+.fc-home-family-court-card {
+  width: 100%;
+  min-height: 156px;
+  padding: 20px 22px;
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: 18px;
+  border: 2px solid rgba(255,196,92,.76);
+  border-radius: 22px;
+  background:
+    radial-gradient(circle at 18% 50%, rgba(255,196,92,.16), transparent 28%),
+    radial-gradient(circle at 82% 20%, rgba(138,114,255,.18), transparent 34%),
+    linear-gradient(145deg, rgba(35,25,56,.98), rgba(11,15,34,.98));
+  color: #fff;
+  text-align: left;
+  box-shadow: 0 20px 70px rgba(0,0,0,.30), 0 0 34px rgba(255,196,92,.15), 0 0 26px rgba(138,114,255,.10);
+  position: relative;
+  overflow: hidden;
+}
+.fc-home-family-court-card::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(105deg, transparent 28%, rgba(255,255,255,.07) 45%, transparent 62%);
+  transform: translateX(-70%);
+  animation: fcCourtSheen 5.5s ease-in-out infinite;
+  pointer-events: none;
+}
+@keyframes fcCourtSheen {
+  0%, 55%, 100% { transform: translateX(-70%); }
+  72% { transform: translateX(70%); }
+}
+.fc-home-family-court-emblem {
+  width: 78px;
+  height: 78px;
+  border-radius: 22px;
+  display: grid;
+  place-items: center;
+  position: relative;
+  background: linear-gradient(145deg, rgba(255,196,92,.18), rgba(138,114,255,.16));
+  border: 1px solid rgba(255,196,92,.52);
+  box-shadow: inset 0 0 20px rgba(255,255,255,.035), 0 0 26px rgba(255,196,92,.16);
+}
+.fc-home-family-court-emblem span { font-size: 2.35rem; filter: drop-shadow(0 0 9px rgba(255,255,255,.22)); }
+.fc-home-family-court-emblem i {
+  position: absolute;
+  right: -5px;
+  bottom: -5px;
+  width: 31px;
+  height: 31px;
+  display: grid;
+  place-items: center;
+  border-radius: 10px;
+  background: #17152b;
+  border: 1px solid rgba(255,196,92,.55);
+  font-style: normal;
+  font-size: .95rem;
+}
+.fc-home-family-court-copy { display: grid; gap: 4px; min-width: 0; position: relative; z-index: 1; }
+.fc-home-family-court-kicker { color: #ffe2a1; font-size: .68rem; font-weight: 900; text-transform: uppercase; letter-spacing: .16em; }
+.fc-home-family-court-copy strong {
+  color: #fff1c9;
+  font-size: clamp(1.25rem, 3vw, 1.75rem);
+  font-weight: 950;
+  letter-spacing: .075em;
+  text-shadow: 0 0 18px rgba(255,196,92,.20);
+}
+.fc-home-family-court-copy p { margin: 0; color: #c9c1d9; font-size: .78rem; }
+.fc-home-family-court-action { margin-top: 4px; color: #d8c9ff; font-size: .74rem; font-weight: 850; }
+.fc-home-family-court-badge {
+  position: relative;
+  z-index: 1;
+  min-width: 72px;
+  min-height: 72px;
+  border-radius: 18px;
+  display: grid;
+  place-items: center;
+  align-content: center;
+  gap: 3px;
+  background: rgba(138,114,255,.12);
+  border: 1px solid rgba(138,114,255,.40);
+  box-shadow: 0 0 24px rgba(138,114,255,.12);
+}
+.fc-home-family-court-badge span { color: #c9c0ff; font-size: .62rem; text-transform: uppercase; letter-spacing: .12em; font-weight: 900; }
+.fc-home-family-court-badge strong { font-size: 1.35rem; }
+.fc-home-family-court-card:hover {
+  border-color: rgba(255,214,132,.96);
+  box-shadow: 0 24px 78px rgba(0,0,0,.34), 0 0 42px rgba(255,196,92,.22), 0 0 28px rgba(138,114,255,.14);
+  transform: translateY(-1px);
+}
+@media (max-width: 760px) {
+  .fc-home-family-court-card { min-height: 142px; padding: 17px; gap: 12px; grid-template-columns: auto 1fr auto; }
+  .fc-home-family-court-emblem { width: 62px; height: 62px; border-radius: 18px; }
+  .fc-home-family-court-emblem span { font-size: 1.85rem; }
+  .fc-home-family-court-emblem i { width: 26px; height: 26px; font-size: .78rem; }
+  .fc-home-family-court-copy strong { font-size: 1.12rem; }
+  .fc-home-family-court-copy p { font-size: .7rem; }
+  .fc-home-family-court-action { font-size: .68rem; }
+  .fc-home-family-court-badge { min-width: 48px; min-height: 54px; border-radius: 14px; }
+  .fc-home-family-court-badge span { font-size: .54rem; }
+  .fc-home-family-court-badge strong { font-size: 1.05rem; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .fc-home-family-court-card::after { animation: none; }
+}
