@@ -363,11 +363,13 @@ export default function App() {
     { id: 'event-2', title: 'Football Training', date: todayKey(), time: '17:00', location: 'Leisure Centre' },
     { id: 'event-3', title: 'Weekly Food Shop', date: (() => { const d = new Date(); d.setDate(d.getDate() + 1); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}` })(), time: '18:00', location: 'Supermarket' },
   ])
-  const [personalEvents, setPersonalEvents] = useState<PersonalEvent[]>(() => {
+  const [personalEventsByMember, setPersonalEventsByMember] = useState<Record<string, PersonalEvent[]>>(() => {
     try {
-      const saved = localStorage.getItem('family-circle-personal-events')
-      return saved ? JSON.parse(saved) as PersonalEvent[] : []
-    } catch { return [] }
+      const saved = localStorage.getItem('family-circle-personal-events-by-member')
+      if (saved) return JSON.parse(saved) as Record<string, PersonalEvent[]>
+      const legacy = localStorage.getItem('family-circle-personal-events')
+      return legacy ? { [memberSeeds[0].id]: JSON.parse(legacy) as PersonalEvent[] } : {}
+    } catch { return {} }
   })
   const [activeStatusSharing, setActiveStatusSharing] = useState(() => localStorage.getItem('family-circle-active-status') !== 'false')
   const [appVisible, setAppVisible] = useState(true)
@@ -936,9 +938,11 @@ export default function App() {
 
   function addPersonalEvent(title: string, date: string, time: string, location: string) {
     if (!title.trim() || !date || !time) return
-    const next = [...personalEvents, { id: `personal-event-${Date.now()}`, title: title.trim(), date, time, location: location.trim() }]
-    setPersonalEvents(next)
-    localStorage.setItem('family-circle-personal-events', JSON.stringify(next))
+    const memberEvents = personalEventsByMember[selectedMember.id] ?? []
+    const next = [...memberEvents, { id: `personal-event-${Date.now()}`, title: title.trim(), date, time, location: location.trim() }]
+    const nextByMember = { ...personalEventsByMember, [selectedMember.id]: next }
+    setPersonalEventsByMember(nextByMember)
+    localStorage.setItem('family-circle-personal-events-by-member', JSON.stringify(nextByMember))
   }
 
   function saveActiveStatusPreference(enabled: boolean) {
@@ -1235,7 +1239,7 @@ export default function App() {
           <span>✓ Profile saved</span>
           <small>Your profile is now shown as a full profile view.</small>
         </div>
-        <section className="fc-personal-calendar-wrap"><CalendarPanel events={events} personalEvents={personalEvents} onAdd={addEvent} onAddPersonal={addPersonalEvent} onBack={() => {}} onNav={() => <></>} mode="personal" /></section>
+        <section className="fc-personal-calendar-wrap"><CalendarPanel events={events} personalEvents={personalEventsByMember[selectedMember.id] ?? []} onAdd={addEvent} onAddPersonal={addPersonalEvent} onBack={() => {}} onNav={() => <></>} mode="personal" /></section>
                 <RecognitionProfile member={profileTarget} members={members} />
       </section> : <div className="fc-profile-layout">
         <div className="fc-panel fc-profile-hero" style={profileTarget.coverPhoto ? { backgroundImage: `linear-gradient(135deg,rgba(10,13,32,.96),rgba(10,13,32,.78)),url("${profileTarget.coverPhoto}")` } : undefined}>
