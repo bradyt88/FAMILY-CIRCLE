@@ -39,7 +39,7 @@ type RecognitionTie = { candidates: string[]; votes: Record<string, string>; sta
 type WeeklyRecognition = { weekKey: string; famVotes: Record<string, string>; clownVotes: Record<string, string>; famWinner: string | null; clownWinner: string | null; famTie: RecognitionTie | null; clownTie: RecognitionTie | null; famAnnounced: boolean; clownAnnounced: boolean }
 type FamilyMember = { id: string; label: string; initials: string; accent: string; phone: string; bio: string; status: StatusOption; locationLabel: string; lastUpdated: string; mapX: number; mapY: number; photo?: string | null; socials: Record<SocialName, string>; recognition?: MemberRecognition; coverPhoto?: string | null }
 type ChatMessage = { id: string; memberId: string; name: string; initials: string; accent: string; time: string; text: string; image?: string; moneyRequestId?: string }
-type Notification = { id: string; kind: 'Chat' | 'Task' | 'Calendar' | 'Emergency' | 'Profile' | 'Money'; title: string; detail: string; time: string }
+type Notification = { id: string; kind: 'Chat' | 'Task' | 'Calendar' | 'Emergency' | 'Profile' | 'Money'; title: string; detail: string; time: string; target?: 'familyCourt' }
 type NotificationPreferences = { Chat: boolean; Task: boolean; Calendar: boolean; Profile: boolean; Money: boolean; Emergency: true }
 type FamilyPhoto = { id: string; src: string; name: string; time: string }
 type FamilyEvent = { id: string; title: string; date: string; time: string; location: string }
@@ -1277,8 +1277,24 @@ export default function App() {
       {renderBottomNav()}
     </div>
   }
+  function handleNotificationClick(item: Notification) {
+    if (item.target === 'familyCourt') {
+      const courtCaseId = item.id.match(/^court-(?:summons|jury)-(.+?)(?:-member-[^-]+)?$/)?.[1] ?? item.id.match(/^court-accepted-(.+?)-member-[^-]+$/)?.[1]
+      const targetCase = (courtCaseId && familyCourtCases.find((courtCase) => courtCase.id === courtCaseId)) ?? familyCourtCases.find((courtCase) => courtCase.status === 'summoned' || courtCase.status === 'ready')
+      if (targetCase) {
+        setFamilyCourtOpenedCaseId(targetCase.id)
+        setFamilyCourtCaseTitle(targetCase.title)
+        setFamilyCourtAccusedId(targetCase.accusedId)
+        setFamilyCourtSetupView('hub')
+      }
+      setToolMode('familyCourt')
+      setActiveTab('home')
+    }
+    setNotifications((current) => current.filter((notification) => notification.id !== item.id))
+  }
+
   function renderNotifications() {
-    return <div className="fc-page"><FeatureHeader title="Notifications" description="Keep up with family chat, tasks, calendar and emergency requests." onHome={() => goToTab('home')} /><div className="fc-panel"><div className="fc-panel-head"><div><small>Family updates</small><h2>Notifications</h2></div><button className="fc-ghost-button" type="button" onClick={() => setNotifications([])}>Clear all</button></div>{notifications.length === 0 ? <div className="fc-empty"><span>✓</span><strong>You're all caught up.</strong><p>No new family notifications.</p></div> : <div className="fc-notification-list">{notifications.map((item) => <article key={item.id}><span className="fc-notification-icon">{item.kind === 'Emergency' ? '🚨' : item.kind === 'Money' ? '💷' : '•'}</span><div><strong>{item.title}</strong><p>{item.detail}</p><small>{item.time}</small></div></article>)}</div>}</div>{renderBottomNav()}</div>
+    return <div className="fc-page"><FeatureHeader title="Notifications" description="Keep up with family chat, tasks, calendar and emergency requests." onHome={() => goToTab('home')} /><div className="fc-panel"><div className="fc-panel-head"><div><small>Family updates</small><h2>Notifications</h2></div><button className="fc-ghost-button" type="button" onClick={() => setNotifications([])}>Clear all</button></div>{notifications.length === 0 ? <div className="fc-empty"><span>✓</span><strong>You're all caught up.</strong><p>No new family notifications.</p></div> : <div className="fc-notification-list">{notifications.map((item) => <button className="fc-notification-item" key={item.id} type="button" onClick={() => handleNotificationClick(item)}><span className="fc-notification-icon">{item.kind === 'Emergency' ? '🚨' : item.kind === 'Money' ? '💷' : item.target === 'familyCourt' ? '⚖️' : '•'}</span><div><strong>{item.title}</strong><p>{item.detail}</p><small>{item.time}</small></div><b>→</b></button>)}</div>}</div>{renderBottomNav()}</div>
   }
 
   function updateNotificationPreference(kind: keyof Omit<NotificationPreferences, 'Emergency'>, enabled: boolean) {
@@ -1508,8 +1524,8 @@ export default function App() {
     const familyNotifications: Notification[] = members
       .filter((member) => member.id !== selectedMember.id)
       .map((member) => member.id === familyCourtAccusedId
-        ? { id: 'court-summons-' + id, kind: 'Calendar' as const, title: 'You have been summoned to Family Court', detail: selectedMember.label + ' has opened a case against you: ' + title, time: 'Just now' }
-        : { id: 'court-jury-' + id + '-' + member.id, kind: 'Calendar' as const, title: 'A Family Court case has been opened', detail: selectedMember.label + ' has brought ' + accusedName + ' before Family Court: ' + title, time: 'Just now' })
+        ? { id: 'court-summons-' + id, kind: 'Calendar' as const, title: 'You have been summoned to Family Court', detail: selectedMember.label + ' has opened a case against you: ' + title, time: 'Just now', target: 'familyCourt' }
+        : { id: 'court-jury-' + id + '-' + member.id, kind: 'Calendar' as const, title: 'A Family Court case has been opened', detail: selectedMember.label + ' has brought ' + accusedName + ' before Family Court: ' + title, time: 'Just now', target: 'familyCourt' })
     setNotifications((current) => [...familyNotifications, ...current])
     setFamilyCourtOpenedCaseId(id)
     setFamilyCourtSetupView('opened')
