@@ -370,6 +370,7 @@ export default function App() {
   const [familyCourtReviewCaseId, setFamilyCourtReviewCaseId] = useState<string | null>(null)
   const [familyCourtAppealReason, setFamilyCourtAppealReason] = useState('New evidence')
   const [familyCourtAppealExplanation, setFamilyCourtAppealExplanation] = useState('')
+  const [familyCourtAppealEvidence, setFamilyCourtAppealEvidence] = useState<string[]>([])
   const [familyCourtClock, setFamilyCourtClock] = useState(Date.now())
   const [messages, setMessages] = useState<ChatMessage[]>(initialMessages)
   const [weeklyRecognition, setWeeklyRecognition] = useState<WeeklyRecognition>(() => loadWeeklyRecognition())
@@ -1643,7 +1644,14 @@ export default function App() {
   }
 
   function closeFamilyCourtCase(caseId: string) {
-    setFamilyCourtCases((current) => current.map((item) => item.id === caseId ? { ...item, status: 'closed', courtStage: 'case-closed', courtStageStartedAt: new Date().toISOString() } : item))
+    const now = new Date().toISOString()
+    setFamilyCourtCases((current) => current.map((item) => {
+      if (item.id !== caseId) return item
+      const appeal = item.appeal?.status === 'approved'
+        ? { ...item.appeal, status: 'closed' as const, closedAt: now, finalVerdict: item.verdict, finalPunishment: item.punishment }
+        : item.appeal
+      return { ...item, status: 'closed', appeal, courtStage: 'case-closed', courtStageStartedAt: now }
+    }))
     setFamilyCourtOpenedCaseId(null)
     setFamilyCourtSetupView('hub')
   }
@@ -1684,21 +1692,17 @@ export default function App() {
     setFamilyCourtReviewCaseId(caseId)
     setFamilyCourtAppealReason('New evidence')
     setFamilyCourtAppealExplanation('')
+    setFamilyCourtAppealEvidence([])
     setFamilyCourtSetupView('appeal')
   }
 
-  function addFamilyCourtAppealEvidence(caseId: string, file: File) {
+  function addFamilyCourtAppealEvidence(file: File) {
     if (!file.type.startsWith('image/')) return
     const reader = new FileReader()
     reader.onload = () => {
       const src = typeof reader.result === 'string' ? reader.result : ''
       if (!src) return
-      setFamilyCourtCases((current) => current.map((item) => {
-        if (item.id !== caseId) return item
-        const existing = item.appeal?.newEvidence ?? []
-        if (existing.length >= 4) return item
-        return { ...item, appeal: item.appeal ? { ...item.appeal, newEvidence: [...existing, src] } : undefined }
-      }))
+      setFamilyCourtAppealEvidence((current) => current.length >= 4 ? current : [...current, src])
     }
     reader.readAsDataURL(file)
   }
@@ -1712,7 +1716,7 @@ export default function App() {
       submittedAt: new Date().toISOString(),
       reason: familyCourtAppealReason,
       explanation: familyCourtAppealExplanation.trim(),
-      newEvidence: [],
+      newEvidence: familyCourtAppealEvidence,
       status: 'pending',
       familyVotes: {},
     }
@@ -1781,6 +1785,7 @@ export default function App() {
     setFamilyCourtReviewCaseId(null)
     setFamilyCourtAppealReason('New evidence')
     setFamilyCourtAppealExplanation('')
+    setFamilyCourtAppealEvidence([])
   }
 
   function openFamilyCourtCase() {
@@ -1882,7 +1887,7 @@ export default function App() {
             <div className="fc-court-appeal-form">
               <label><span>Why do you want to appeal?</span><select value={familyCourtAppealReason} onChange={(event) => setFamilyCourtAppealReason(event.target.value)}><option>New evidence</option><option>Evidence misunderstood</option><option>Unfair procedure</option><option>Other</option></select></label>
               <label><span>Tell the family why you are appealing</span><textarea value={familyCourtAppealExplanation} onChange={(event) => setFamilyCourtAppealExplanation(event.target.value)} maxLength={600} placeholder="Explain what you want the family to reconsider." /></label>
-              <div className="fc-court-appeal-upload"><div><span className="fc-kicker">New evidence</span><strong>Upload up to 4 images</strong><small>Photos, screenshots or pictures only.</small></div><label className="fc-primary-button">+ Add Evidence<input type="file" accept="image/*" multiple hidden onChange={(event) => Array.from(event.target.files ?? []).slice(0,4).forEach((file) => addFamilyCourtAppealEvidence(appealCase.id,file))} /></label>{appealDraft?.newEvidence?.length ? <div className="fc-court-evidence-grid">{appealDraft.newEvidence.map((src,index) => <img key={src.slice(0,40)+index} src={src} alt={'Appeal evidence '+String.fromCharCode(65+index)} />)}</div> : <small>No new evidence added yet.</small>}</div>
+              <div className="fc-court-appeal-upload"><div><span className="fc-kicker">New evidence</span><strong>Upload up to 4 images</strong><small>Photos, screenshots or pictures only.</small></div><label className="fc-primary-button">+ Add Evidence<input type="file" accept="image/*" multiple hidden onChange={(event) => Array.from(event.target.files ?? []).slice(0,4 - familyCourtAppealEvidence.length).forEach((file) => addFamilyCourtAppealEvidence(file))} /></label>{appealDraft?.newEvidence?.length ? <div className="fc-court-evidence-grid">{appealDraft.newEvidence.map((src,index) => <img key={src.slice(0,40)+index} src={src} alt={'Appeal evidence '+String.fromCharCode(65+index)} />)}</div> : <small>No new evidence added yet.</small>}</div>
               <div className="fc-court-appeal-pack-preview"><span className="fc-kicker">Appeal pack</span><strong>Original case + appeal reason + explanation + new evidence</strong><small>The original case will remain preserved and the family will receive the appeal for a vote.</small></div>
               <div className="fc-court-form-actions"><button className="fc-ghost-button" type="button" onClick={() => setFamilyCourtSetupView('reviewCase')}>Cancel</button><button className="fc-primary-button" type="button" disabled={!familyCourtAppealExplanation.trim()} onClick={() => submitFamilyCourtAppeal(appealCase.id)}>⚖️ SUBMIT APPEAL</button></div>
             </div>
