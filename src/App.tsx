@@ -1599,16 +1599,23 @@ export default function App() {
                 <div className="fc-courtroom-floor">
                   <div className="fc-courtroom-floor-line one"/><div className="fc-courtroom-floor-line two"/><div className="fc-courtroom-floor-line three"/>
                 </div>
-                <div className="fc-courtroom-bench"><span>⚖️</span><strong>JUDGE'S BENCH</strong><small>{judge?.label ?? 'Judge'}</small></div>
-                <div className="fc-courtroom-people">
-                  <article className="fc-courtroom-seat accuser"><span>ACCUSER</span><AppAvatar member={accuserMember}/><strong>{accuserMember.label}</strong><small>Bringing the case</small></article>
-                  <div className="fc-courtroom-judge"><span>JUDGE</span><div>⚖️</div><strong>{judge?.label ?? 'Judge'}</strong><small>{judge ? 'Presiding over the case' : 'Judge to be selected'}</small></div>
-                  <article className="fc-courtroom-seat accused"><span>ACCUSED</span><AppAvatar member={accusedMember}/><strong>{accusedMember.label}</strong><small>Answering the case</small></article>
-                </div>
-                <div className="fc-courtroom-table-labels"><span>ACCUSER'S TABLE</span><span>JUDGE'S BENCH</span><span>ACCUSED'S TABLE</span></div>
-              </div>
 
-              {juryMembers.length > 0 && <section className="fc-courtroom-jury"><div><span>THE JURY</span><strong>Family members ready for court</strong></div><div className="fc-courtroom-jury-grid">{juryMembers.map((member) => <div className="fc-courtroom-juror" key={member.id}><AppAvatar member={member}/><span>{member.label}</span><small>✓ Ready</small></div>)}</div></section>}
+                <div className="fc-courtroom-bench">
+                  <span>⚖️</span>
+                  <div className="fc-courtroom-bench-judge"><AppAvatar member={judge ?? accuserMember}/><div><strong>JUDGE'S BENCH</strong><small>{judge?.label ?? 'Judge'}</small></div></div>
+                </div>
+
+                <div className="fc-courtroom-people">
+                  <article className="fc-courtroom-seat accuser"><span>ACCUSER</span><AppAvatar member={accuserMember}/><strong>{accuserMember.label}</strong><small>Bringing the case</small><em>ACCUSER'S TABLE</em></article>
+                  <article className="fc-courtroom-seat accused"><span>ACCUSED</span><AppAvatar member={accusedMember}/><strong>{accusedMember.label}</strong><small>Answering the case</small><em>ACCUSED'S TABLE</em></article>
+                </div>
+
+                <div className="fc-courtroom-jury">
+                  <div className="fc-courtroom-jury-heading"><span>THE JURY BENCH</span><strong>{juryMembers.length > 0 ? 'Family members ready to hear the case' : 'No jury — the judge will decide the verdict'}</strong></div>
+                  {juryMembers.length > 0 && <div className="fc-courtroom-jury-grid">{juryMembers.map((member) => <div className="fc-courtroom-juror" key={member.id}><AppAvatar member={member}/><span>{member.label}</span><small>✓ Ready</small></div>)}
+                  </div>}
+                </div>
+              </div>
 
               {!currentCourtCase.courtStarted ? <button className="fc-primary-button fc-court-begin-button" type="button" disabled={!judge} onClick={() => beginFamilyCourt(currentCourtCase.id)}>🔨 BEGIN COURT</button> :
                 <section className="fc-court-session-banner"><span>🔨</span><div><small>COURT IS NOW IN SESSION</small><strong>The Family Court hearing has officially begun.</strong><p>The next stage is Opening Statements. The two parties will receive their private writing window before both statements are revealed together.</p></div></section>}
