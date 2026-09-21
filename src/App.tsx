@@ -1359,7 +1359,7 @@ export default function App() {
   }
   function handleNotificationClick(item: Notification) {
     if (item.target === 'familyCourt') {
-      const courtCaseId = item.id.match(/^court-(?:summons|jury)-(.+?)(?:-member-[^-]+)?$/)?.[1] ?? item.id.match(/^court-accepted-(.+?)-member-[^-]+$/)?.[1]
+      const courtCaseId = item.targetCaseId ?? item.id.match(/^court-(?:summons|jury|appeal|appeal-approved|appeal-decision)-(.+?)(?:-member-[^-]+)?$/)?.[1] ?? item.id.match(/^court-accepted-(.+?)-member-[^-]+$/)?.[1]
       const targetCase = (courtCaseId && familyCourtCases.find((courtCase) => courtCase.id === courtCaseId)) ?? familyCourtCases.find((courtCase) => courtCase.status === 'summoned' || courtCase.status === 'ready')
       if (targetCase) {
         setFamilyCourtOpenedCaseId(targetCase.id)
@@ -1732,10 +1732,19 @@ export default function App() {
       familyVotes: {},
     }
     setFamilyCourtCases((current) => current.map((item) => item.id === caseId ? { ...item, appeal } : item))
-    setNotifications((current) => [
-      { id: 'court-appeal-' + caseId, kind: 'Calendar' as const, title: 'Family Court appeal submitted', detail: selectedMember.label + ' has appealed ' + caseItem.title + '. The family can now vote on the appeal.', time: 'Just now', target: 'familyCourt' as const, targetCaseId: caseId },
-      ...current,
-    ])
+    const appealNotifications: Notification[] = members
+      .filter((member) => member.id !== selectedMember.id)
+      .map((member) => ({
+        id: 'court-appeal-' + caseId + '-' + member.id,
+        kind: 'Calendar' as const,
+        title: '⚖️ Family Court appeal',
+        detail: selectedMember.label + ' has appealed ' + caseItem.title + '. Review the appeal and cast your family vote.',
+        time: 'Just now',
+        target: 'familyCourt' as const,
+        targetCaseId: caseId,
+        recipientMemberId: member.id,
+      }))
+    setNotifications((current) => [...appealNotifications, ...current.filter((notification) => !(notification.target === 'familyCourt' && notification.targetCaseId === caseId))])
     setMessages((current) => [
       { id: 'chat-appeal-' + caseId, memberId: selectedMember.id, name: selectedMember.label, initials: selectedMember.initials, accent: selectedMember.accent, time: formatTime(), text: '⚖️ I have appealed the Family Court case “' + caseItem.title + '”. The appeal is ready for the family vote.' },
       ...current,
@@ -1766,7 +1775,7 @@ export default function App() {
         }
         return {
           ...item, originalTrial, appeal: { ...item.appeal, familyVotes: votes, status: 'approved', votedAt: now, approvedAt: now },
-          status: 'summoned', acceptedMemberIds: [item.appeal.appellantId], judgeId: undefined, courtStarted: false, courtStage: undefined, courtStageStartedAt: undefined,
+          status: 'summoned', acceptedMemberIds: [], judgeId: undefined, courtStarted: false, courtStage: undefined, courtStageStartedAt: undefined,
           verdictAt: undefined, openingStatements: {}, openingSubmittedBy: [], evidence: {}, evidenceSubmittedBy: [], judgeQuestions: {}, judgeQuestionsSubmitted: false,
           answers: {}, answersSubmittedBy: [], juryVotes: {}, verdict: undefined, punishment: undefined,
         }
@@ -1774,7 +1783,30 @@ export default function App() {
       return { ...item, appeal: { ...item.appeal, familyVotes: votes, status: 'denied', votedAt: now, closedAt: now }, status: 'closed', courtStage: 'case-closed', courtStageStartedAt: now }
     }))
     if (decided) {
-      setNotifications((current) => [{ id: 'court-appeal-decision-' + caseId + '-' + Date.now().toString(36), kind: 'Calendar' as const, title: approved ? 'Family Court appeal approved' : 'Family Court appeal denied', detail: approved ? 'The case has been reopened for a new Family Court trial.' : 'The original verdict is now final and cannot be appealed again.', time: 'Just now', target: 'familyCourt' as const, targetCaseId: caseId }, ...current])
+      setNotifications((current) => {
+        const decisionNotifications: Notification[] = approved
+          ? members.map((member) => ({
+              id: 'court-appeal-approved-' + caseId + '-' + member.id,
+              kind: 'Calendar' as const,
+              title: '⚖️ Family Court appeal approved',
+              detail: 'The appeal was approved. Everyone must accept the new Family Court summons before the retrial can begin.',
+              time: 'Just now',
+              target: 'familyCourt' as const,
+              targetCaseId: caseId,
+              recipientMemberId: member.id,
+            }))
+          : members.map((member) => ({
+              id: 'court-appeal-decision-' + caseId + '-' + member.id,
+              kind: 'Calendar' as const,
+              title: 'Family Court appeal denied',
+              detail: 'The original verdict is now final and cannot be appealed again.',
+              time: 'Just now',
+              target: 'familyCourt' as const,
+              targetCaseId: caseId,
+              recipientMemberId: member.id,
+            }))
+        return [...decisionNotifications, ...current.filter((notification) => !(notification.target === 'familyCourt' && notification.targetCaseId === caseId))]
+      })
     }
   }
 
