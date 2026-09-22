@@ -4196,3 +4196,101 @@
 
 .fc-court-upcoming-row{border-color:rgba(114,170,255,.14)}
 .fc-court-upcoming-row:hover{border-color:rgba(114,170,255,.42)}
+
+
+/* Family Chance */
+.fc-home-family-chance { margin-top: 14px; }
+.fc-home-family-chance-card { width: 100%; display: grid; grid-template-columns: 92px 1fr auto; align-items: center; gap: 18px; padding: 18px 22px; border-radius: 24px; border: 1px solid rgba(255, 191, 71, .72); background: radial-gradient(circle at 14% 10%, rgba(255,191,71,.18), transparent 30%), linear-gradient(105deg, rgba(42,23,65,.98), rgba(12,18,45,.96) 56%, rgba(7,25,48,.98)); color: #fff; text-align: left; box-shadow: 0 0 28px rgba(255,191,71,.08), 0 24px 70px rgba(0,0,0,.3); overflow: hidden; position: relative; }
+.fc-home-family-chance-card:hover { border-color: rgba(255,218,120,.95); transform: translateY(-1px); }
+.fc-home-family-chance-art { width: 82px; height: 82px; border-radius: 22px; display: grid; place-items: center; position: relative; background: linear-gradient(145deg, rgba(255,191,71,.22), rgba(124,92,255,.14)); border: 1px solid rgba(255,191,71,.38); }
+.fc-chance-wheel { font-size: 2.45rem; transform: rotate(-8deg); }
+.fc-chance-die { position: absolute; right: 6px; bottom: 4px; font-size: 1.5rem; }
+.fc-home-family-chance-copy { min-width: 0; display: grid; gap: 4px; }
+.fc-home-family-chance-kicker { color: #ffd67c; font-size: .78rem; font-weight: 800; text-transform: uppercase; letter-spacing: .08em; }
+.fc-home-family-chance-copy strong { font-size: 1.35rem; letter-spacing: -.02em; }
+.fc-home-family-chance-copy p { margin: 0; color: #c8d0ee; font-size: .86rem; }
+.fc-home-family-chance-action { color: #ffe3a4; font-weight: 800; font-size: .82rem; margin-top: 2px; }
+.fc-home-family-chance-badge { display: grid; justify-items: center; gap: 5px; min-width: 52px; }
+.fc-home-family-chance-badge span { font-size: .67rem; color: #241a06; background: #ffd45f; padding: 4px 8px; border-radius: 999px; font-weight: 900; }
+.fc-home-family-chance-badge strong { font-size: 1.45rem; }
+
+.fc-family-chance-page .fc-feature-header.family-chance { border-color: rgba(255,191,71,.55); background: linear-gradient(110deg, rgba(43,25,67,.96), rgba(9,17,40,.96)); }
+.fc-chance-hub, .fc-chance-panel, .fc-chance-spin-stage, .fc-chance-result-panel { margin-top: 14px; border: 1px solid rgba(255,255,255,.10); border-radius: 26px; background: linear-gradient(145deg, rgba(12,17,43,.94), rgba(9,12,28,.97)); box-shadow: 0 24px 70px rgba(0,0,0,.28); overflow: hidden; }
+.fc-chance-intro { display: flex; align-items: center; gap: 16px; padding: 22px; border-bottom: 1px solid rgba(255,255,255,.08); }
+.fc-chance-orbit { width: 58px; height: 58px; border-radius: 50%; display: grid; place-items: center; background: radial-gradient(circle, rgba(255,191,71,.22), rgba(124,92,255,.12)); border: 1px solid rgba(255,191,71,.42); color: #ffd67c; font-size: 1.7rem; }
+.fc-chance-intro h2, .fc-chance-panel-head h2, .fc-chance-spin-stage-head h2, .fc-chance-result-panel h2 { margin: 3px 0 4px; font-size: 1.55rem; }
+.fc-chance-intro p, .fc-chance-panel-head p, .fc-chance-spin-stage-head p { margin: 0; color: #aeb8da; }
+.fc-chance-choice-grid { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 14px; padding: 18px; }
+.fc-chance-choice { min-height: 180px; border-radius: 22px; border: 1px solid rgba(255,255,255,.12); padding: 18px; display: grid; grid-template-columns: auto 1fr auto; gap: 15px; align-items: center; color: #fff; text-align: left; }
+.fc-chance-choice.spin { background: radial-gradient(circle at 10% 0%, rgba(255,191,71,.2), transparent 40%), rgba(43,24,62,.78); border-color: rgba(255,191,71,.5); }
+.fc-chance-choice.roll { background: radial-gradient(circle at 10% 0%, rgba(82,217,255,.17), transparent 40%), rgba(10,29,54,.82); border-color: rgba(82,217,255,.42); }
+.fc-chance-choice-icon { width: 66px; height: 66px; border-radius: 18px; display: grid; place-items: center; font-size: 2.1rem; background: rgba(255,255,255,.07); border: 1px solid rgba(255,255,255,.12); }
+.fc-chance-choice span { color: #aeb8da; font-size: .72rem; text-transform: uppercase; letter-spacing: .07em; font-weight: 800; }
+.fc-chance-choice strong { display: block; font-size: 1.28rem; margin-top: 3px; }
+.fc-chance-choice p { margin: 6px 0 0; color: #b8c2e2; font-size: .78rem; line-height: 1.45; }
+.fc-chance-choice > b { font-size: 1.6rem; color: #e9edff; }
+
+.fc-chance-panel { padding: 22px; }
+.fc-chance-panel-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 18px; }
+.fc-chance-count { min-width: 72px; text-align: center; padding: 9px 12px; border-radius: 999px; border: 1px solid rgba(255,191,71,.38); background: rgba(255,191,71,.09); color: #ffe3a4; font-weight: 900; }
+.fc-chance-member-grid { display: grid; gap: 9px; margin-top: 18px; }
+.fc-chance-member { display: flex; align-items: center; gap: 12px; padding: 10px 12px; border-radius: 16px; border: 1px solid rgba(255,255,255,.08); background: rgba(5,10,28,.7); color: #fff; text-align: left; }
+.fc-chance-member.joined { border-color: rgba(255,191,71,.5); background: rgba(255,191,71,.07); }
+.fc-chance-member > span { display: grid; flex: 1; }
+.fc-chance-member small { color: #9ea8c8; margin-top: 2px; }
+.fc-chance-member > b { color: #ffd67c; font-size: 1.2rem; }
+.fc-chance-lobby-actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 18px; flex-wrap: wrap; }
+.fc-chance-spinner-winner { display: grid; justify-items: end; padding: 9px 12px; border-radius: 16px; background: rgba(255,191,71,.09); border: 1px solid rgba(255,191,71,.35); color: #ffe3a4; font-weight: 850; }
+.fc-chance-spinner-winner small { color: #9ea8c8; font-weight: 600; }
+.fc-chance-category-grid { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 9px; margin-top: 18px; }
+.fc-chance-category { min-height: 70px; border-radius: 16px; border: 1px solid rgba(255,255,255,.08); background: rgba(5,10,28,.7); color: #fff; padding: 10px 12px; display: flex; align-items: center; gap: 10px; text-align: left; }
+.fc-chance-category span { font-size: 1.4rem; }
+.fc-chance-category strong { font-size: .83rem; }
+.fc-chance-category.selected { border-color: rgba(255,191,71,.72); background: rgba(255,191,71,.11); box-shadow: inset 0 0 20px rgba(255,191,71,.05); }
+.fc-chance-add-idea { width: 100%; margin-top: 10px; min-height: 44px; border-radius: 14px; border: 1px dashed rgba(255,191,71,.45); background: transparent; color: #ffd67c; font-weight: 800; }
+
+.fc-chance-spin-stage { min-height: 520px; padding: 22px; display: grid; justify-items: center; align-content: center; text-align: center; }
+.fc-chance-spin-stage-head { margin-bottom: 18px; }
+.fc-chance-wheel-stage { position: relative; width: min(390px, 84vw); aspect-ratio: 1; display: grid; place-items: center; }
+.fc-chance-pointer { position: absolute; top: -4px; z-index: 3; color: #ffd45f; font-size: 2rem; filter: drop-shadow(0 3px 7px rgba(0,0,0,.45)); }
+.fc-chance-wheel-visual { width: 86%; aspect-ratio: 1; border-radius: 50%; border: 10px solid rgba(255,255,255,.12); background: conic-gradient(#ff5fc7 0 12.5%, #7c5cff 12.5% 25%, #52d9ff 25% 37.5%, #ffd45f 37.5% 50%, #ff7b66 50% 62.5%, #6ee7b7 62.5% 75%, #8fa5ff 75% 87.5%, #c58cff 87.5% 100%); box-shadow: 0 0 45px rgba(255,191,71,.16), inset 0 0 35px rgba(0,0,0,.25); position: relative; transition: transform 3.8s cubic-bezier(.12,.7,.08,1); }
+.fc-chance-wheel-stage.spinning .fc-chance-wheel-visual { animation: fc-chance-wheel-spin 5s cubic-bezier(.08,.72,.12,1) both; }
+.fc-chance-wheel-core { position: absolute; inset: 37%; border-radius: 50%; display: grid; place-items: center; background: #0a1025; border: 4px solid rgba(255,255,255,.18); font-size: 1.55rem; z-index: 2; }
+.fc-chance-wheel-visual > span { position: absolute; left: 50%; top: 50%; width: 100px; margin-left: -50px; text-align: center; font-size: .64rem; font-weight: 850; color: #fff; text-shadow: 0 2px 7px rgba(0,0,0,.75); }
+.fc-chance-spin-status { min-height: 52px; max-width: 440px; display: grid; place-items: center; margin-top: 10px; padding: 10px 18px; border-radius: 16px; background: rgba(255,255,255,.05); border: 1px solid rgba(255,255,255,.09); color: #fff; font-weight: 900; font-size: 1.08rem; }
+@keyframes fc-chance-wheel-spin { 0%{transform:rotate(0)} 72%{transform:rotate(1750deg)} 90%{transform:rotate(1840deg)} 100%{transform:rotate(1875deg)} }
+
+.fc-chance-result-panel { min-height: 430px; padding: 40px 22px; display: grid; justify-items: center; align-content: center; text-align: center; position: relative; }
+.fc-chance-confetti { color: #ffd45f; font-size: 1.8rem; letter-spacing: 1.2rem; animation: fc-chance-confetti-pulse 900ms ease-in-out infinite alternate; }
+@keyframes fc-chance-confetti-pulse { from{transform:translateY(0);opacity:.55} to{transform:translateY(-5px);opacity:1} }
+.fc-chance-result-card { min-width: min(500px, 100%); margin-top: 16px; padding: 24px; border-radius: 22px; border: 1px solid rgba(255,191,71,.55); background: linear-gradient(145deg, rgba(56,31,67,.72), rgba(13,21,47,.9)); display: grid; gap: 6px; }
+.fc-chance-result-card small { color: #aeb8da; text-transform: uppercase; letter-spacing: .08em; }
+.fc-chance-result-card strong { font-size: 1.9rem; color: #ffe6a9; }
+.fc-chance-result-card.mystery { border-color: rgba(82,217,255,.5); }
+.fc-chance-result-card.mystery strong { color: #d9f8ff; }
+.fc-chance-result-actions { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; margin-top: 18px; }
+
+.fc-chance-dice-large { font-size: 2.6rem; }
+.fc-chance-dice-mode { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 10px; margin-top: 18px; }
+.fc-chance-dice-mode button { min-height: 72px; border-radius: 16px; border: 1px solid rgba(255,255,255,.09); background: rgba(5,10,28,.7); color: #fff; font-weight: 850; text-align: left; padding: 12px 14px; }
+.fc-chance-dice-mode button span { display: block; color: #9ea8c8; font-size: .73rem; font-weight: 600; margin-top: 3px; }
+.fc-chance-dice-mode button.selected { border-color: rgba(82,217,255,.65); background: rgba(82,217,255,.09); }
+.fc-chance-mystery-grid { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 10px; margin-top: 16px; }
+.fc-chance-mystery-grid label { display: grid; gap: 5px; }
+.fc-chance-mystery-grid label > span { color: #aeb8da; font-size: .72rem; font-weight: 800; }
+.fc-chance-mystery-grid input, .fc-chance-mystery-grid select { width: 100%; min-height: 42px; border-radius: 12px; border: 1px solid rgba(255,255,255,.10); background: #0b1126; color: #fff; padding: 9px 10px; }
+.fc-chance-mystery-grid select { color: #aeb8da; }
+.fc-chance-dice-table { width: min(560px, 94vw); min-height: 190px; margin: 14px 0 6px; border-radius: 24px; border: 1px solid rgba(255,255,255,.12); background: radial-gradient(circle at 50% 35%, rgba(82,217,255,.11), transparent 48%), linear-gradient(160deg, #142341, #071225); display: flex; align-items: center; justify-content: center; gap: 30px; box-shadow: inset 0 -16px 35px rgba(0,0,0,.28); }
+.fc-chance-die-cube { width: 92px; height: 92px; border-radius: 20px; display: grid; place-items: center; background: linear-gradient(145deg, #f7f8ff, #b8c6e8); color: #0b1230; font-size: 3.4rem; box-shadow: 0 16px 35px rgba(0,0,0,.35); animation: fc-chance-die-roll .65s linear infinite; }
+.fc-chance-die-cube.secondary { animation-delay: .08s; }
+@keyframes fc-chance-die-roll { 0%{transform:translate(0,0) rotate(0deg)} 25%{transform:translate(-16px,-10px) rotate(90deg)} 50%{transform:translate(10px,8px) rotate(180deg)} 75%{transform:translate(16px,-4px) rotate(270deg)} 100%{transform:translate(0,0) rotate(360deg)} }
+
+@media (max-width: 720px) {
+  .fc-home-family-chance-card { grid-template-columns: 68px 1fr; padding: 14px; gap: 12px; }
+  .fc-home-family-chance-art { width: 64px; height: 64px; border-radius: 18px; }
+  .fc-home-family-chance-badge { position: absolute; right: 12px; top: 12px; }
+  .fc-chance-choice-grid, .fc-chance-category-grid, .fc-chance-dice-mode, .fc-chance-mystery-grid { grid-template-columns: 1fr; }
+  .fc-chance-choice { min-height: 145px; }
+  .fc-chance-panel-head { flex-direction: column; }
+  .fc-chance-spinner-winner { justify-items: start; }
+}
