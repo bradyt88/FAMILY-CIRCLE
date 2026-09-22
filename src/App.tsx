@@ -2235,7 +2235,6 @@ export default function App() {
           }
         }, 120)
       }
-      const saveMysteryResult = () => setFamilyChanceView('mysterySetup')
       const addChanceToCalendar = () => {
         if (!familyChanceSpinResult) return
         const date = window.prompt('What date should this go on?', todayKey())
