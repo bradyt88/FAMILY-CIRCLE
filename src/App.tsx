@@ -3,7 +3,7 @@ import logoUrl from '../design/brand/family-circle-logo.png'
 import Onboarding from './Onboarding'
 import './batch15.css'
 
-type ToolMode = 'emergency' | 'profile' | 'family' | 'games' | 'notifications' | 'settings' | 'map' | 'music' | 'musicCommunity' | 'familyCourt'
+type ToolMode = 'emergency' | 'profile' | 'family' | 'games' | 'notifications' | 'settings' | 'map' | 'music' | 'musicCommunity' | 'familyCourt' | 'familyChance'
 type HomeTab = 'home' | 'chat' | 'photos' | 'calendar' | 'tasks' | 'shopping'
 type AccountType = 'adult' | 'child'
 type Plan = 'free' | 'plus' | 'premium'
@@ -373,6 +373,25 @@ export default function App() {
   const [familyCourtAppealEvidence, setFamilyCourtAppealEvidence] = useState<string[]>([])
   const [familyCourtUpcomingCaseId, setFamilyCourtUpcomingCaseId] = useState<string | null>(null)
   const [familyCourtClock, setFamilyCourtClock] = useState(Date.now())
+  const [familyChanceView, setFamilyChanceView] = useState<'hub' | 'familyLobby' | 'familyCategory' | 'familySpin' | 'familyResult' | 'mysterySetup' | 'mysteryRoll' | 'mysteryResult'>('hub')
+  const [familyChanceJoinedIds, setFamilyChanceJoinedIds] = useState<string[]>([])
+  const [familyChanceSpinnerId, setFamilyChanceSpinnerId] = useState<string | null>(null)
+  const [familyChanceCategory, setFamilyChanceCategory] = useState('')
+  const [familyChanceSpinResult, setFamilyChanceSpinResult] = useState('')
+  const [familyChanceSpinning, setFamilyChanceSpinning] = useState(false)
+  const [familyChancePool, setFamilyChancePool] = useState<Record<string, string[]>>({
+    'Date Night': ['Dinner together', 'Try somewhere new', 'Go for a walk', 'Dessert date', 'Mini golf', 'Coffee date'],
+    'Family Night': ['Board game night', 'Bake together', 'Family quiz', 'Build a blanket fort', 'Takeaway night', 'Family challenge'],
+    'Movie Night': ['Pick a comedy', 'Pick an adventure', 'Animated film', 'Classic film', 'Family favourite', 'Mystery movie'],
+    \"What's for Tea?\": ['Pizza', 'Tacos', 'Homemade burgers', 'Pasta night', 'Try a new recipe', 'Takeaway'],
+    'What Should We Do?': ['Go to the park', 'Bowling', 'Swimming', 'Go for ice cream', 'Family walk', 'Visit somewhere new'],
+    'Where Should We Go?': ['Local day out', 'Cinema', 'Park', 'Museum', 'Beach', 'Adventure day'],
+    'What Should We Play?': ['FC Card Game', 'Family quiz', 'Charades', 'Hide and seek', 'Guess the song', 'Game night'],
+  })
+  const [familyChanceMysteryOptions, setFamilyChanceMysteryOptions] = useState<string[]>(['', '', '', '', '', ''])
+  const [familyChanceMysteryResult, setFamilyChanceMysteryResult] = useState('')
+  const [familyChanceMysteryDice, setFamilyChanceMysteryDice] = useState<1 | 2>(1)
+  const [familyChanceMysteryRolling, setFamilyChanceMysteryRolling] = useState(false)
   const [messages, setMessages] = useState<ChatMessage[]>(initialMessages)
   const [weeklyRecognition, setWeeklyRecognition] = useState<WeeklyRecognition>(() => loadWeeklyRecognition())
   const [photos, setPhotos] = useState<FamilyPhoto[]>([])
@@ -1132,6 +1151,19 @@ export default function App() {
             <span className="fc-home-family-court-action">Enter Family Court →</span>
           </div>
           <div className="fc-home-family-court-badge"><span>New</span><strong>⚖️</strong></div>
+        </button>
+      </section>
+
+      <section className="fc-home-family-chance">
+        <button className="fc-home-family-chance-card" type="button" onClick={() => openTool('familyChance')}>
+          <div className="fc-home-family-chance-art" aria-hidden="true"><span className="fc-chance-wheel">🎰</span><span className="fc-chance-die">🎲</span></div>
+          <div className="fc-home-family-chance-copy">
+            <span className="fc-home-family-chance-kicker">🎲 Family Circle</span>
+            <strong>FAMILY CHANCE</strong>
+            <p>Spin together. Roll your own. Let chance decide.</p>
+            <span className="fc-home-family-chance-action">Enter Family Chance →</span>
+          </div>
+          <div className="fc-home-family-chance-badge"><span>New</span><strong>🎲</strong></div>
         </button>
       </section>
 
@@ -2124,6 +2156,147 @@ export default function App() {
           <div className="fc-court-form-actions"><button className="fc-ghost-button" type="button" onClick={() => resetFamilyCourtCaseSetup('hub')}>Cancel</button><button className="fc-primary-button" type="button" disabled={!familyCourtAccusedId || !familyCourtCaseTitle.trim() || (familyCourtTiming === 'scheduled' && (!familyCourtDate || !familyCourtTime))} onClick={() => setFamilyCourtSetupView('review')}>Review Case →</button></div>
         </section>}
         {familyCourtSetupView !== 'hub' && familyCourtSetupView !== 'opened' && <div className="fc-court-lobby-back"><button type="button" onClick={() => resetFamilyCourtCaseSetup('hub')}>← Back to Family Court</button></div>}
+        {renderBottomNav()}
+      </div>
+    }
+    if (toolMode === 'familyChance') {
+      const categories = Object.keys(familyChancePool)
+      const joinedCount = familyChanceJoinedIds.length
+      const allJoined = joinedCount === members.length
+      const customPool = Array.from(new Set(Object.values(familyChancePool).flat().filter(Boolean)))
+      const mysteryFilled = familyChanceMysteryOptions.filter((item) => item.trim()).length
+      const mysteryPool = customPool
+      const closeChance = () => {
+        setFamilyChanceView('hub')
+        setFamilyChanceJoinedIds([])
+        setFamilyChanceSpinnerId(null)
+        setFamilyChanceSpinning(false)
+      }
+      const startFamilyLobby = () => {
+        setFamilyChanceView('familyLobby')
+        setFamilyChanceJoinedIds([selectedMember.id])
+        setFamilyChanceSpinnerId(null)
+        setFamilyChanceSpinResult('')
+      }
+      const joinMember = (id: string) => setFamilyChanceJoinedIds((current) => current.includes(id) ? current : [...current, id])
+      const runSpinnerMiniGame = () => {
+        if (!allJoined || familyChanceSpinning) return
+        setFamilyChanceSpinning(true)
+        const sequence = [...familyChanceJoinedIds]
+        let index = 0
+        const timer = window.setInterval(() => {
+          index += 1
+          setFamilyChanceSpinnerId(sequence[index % sequence.length])
+          if (index >= sequence.length * 3 + Math.floor(Math.random() * 3)) {
+            window.clearInterval(timer)
+            const winner = sequence[Math.floor(Math.random() * sequence.length)]
+            setFamilyChanceSpinnerId(winner)
+            setFamilyChanceSpinning(false)
+            window.setTimeout(() => setFamilyChanceView('familyCategory'), 650)
+          }
+        }, 130)
+      }
+      const spinFamilyWheel = () => {
+        if (!familyChanceCategory || familyChanceSpinning) return
+        const options = familyChancePool[familyChanceCategory] ?? []
+        if (!options.length) return
+        setFamilyChanceSpinning(true)
+        setFamilyChanceView('familySpin')
+        let ticks = 0
+        const timer = window.setInterval(() => {
+          setFamilyChanceSpinResult(options[Math.floor(Math.random() * options.length)])
+          ticks += 1
+          if (ticks >= 24) {
+            window.clearInterval(timer)
+            const result = options[Math.floor(Math.random() * options.length)]
+            setFamilyChanceSpinResult(result)
+            setFamilyChanceSpinning(false)
+            window.setTimeout(() => setFamilyChanceView('familyResult'), 1050)
+          }
+        }, 110)
+      }
+      const updateMysteryOption = (index: number, value: string) => setFamilyChanceMysteryOptions((current) => current.map((item, i) => i === index ? value : item))
+      const addMysteryFromPool = (index: number, value: string) => updateMysteryOption(index, value)
+      const rollMystery = () => {
+        const options = familyChanceMysteryOptions.map((item) => item.trim()).filter(Boolean)
+        if (options.length < 2 || familyChanceMysteryRolling) return
+        setFamilyChanceMysteryRolling(true)
+        setFamilyChanceView('mysteryRoll')
+        let ticks = 0
+        const timer = window.setInterval(() => {
+          setFamilyChanceMysteryResult(options[Math.floor(Math.random() * options.length)])
+          ticks += 1
+          if (ticks >= 18) {
+            window.clearInterval(timer)
+            const result = options[Math.floor(Math.random() * options.length)]
+            setFamilyChanceMysteryResult(result)
+            setFamilyChanceMysteryRolling(false)
+            window.setTimeout(() => setFamilyChanceView('mysteryResult'), 700)
+          }
+        }, 120)
+      }
+      const saveMysteryResult = () => setFamilyChanceView('mysterySetup')
+      const addChanceToCalendar = () => {
+        if (!familyChanceSpinResult) return
+        const date = window.prompt('What date should this go on?', todayKey())
+        if (!date) return
+        const time = window.prompt('What time?', '19:00') || '19:00'
+        addEvent(familyChanceSpinResult, date, time, 'Family Chance')
+        setFamilyChanceView('hub')
+      }
+      const addCustomPoolItem = (category: string) => {
+        const value = window.prompt('Add a family idea for ' + category)
+        if (!value?.trim()) return
+        setFamilyChancePool((current) => ({ ...current, [category]: [...(current[category] ?? []), value.trim()] }))
+      }
+      return <div className="fc-page fc-family-chance-page">
+        <div className="fc-feature-header family-chance"><div><p className="fc-kicker">Family Circle · Chance</p><h1>Family Chance</h1><p className="fc-muted">A playful way for the family to decide — or for you to let luck choose.</p></div><button className="fc-ghost-button" type="button" onClick={() => { closeChance(); goToTab('home') }}>← Home</button></div>
+
+        {familyChanceView === 'hub' && <section className="fc-chance-hub">
+          <div className="fc-chance-intro"><span className="fc-chance-orbit">✦</span><div><span className="fc-kicker">Choose your experience</span><h2>How are we leaving it to chance?</h2><p>Pick a family decision or a personal mystery roll.</p></div></div>
+          <div className="fc-chance-choice-grid">
+            <button className="fc-chance-choice spin" type="button" onClick={startFamilyLobby}><div className="fc-chance-choice-icon">🎰</div><div><span>Everyone joins</span><strong>Family Spin</strong><p>Bring everyone in, choose what you're deciding, and let the wheel speak.</p></div><b>→</b></button>
+            <button className="fc-chance-choice roll" type="button" onClick={() => setFamilyChanceView('mysterySetup')}><div className="fc-chance-choice-icon">🎲</div><div><span>Just for you</span><strong>Mystery Roll</strong><p>Set your own options, roll the dice, and see what you get.</p></div><b>→</b></button>
+          </div>
+        </section>}
+
+        {familyChanceView === 'familyLobby' && <section className="fc-chance-panel">
+          <div className="fc-chance-panel-head"><div><span className="fc-kicker">Family Spin · Step 1</span><h2>Get everyone in!</h2><p>The wheel won't start until the whole family has joined.</p></div><span className="fc-chance-count">{joinedCount}/{members.length}</span></div>
+          <div className="fc-chance-member-grid">{members.map((member) => <button key={member.id} className={'fc-chance-member' + (familyChanceJoinedIds.includes(member.id) ? ' joined' : '')} type="button" onClick={() => joinMember(member.id)}><AppAvatar member={member}/><span><strong>{member.label}</strong><small>{familyChanceJoinedIds.includes(member.id) ? 'In the room ✓' : 'Tap to join'}</small></span><b>{familyChanceJoinedIds.includes(member.id) ? '✓' : '+'}</b></button>)}</div>
+          <div className="fc-chance-lobby-actions"><button className="fc-ghost-button" type="button" onClick={closeChance}>Cancel</button><button className="fc-primary-button" type="button" disabled={!allJoined || familyChanceSpinning} onClick={runSpinnerMiniGame}>🎲 Who gets to spin?</button></div>
+        </section>}
+
+        {familyChanceView === 'familyCategory' && <section className="fc-chance-panel">
+          <div className="fc-chance-panel-head"><div><span className="fc-kicker">Family Spin · Step 2</span><h2>What are we spinning for?</h2><p>Pick the thing the family needs to decide today.</p></div><div className="fc-chance-spinner-winner">{familyChanceSpinnerId ? members.find((m) => m.id === familyChanceSpinnerId)?.label : ''}<small>gets to spin</small></div></div>
+          <div className="fc-chance-category-grid">{categories.map((category) => <button key={category} type="button" className={'fc-chance-category' + (familyChanceCategory === category ? ' selected' : '')} onClick={() => setFamilyChanceCategory(category)}><span>{category === 'Date Night' ? '❤️' : category === 'Family Night' ? '👨‍👩‍👧‍👦' : category === 'Movie Night' ? '🎬' : category === "What's for Tea?" ? '🍽️' : category === 'What Should We Do?' ? '🌳' : category === 'Where Should We Go?' ? '📍' : '🎮'}</span><strong>{category}</strong></button>)}</div>
+          <button className="fc-chance-add-idea" type="button" onClick={() => addCustomPoolItem(familyChanceCategory || categories[0])}>＋ Add your own family idea</button>
+          <div className="fc-chance-lobby-actions"><button className="fc-ghost-button" type="button" onClick={() => setFamilyChanceView('familyLobby')}>← Back</button><button className="fc-primary-button" type="button" disabled={!familyChanceCategory} onClick={() => { setFamilyChanceSpinResult(''); spinFamilyWheel() }}>🎰 Spin the wheel</button></div>
+        </section>}
+
+        {familyChanceView === 'familySpin' && <section className="fc-chance-spin-stage" aria-live="polite">
+          <div className="fc-chance-spin-stage-head"><span className="fc-kicker">{familyChanceCategory}</span><h2>Let it spin…</h2><p>Everyone's watching. The wheel is slowing down.</p></div>
+          <div className={'fc-chance-wheel-stage' + (familyChanceSpinning ? ' spinning' : '')}><div className="fc-chance-pointer">▼</div><div className="fc-chance-wheel-visual"><div className="fc-chance-wheel-core">🎲</div>{(familyChancePool[familyChanceCategory] ?? []).slice(0,8).map((item,index)=><span key={item + index} style={{transform: 'rotate(' + (index*45) + 'deg) translateY(-118px) rotate(-' + (index*45) + 'deg)'}}>{item}</span>)}</div></div>
+          <div className="fc-chance-spin-status">{familyChanceSpinResult || 'Spinning…'}</div>
+        </section>}
+
+        {familyChanceView === 'familyResult' && <section className="fc-chance-result-panel">
+          <div className="fc-chance-confetti" aria-hidden="true">✦ ✧ ✦ ✧ ✦</div><span className="fc-kicker">🎉 The wheel has spoken</span><h2>Decision final.</h2><div className="fc-chance-result-card"><small>{familyChanceCategory}</small><strong>{familyChanceSpinResult}</strong></div><div className="fc-chance-result-actions"><button className="fc-ghost-button" type="button" onClick={() => setFamilyChanceView('hub')}>← Family Chance</button><button className="fc-primary-button" type="button" onClick={() => addChanceToCalendar()}>📅 Add to Family Calendar</button></div></section>}
+
+        {familyChanceView === 'mysterySetup' && <section className="fc-chance-panel">
+          <div className="fc-chance-panel-head"><div><span className="fc-kicker">Mystery Roll · Personal</span><h2>What could you do?</h2><p>Type your own ideas or choose from the Family Pool.</p></div><div className="fc-chance-dice-large">🎲</div></div>
+          <div className="fc-chance-dice-mode"><button className={familyChanceMysteryDice === 1 ? 'selected' : ''} type="button" onClick={() => setFamilyChanceMysteryDice(1)}>🎲 One Die<span>Six faces · one result</span></button><button className={familyChanceMysteryDice === 2 ? 'selected' : ''} type="button" onClick={() => setFamilyChanceMysteryDice(2)}>🎲🎲 Two Dice<span>Two rolls · choose your fate</span></button></div>
+          <div className="fc-chance-mystery-grid">{familyChanceMysteryOptions.map((value,index) => <label key={index}><span>Face {index + 1}</span><input value={value} maxLength={42} onChange={(event) => updateMysteryOption(index,event.target.value)} placeholder={mysteryPool[index] ?? 'Type an idea'} /><select value={mysteryPool.includes(value) ? value : ''} onChange={(event) => addMysteryFromPool(index,event.target.value)}><option value="">Pick from Family Pool</option>{mysteryPool.map((item,optionIndex)=><option key={item + optionIndex} value={item}>{item}</option>)}</select></label>)}</div>
+          <div className="fc-chance-lobby-actions"><button className="fc-ghost-button" type="button" onClick={() => setFamilyChanceView('hub')}>← Family Chance</button><button className="fc-primary-button" type="button" disabled={mysteryFilled < 2} onClick={rollMystery}>🎲 Roll the dice</button></div>
+        </section>}
+
+        {familyChanceView === 'mysteryRoll' && <section className="fc-chance-spin-stage">
+          <div className="fc-chance-spin-stage-head"><span className="fc-kicker">Mystery Roll</span><h2>Let luck choose…</h2><p>{familyChanceMysteryRolling ? 'Rolling across the table…' : 'Your roll is ready.'}</p></div>
+          <div className="fc-chance-dice-table"><div className="fc-chance-die-cube">{familyChanceMysteryResult ? '🎲' : '·'}</div>{familyChanceMysteryDice === 2 && <div className="fc-chance-die-cube secondary">🎲</div>}</div>
+          <div className="fc-chance-spin-status">{familyChanceMysteryResult || 'Rolling…'}</div>
+        </section>}
+
+        {familyChanceView === 'mysteryResult' && <section className="fc-chance-result-panel">
+          <div className="fc-chance-confetti" aria-hidden="true">🎲 ✦ 🎲 ✦ 🎲</div><span className="fc-kicker">Mystery Roll result</span><h2>That's the one.</h2><div className="fc-chance-result-card mystery"><small>Your personal roll</small><strong>{familyChanceMysteryResult}</strong></div><div className="fc-chance-result-actions"><button className="fc-ghost-button" type="button" onClick={() => setFamilyChanceView('mysterySetup')}>🎲 Roll Again</button><button className="fc-primary-button" type="button" onClick={() => setFamilyChanceView('hub')}>Done</button></div></section>}
         {renderBottomNav()}
       </div>
     }
