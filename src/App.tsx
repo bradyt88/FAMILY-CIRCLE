@@ -383,7 +383,7 @@ export default function App() {
     'Date Night': ['Dinner together', 'Try somewhere new', 'Go for a walk', 'Dessert date', 'Mini golf', 'Coffee date'],
     'Family Night': ['Board game night', 'Bake together', 'Family quiz', 'Build a blanket fort', 'Takeaway night', 'Family challenge'],
     'Movie Night': ['Pick a comedy', 'Pick an adventure', 'Animated film', 'Classic film', 'Family favourite', 'Mystery movie'],
-    \"What's for Tea?\": ['Pizza', 'Tacos', 'Homemade burgers', 'Pasta night', 'Try a new recipe', 'Takeaway'],
+    "What's for Tea?": ['Pizza', 'Tacos', 'Homemade burgers', 'Pasta night', 'Try a new recipe', 'Takeaway'],
     'What Should We Do?': ['Go to the park', 'Bowling', 'Swimming', 'Go for ice cream', 'Family walk', 'Visit somewhere new'],
     'Where Should We Go?': ['Local day out', 'Cinema', 'Park', 'Museum', 'Beach', 'Adventure day'],
     'What Should We Play?': ['FC Card Game', 'Family quiz', 'Charades', 'Hide and seek', 'Guess the song', 'Game night'],
