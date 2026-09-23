@@ -373,12 +373,13 @@ export default function App() {
   const [familyCourtAppealEvidence, setFamilyCourtAppealEvidence] = useState<string[]>([])
   const [familyCourtUpcomingCaseId, setFamilyCourtUpcomingCaseId] = useState<string | null>(null)
   const [familyCourtClock, setFamilyCourtClock] = useState(Date.now())
-  const [familyChanceView, setFamilyChanceView] = useState<'hub' | 'familyLobby' | 'familyCategory' | 'familySpin' | 'familyResult' | 'mysterySetup' | 'mysteryRoll' | 'mysteryResult'>('hub')
+  const [familyChanceView, setFamilyChanceView] = useState<'hub' | 'familyLobby' | 'familyMemberSpin' | 'familyCategory' | 'familySpin' | 'familyResult' | 'mysterySetup' | 'mysteryRoll' | 'mysteryResult'>('hub')
   const [familyChanceJoinedIds, setFamilyChanceJoinedIds] = useState<string[]>([])
   const [familyChanceSpinnerId, setFamilyChanceSpinnerId] = useState<string | null>(null)
   const [familyChanceCategory, setFamilyChanceCategory] = useState('')
   const [familyChanceSpinResult, setFamilyChanceSpinResult] = useState('')
   const [familyChanceSpinning, setFamilyChanceSpinning] = useState(false)
+  const [familyChanceWheelRotation, setFamilyChanceWheelRotation] = useState(0)
   const [familyChancePool, setFamilyChancePool] = useState<Record<string, string[]>>({
     'Date Night': ['Dinner together', 'Try somewhere new', 'Go for a walk', 'Dessert date', 'Mini golf', 'Coffee date'],
     'Family Night': ['Board game night', 'Bake together', 'Family quiz', 'Build a blanket fort', 'Takeaway night', 'Family challenge'],
@@ -2166,54 +2167,67 @@ export default function App() {
       const customPool = Array.from(new Set(Object.values(familyChancePool).flat().filter(Boolean)))
       const mysteryFilled = familyChanceMysteryOptions.filter((item) => item.trim()).length
       const mysteryPool = customPool
+      const chanceWheelColours = ['#ff5fc7', '#7c5cff', '#52d9ff', '#ffd45f', '#ff7b66', '#6ee7b7', '#8fa5ff', '#c58cff']
+      const buildChanceWheelGradient = (count: number) => {
+        if (!count) return '#7c5cff'
+        const slice = 100 / count
+        return `conic-gradient(${Array.from({ length: count }, (_, index) => {
+          const start = (index * slice).toFixed(4)
+          const end = ((index + 1) * slice).toFixed(4)
+          return `${chanceWheelColours[index % chanceWheelColours.length]} ${start}% ${end}%`
+        }).join(', ')})`
+      }
       const closeChance = () => {
         setFamilyChanceView('hub')
         setFamilyChanceJoinedIds([])
         setFamilyChanceSpinnerId(null)
         setFamilyChanceSpinning(false)
+        setFamilyChanceWheelRotation(0)
       }
       const startFamilyLobby = () => {
         setFamilyChanceView('familyLobby')
         setFamilyChanceJoinedIds([selectedMember.id])
         setFamilyChanceSpinnerId(null)
         setFamilyChanceSpinResult('')
+        setFamilyChanceWheelRotation(0)
       }
       const joinMember = (id: string) => setFamilyChanceJoinedIds((current) => current.includes(id) ? current : [...current, id])
       const runSpinnerMiniGame = () => {
         if (!allJoined || familyChanceSpinning) return
+        const participants = [...familyChanceJoinedIds]
+        if (!participants.length) return
+        const winnerIndex = Math.floor(Math.random() * participants.length)
+        const winner = participants[winnerIndex]
+        const segmentAngle = 360 / participants.length
+        const targetRotation = 1440 - (winnerIndex * segmentAngle + segmentAngle / 2)
+        setFamilyChanceSpinnerId(winner)
+        setFamilyChanceWheelRotation(0)
         setFamilyChanceSpinning(true)
-        const sequence = [...familyChanceJoinedIds]
-        let index = 0
-        const timer = window.setInterval(() => {
-          index += 1
-          setFamilyChanceSpinnerId(sequence[index % sequence.length])
-          if (index >= sequence.length * 3 + Math.floor(Math.random() * 3)) {
-            window.clearInterval(timer)
-            const winner = sequence[Math.floor(Math.random() * sequence.length)]
-            setFamilyChanceSpinnerId(winner)
-            setFamilyChanceSpinning(false)
-            window.setTimeout(() => setFamilyChanceView('familyCategory'), 650)
-          }
-        }, 130)
+        setFamilyChanceView('familyMemberSpin')
+        window.setTimeout(() => setFamilyChanceWheelRotation(targetRotation), 60)
+        window.setTimeout(() => {
+          setFamilyChanceSpinning(false)
+          setFamilyChanceView('familyCategory')
+        }, 5600)
       }
       const spinFamilyWheel = () => {
         if (!familyChanceCategory || familyChanceSpinning) return
         const options = familyChancePool[familyChanceCategory] ?? []
         if (!options.length) return
+        const winnerIndex = Math.floor(Math.random() * options.length)
+        const result = options[winnerIndex]
+        const segmentAngle = 360 / options.length
+        const targetRotation = 2160 - (winnerIndex * segmentAngle + segmentAngle / 2)
+        setFamilyChanceSpinResult('')
+        setFamilyChanceWheelRotation(0)
         setFamilyChanceSpinning(true)
         setFamilyChanceView('familySpin')
-        let ticks = 0
-        const timer = window.setInterval(() => {
-          setFamilyChanceSpinResult(options[Math.floor(Math.random() * options.length)])
-          ticks += 1
-          if (ticks >= 24) {
-            window.clearInterval(timer)
-            const result = options[Math.floor(Math.random() * options.length)]
-            setFamilyChanceSpinResult(result)
-            setFamilyChanceSpinning(false)
-            window.setTimeout(() => setFamilyChanceView('familyResult'), 1050)
-          }
-        }, 110)
+        window.setTimeout(() => setFamilyChanceWheelRotation(targetRotation), 60)
+        window.setTimeout(() => {
+          setFamilyChanceSpinResult(result)
+          setFamilyChanceSpinning(false)
+          setFamilyChanceView('familyResult')
+        }, 6100)
       }
       const updateMysteryOption = (index: number, value: string) => setFamilyChanceMysteryOptions((current) => current.map((item, i) => i === index ? value : item))
       const addMysteryFromPool = (index: number, value: string) => updateMysteryOption(index, value)
@@ -2265,6 +2279,22 @@ export default function App() {
           <div className="fc-chance-lobby-actions"><button className="fc-ghost-button" type="button" onClick={closeChance}>Cancel</button><button className="fc-primary-button" type="button" disabled={!allJoined || familyChanceSpinning} onClick={runSpinnerMiniGame}>🎲 Who gets to spin?</button></div>
         </section>}
 
+        {familyChanceView === 'familyMemberSpin' && <section className="fc-chance-spin-stage fc-chance-member-spin-stage" aria-live="polite">
+          <div className="fc-chance-spin-stage-head"><span className="fc-kicker">Family Spin · Step 1</span><h2>Who gets to spin?</h2><p>The wheel is choosing the family member who gets the main spin.</p></div>
+          <div className="fc-chance-wheel-stage">
+            <div className="fc-chance-pointer">▼</div>
+            <div className="fc-chance-wheel-visual" style={{ transform: `rotate(${familyChanceWheelRotation}deg)`, background: buildChanceWheelGradient(familyChanceJoinedIds.length) }}>
+              <div className="fc-chance-wheel-core">🎲</div>
+              {familyChanceJoinedIds.map((id, index) => {
+                const member = members.find((item) => item.id === id)
+                const angle = (360 / familyChanceJoinedIds.length) * index
+                return <span key={id} className="fc-chance-wheel-label member" style={{ transform: `rotate(${angle}deg) translateY(-118px) rotate(-${angle}deg)` }}>{member?.label ?? 'Family member'}</span>
+              })}
+            </div>
+          </div>
+          <div className="fc-chance-spin-status">{familyChanceSpinning ? 'Choosing…' : familyChanceSpinnerId ? members.find((member) => member.id === familyChanceSpinnerId)?.label : ''}</div>
+        </section>}
+
         {familyChanceView === 'familyCategory' && <section className="fc-chance-panel">
           <div className="fc-chance-panel-head"><div><span className="fc-kicker">Family Spin · Step 2</span><h2>What are we spinning for?</h2><p>Pick the thing the family needs to decide today.</p></div><div className="fc-chance-spinner-winner">{familyChanceSpinnerId ? members.find((m) => m.id === familyChanceSpinnerId)?.label : ''}<small>gets to spin</small></div></div>
           <div className="fc-chance-category-grid">{categories.map((category) => <button key={category} type="button" className={'fc-chance-category' + (familyChanceCategory === category ? ' selected' : '')} onClick={() => setFamilyChanceCategory(category)}><span>{category === 'Date Night' ? '❤️' : category === 'Family Night' ? '👨‍👩‍👧‍👦' : category === 'Movie Night' ? '🎬' : category === "What's for Tea?" ? '🍽️' : category === 'What Should We Do?' ? '🌳' : category === 'Where Should We Go?' ? '📍' : '🎮'}</span><strong>{category}</strong></button>)}</div>
@@ -2272,10 +2302,19 @@ export default function App() {
           <div className="fc-chance-lobby-actions"><button className="fc-ghost-button" type="button" onClick={() => setFamilyChanceView('familyLobby')}>← Back</button><button className="fc-primary-button" type="button" disabled={!familyChanceCategory} onClick={() => { setFamilyChanceSpinResult(''); spinFamilyWheel() }}>🎰 Spin the wheel</button></div>
         </section>}
 
-        {familyChanceView === 'familySpin' && <section className="fc-chance-spin-stage" aria-live="polite">
+        {familyChanceView === 'familySpin' && <section className="fc-chance-spin-stage fc-chance-main-spin-stage" aria-live="polite">
           <div className="fc-chance-spin-stage-head"><span className="fc-kicker">{familyChanceCategory}</span><h2>Let it spin…</h2><p>Everyone's watching. The wheel is slowing down.</p></div>
-          <div className={'fc-chance-wheel-stage' + (familyChanceSpinning ? ' spinning' : '')}><div className="fc-chance-pointer">▼</div><div className="fc-chance-wheel-visual"><div className="fc-chance-wheel-core">🎲</div>{(familyChancePool[familyChanceCategory] ?? []).slice(0,8).map((item,index)=><span key={item + index} style={{transform: 'rotate(' + (index*45) + 'deg) translateY(-118px) rotate(-' + (index*45) + 'deg)'}}>{item}</span>)}</div></div>
-          <div className="fc-chance-spin-status">{familyChanceSpinResult || 'Spinning…'}</div>
+          <div className="fc-chance-wheel-stage">
+            <div className="fc-chance-pointer">▼</div>
+            <div className="fc-chance-wheel-visual" style={{ transform: `rotate(${familyChanceWheelRotation}deg)`, background: buildChanceWheelGradient((familyChancePool[familyChanceCategory] ?? []).length) }}>
+              <div className="fc-chance-wheel-core">🎲</div>
+              {(familyChancePool[familyChanceCategory] ?? []).map((item, index, options) => {
+                const angle = (360 / options.length) * index
+                return <span key={item + index} className="fc-chance-wheel-label" style={{ transform: `rotate(${angle}deg) translateY(-118px) rotate(-${angle}deg)` }}>{item}</span>
+              })}
+            </div>
+          </div>
+          <div className="fc-chance-spin-status">{familyChanceSpinning ? 'Spinning…' : familyChanceSpinResult || 'Spinning…'}</div>
         </section>}
 
         {familyChanceView === 'familyResult' && <section className="fc-chance-result-panel">
